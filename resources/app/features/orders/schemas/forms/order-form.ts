@@ -6,6 +6,7 @@ import { getStateLabel, isAddressFieldRequired } from '@/libs/address-rules';
 import {
   isEmptyValue,
   nullishShape,
+  numberOrNull,
   prepareFormSchema,
   required,
   requiredWhen,
@@ -48,8 +49,13 @@ const OrderFormShape = prepareFormSchema(
     currency_code: stringOrNull(),
     coupon_codes: z.array(CouponListItemSchema).default([]),
     customer_id: required(z.number(), __('Customer is required', 'kirki-ecommerce')),
+    customer_email: stringOrNull(),
+    customer_phone: stringOrNull(),
+    consents: z.array(z.string()).nullish(),
 
+    payment_provider: stringOrNull(),
     shipping_method: required(z.string(), __('Shipping method is required', 'kirki-ecommerce')),
+    shipping_id: numberOrNull(),
 
     shipping_first_name: required(z.string(), __('First name is required', 'kirki-ecommerce')),
     shipping_last_name: required(z.string(), __('Last name is required', 'kirki-ecommerce')),
@@ -73,6 +79,7 @@ const OrderFormShape = prepareFormSchema(
     shipping_company: stringOrNull(),
 
     is_billing_same_as_shipping: z.boolean().nullish().default(false),
+    billing_id: numberOrNull(),
     billing_first_name: requiredWhen(
       z.string().nullish(),
       (values) => !values.is_billing_same_as_shipping && isEmptyValue(values.billing_first_name),
@@ -161,12 +168,16 @@ const toCouponCodes = (coupons: Pick<CouponListItem, 'code'>[]) => {
 
 const OrderFormSchema = OrderFormShape.transform((values) => ({
   customer_id: values.customer_id,
+  customer_email: values.customer_email ?? null,
+  consents: values.consents ?? null,
   items: values.items,
 
   currency_code: values.currency_code ?? null,
   coupon_codes: toCouponCodes(values.coupon_codes),
 
+  payment_provider: values.payment_provider ?? null,
   shipping_method: values.shipping_method,
+  shipping_id: values.shipping_id,
   shipping_first_name: values.shipping_first_name,
   shipping_last_name: values.shipping_last_name,
   shipping_address_line1: values.shipping_address_line1,
@@ -180,6 +191,7 @@ const OrderFormSchema = OrderFormShape.transform((values) => ({
   shipping_company: values.shipping_company ?? null,
 
   is_billing_same_as_shipping: values.is_billing_same_as_shipping,
+  billing_id: values.billing_id,
   ...buildBillingFields(values),
 
   admin_notes: values.admin_notes ?? null,
@@ -196,6 +208,8 @@ const OrderCalculationRequestSchema = z
     currency_code: values.currency_code ?? null,
     coupon_codes: toCouponCodes(values.coupon_codes ?? []),
 
+    payment_provider: values.payment_provider ?? null,
+
     shipping_method: values.shipping_method ?? null,
     shipping_first_name: values.shipping_first_name ?? null,
     shipping_last_name: values.shipping_last_name ?? null,
@@ -207,6 +221,25 @@ const OrderCalculationRequestSchema = z
     shipping_country: values.shipping_country ?? null,
     shipping_phone: values.shipping_phone ?? null,
     shipping_email: values.shipping_email ?? null,
+    shipping_company: values.shipping_company ?? null,
+
+    billing_first_name: values.billing_first_name ?? null,
+    billing_last_name: values.billing_last_name ?? null,
+    billing_address_line1: values.billing_address_line1 ?? null,
+    billing_address_line2: values.billing_address_line2 ?? null,
+    billing_city: values.billing_city ?? null,
+    billing_state: values.billing_state ?? null,
+    billing_postal_code: values.billing_postal_code ?? null,
+    billing_country: values.billing_country ?? null,
+    billing_phone: values.billing_phone ?? null,
+    billing_email: values.billing_email ?? null,
+    billing_company: values.billing_company ?? null,
+
+    customer_email: values.customer_email ?? null,
+    customer_phone: values.customer_phone ?? null,
+
+    admin_notes: values.admin_notes ?? null,
+    is_manual: values.is_manual,
   }));
 
 type OrderFormInput = z.input<typeof OrderFormSchema>;

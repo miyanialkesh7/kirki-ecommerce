@@ -31,6 +31,26 @@ type CustomerCardProps = {
   readonly?: boolean;
 };
 
+const WATCHED_ADDRESS_FIELDS = [
+  'shipping_first_name',
+  'shipping_last_name',
+  'shipping_email',
+  'shipping_phone',
+  'shipping_address_line1',
+  'shipping_address_line2',
+  'shipping_city',
+  'shipping_state',
+  'shipping_postal_code',
+  'shipping_country',
+  'is_billing_same_as_shipping',
+  'billing_address_line1',
+  'billing_address_line2',
+  'billing_city',
+  'billing_state',
+  'billing_postal_code',
+  'billing_country',
+] as const satisfies readonly (keyof OrderFormInput)[];
+
 const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps) => {
   const form = useFormContext<OrderFormInput>();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -76,7 +96,45 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
     onSave?.();
   };
 
-  const values = useWatch({ control: form.control });
+  const [
+    shipping_first_name,
+    shipping_last_name,
+    shipping_email,
+    shipping_phone,
+    shipping_address_line1,
+    shipping_address_line2,
+    shipping_city,
+    shipping_state,
+    shipping_postal_code,
+    shipping_country,
+    is_billing_same_as_shipping,
+    billing_address_line1,
+    billing_address_line2,
+    billing_city,
+    billing_state,
+    billing_postal_code,
+    billing_country,
+  ] = useWatch({ control: form.control, name: WATCHED_ADDRESS_FIELDS });
+
+  const values = {
+    shipping_first_name,
+    shipping_last_name,
+    shipping_email,
+    shipping_phone,
+    shipping_address_line1,
+    shipping_address_line2,
+    shipping_city,
+    shipping_state,
+    shipping_postal_code,
+    shipping_country,
+    is_billing_same_as_shipping,
+    billing_address_line1,
+    billing_address_line2,
+    billing_city,
+    billing_state,
+    billing_postal_code,
+    billing_country,
+  };
 
   return (
     <Card cssOverride={cardStyles.formCard}>

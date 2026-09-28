@@ -105,6 +105,7 @@ export const toOrderAddresses = (customer: Customer): Partial<OrderFormInput> =>
   const billingContact = addressName(billing, customer);
 
   return {
+    shipping_id: shipping?.id ?? null,
     shipping_first_name: shippingContact.firstName,
     shipping_last_name: shippingContact.lastName,
     shipping_address_line1: shipping?.address_line1 ?? '',
@@ -117,6 +118,7 @@ export const toOrderAddresses = (customer: Customer): Partial<OrderFormInput> =>
     shipping_email: shippingContact.email,
 
     is_billing_same_as_shipping: isBillingSameAsShipping,
+    billing_id: isBillingSameAsShipping ? (shipping?.id ?? null) : (billing?.id ?? null),
     billing_first_name: billingContact.firstName,
     billing_last_name: billingContact.lastName,
     billing_address_line1: billing?.address_line1 ?? '',

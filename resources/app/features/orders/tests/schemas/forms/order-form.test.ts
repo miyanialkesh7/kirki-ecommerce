@@ -59,10 +59,14 @@ describe('OrderFormSchema', () => {
 
     expect(result).toEqual({
       customer_id: 7,
+      customer_email: null,
+      consents: null,
       items: [{ variant_id: 12, quantity: 2 }],
       currency_code: 'USD',
       coupon_codes: [],
+      payment_provider: null,
       shipping_method: 'flat_rate',
+      shipping_id: null,
       shipping_first_name: 'John',
       shipping_last_name: 'Doe',
       shipping_address_line1: '221B Baker Street',
@@ -75,6 +79,7 @@ describe('OrderFormSchema', () => {
       shipping_email: null,
       shipping_company: null,
       is_billing_same_as_shipping: true,
+      billing_id: null,
       billing_first_name: 'John',
       billing_last_name: 'Doe',
       billing_address_line1: '221B Baker Street',
@@ -195,6 +200,11 @@ describe('OrderFormSchema', () => {
 
     expect(result.currency_code).toBeNull();
     expect(result.coupon_codes).toEqual([]);
+    expect(result.customer_email).toBeNull();
+    expect(result.consents).toBeNull();
+    expect(result.payment_provider).toBeNull();
+    expect(result.shipping_id).toBeNull();
+    expect(result.billing_id).toBeNull();
     expect(result.shipping_address_line2).toBeNull();
     expect(result.shipping_phone).toBeNull();
     expect(result.shipping_email).toBeNull();
@@ -350,6 +360,7 @@ describe('OrderCalculationRequestSchema', () => {
       items: [],
       currency_code: null,
       coupon_codes: [],
+      payment_provider: null,
       shipping_method: null,
       shipping_first_name: null,
       shipping_last_name: null,
@@ -361,6 +372,22 @@ describe('OrderCalculationRequestSchema', () => {
       shipping_country: null,
       shipping_phone: null,
       shipping_email: null,
+      shipping_company: null,
+      billing_first_name: null,
+      billing_last_name: null,
+      billing_address_line1: null,
+      billing_address_line2: null,
+      billing_city: null,
+      billing_state: null,
+      billing_postal_code: null,
+      billing_country: null,
+      billing_phone: null,
+      billing_email: null,
+      billing_company: null,
+      customer_email: null,
+      customer_phone: null,
+      admin_notes: null,
+      is_manual: true,
     });
   });
 
@@ -394,21 +421,43 @@ describe('OrderCalculationRequestSchema', () => {
     expect(result.coupon_codes).toEqual(['SAVE10']);
   });
 
-  it('omits the billing, notes and manual-order fields from the calculation payload', () => {
+  it('forwards the billing block, shipping_company, payment_provider, customer contact and notes fields, but not shipping_id/billing_id or is_billing_same_as_shipping', () => {
     const result = OrderCalculationRequestSchema.parse({
       billing_first_name: 'Jane',
       billing_postal_code: 'SW1A 2AA',
       shipping_company: 'Acme Ltd',
+      shipping_id: 4,
+      billing_id: 9,
+      payment_provider: 'stripe',
+      customer_email: 'jane@example.com',
+      customer_phone: '+44 20 7925 0918',
       admin_notes: 'Leave at the door',
       is_billing_same_as_shipping: false,
-      is_manual: true,
+      is_manual: false,
     });
 
-    expect(Object.keys(result)).not.toContain('billing_first_name');
-    expect(Object.keys(result)).not.toContain('billing_postal_code');
-    expect(Object.keys(result)).not.toContain('shipping_company');
-    expect(Object.keys(result)).not.toContain('admin_notes');
+    expect(result.billing_first_name).toBe('Jane');
+    expect(result.billing_postal_code).toBe('SW1A 2AA');
+    expect(result.shipping_company).toBe('Acme Ltd');
+    expect(result.payment_provider).toBe('stripe');
+    expect(result.customer_email).toBe('jane@example.com');
+    expect(result.customer_phone).toBe('+44 20 7925 0918');
+    expect(result.admin_notes).toBe('Leave at the door');
+    expect(result.is_manual).toBe(false);
+
+    expect(Object.keys(result)).not.toContain('shipping_id');
+    expect(Object.keys(result)).not.toContain('billing_id');
     expect(Object.keys(result)).not.toContain('is_billing_same_as_shipping');
-    expect(Object.keys(result)).not.toContain('is_manual');
+  });
+
+  it('does not default a billing field from shipping, unlike OrderFormSchema', () => {
+    const result = OrderCalculationRequestSchema.parse({
+      is_billing_same_as_shipping: true,
+      shipping_first_name: 'John',
+      shipping_city: 'London',
+    });
+
+    expect(result.billing_first_name).toBeNull();
+    expect(result.billing_city).toBeNull();
   });
 });

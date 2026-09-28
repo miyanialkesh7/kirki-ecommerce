@@ -5,14 +5,21 @@ import {
 } from '@/components/ui/input-group';
 import { MinusIcon, PlusIcon } from '@/icons';
 import { defineStyles } from '@/theme/mixins';
+import { dispatchToastMessage } from '@/utils/common';
+import { __ } from '@/wpi18n';
 
 type QuantityStepperProps = {
   value: number;
   min?: number;
+  max?: number;
+  disabledMessage?: string;
   onChange: (value: number) => void;
 };
 
-const QuantityStepper = ({ value, min = 1, onChange }: QuantityStepperProps) => {
+const QuantityStepper = ({ value, min = 1, max, disabledMessage, onChange }: QuantityStepperProps) => {
+  const isDefined = typeof max === 'number';
+  const isAtMax = isDefined && value >= max;
+
   return (
     <InputGroup cssOverride={styles.group}>
       <InputGroupButton
@@ -28,7 +35,8 @@ const QuantityStepper = ({ value, min = 1, onChange }: QuantityStepperProps) => 
         value={value}
         onChange={(event) => {
           const nextValue = Number(event.target.value);
-          onChange(Number.isNaN(nextValue) ? min : Math.max(min, nextValue));
+          const clamped = Number.isNaN(nextValue) ? min : Math.max(min, nextValue);
+          onChange(isDefined ? Math.min(max, clamped) : clamped);
         }}
         onWheel={(event) => {
           event.currentTarget.blur();
@@ -42,7 +50,18 @@ const QuantityStepper = ({ value, min = 1, onChange }: QuantityStepperProps) => 
       />
       <InputGroupButton
         size="icon-xs"
-        onClick={() => onChange(value + 1)}
+        aria-disabled={isAtMax || undefined}
+        cssOverride={isAtMax ? styles.disabledLook : undefined}
+        onClick={() => {
+          if (isAtMax) {
+            dispatchToastMessage('warning', {
+              title: disabledMessage ?? __('Maximum quantity reached', 'kirki-ecommerce'),
+            });
+            return;
+          }
+
+          onChange(value + 1);
+        }}
         aria-label="Increase quantity"
       >
         <PlusIcon />
@@ -62,5 +81,8 @@ const styles = defineStyles({
   input: {
     textAlign: 'center',
     paddingInline: 0,
+  },
+  disabledLook: {
+    opacity: 0.5,
   },
 });

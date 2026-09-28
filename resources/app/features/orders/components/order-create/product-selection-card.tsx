@@ -4,8 +4,7 @@ import Flex from '@/components/ui/flex';
 import { Table, TableBody } from '@/components/ui/table';
 import Text from '@/components/ui/text';
 import OrderItemRow from '@/features/orders/components/order-create/order-item/order-item-row';
-import type { OrderCalculation } from '@/features/orders/schemas/catalog/order';
-import type { OrderItem } from '@/features/orders/types';
+import { useOrderCreateContext } from '@/features/orders/contexts/order-create-context';
 import { PlusIcon, ProductIcon } from '@/icons';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
@@ -13,20 +12,18 @@ import { defineStyles, mergeCss } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
 type ProductSelectionCardProps = {
-  rows: OrderItem[];
-  calculationItems?: OrderCalculation['items'];
   onOpenPicker: () => void;
   onQuantityChange: (index: number, quantity: number) => void;
   onRemoveItem: (index: number) => void;
 };
 
 const ProductSelectionCard = ({
-  rows,
-  calculationItems,
   onOpenPicker,
   onQuantityChange,
   onRemoveItem,
 }: ProductSelectionCardProps) => {
+  const { rows } = useOrderCreateContext();
+
   if (rows.length === 0) {
     return (
       <Card cssOverride={mergeCss(cardStyles.formCard, styles.emptyCard)}>
@@ -67,7 +64,6 @@ const ProductSelectionCard = ({
                   <OrderItemRow
                     key={row.display.variantId}
                     row={row}
-                    calculationItem={calculationItems?.[row.index]}
                     onQuantityChange={onQuantityChange}
                     onRemove={onRemoveItem}
                   />

@@ -7,21 +7,29 @@ import Image from '@/components/ui/image';
 import { TableCell, TableRow } from '@/components/ui/table';
 import Text from '@/components/ui/text';
 import QuantityStepper from '@/features/orders/components/order-create/order-item/quantity-stepper';
-import type { OrderCalculation } from '@/features/orders/schemas/catalog/order';
+import { useOrderCreateContext } from '@/features/orders/contexts/order-create-context';
+import { getQuantityLimit } from '@/features/orders/lib/order-items';
 import type { OrderItem } from '@/features/orders/types';
 
 const EMPTY_AMOUNT = '—';
 
 type OrderItemRowProps = {
   row: OrderItem;
-  calculationItem?: OrderCalculation['items'][number];
   onQuantityChange: (index: number, quantity: number) => void;
   onRemove: (index: number) => void;
 };
 
-const OrderItemRow = ({ row, calculationItem, onQuantityChange, onRemove }: OrderItemRowProps) => {
+const OrderItemRow = ({ row, onQuantityChange, onRemove }: OrderItemRowProps) => {
   const { display, quantity, index } = row;
-  const lineTotal = calculationItem ? calculationItem.base_total_money_object.display : EMPTY_AMOUNT;
+  const { calculationItemById, calculation } = useOrderCreateContext();
+  const calculationItem = calculationItemById.get(index);
+  const quantityLimit = getQuantityLimit(display);
+  const lineTotal = calculationItem
+    ? (calculation?.is_tax_inclusive
+        ? calculationItem.base_subtotal_inclusive_money_object
+        : calculationItem.base_subtotal_exclusive_money_object
+      ).display
+    : EMPTY_AMOUNT;
 
   return (
     <TableRow>
@@ -41,6 +49,8 @@ const OrderItemRow = ({ row, calculationItem, onQuantityChange, onRemove }: Orde
       <TableCell>
         <QuantityStepper
           value={quantity}
+          max={quantityLimit?.max}
+          disabledMessage={quantityLimit?.reason}
           onChange={(nextQuantity) => onQuantityChange(index, nextQuantity)}
         />
       </TableCell>

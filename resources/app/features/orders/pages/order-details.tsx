@@ -141,23 +141,19 @@ const OrderDetails = () => {
                 <CardContent>
                   <Card cssOverride={cardStyles.innerCard}>
                     <CardContent cssOverride={styles.zeroPadding}>
-                      <ItemsTable items={order.items} />
+                      <ItemsTable items={order.items} isTaxInclusive={order.is_tax_inclusive} />
                     </CardContent>
                   </Card>
                 </CardContent>
               </Card>
 
               <PaymentSummaryCard
-                amounts={{
-                  itemsCount: order.items_count,
-                  subtotal: order.totals.base_subtotal_money_object.display,
-                  discount: order.totals.base_discount_money_object.display,
-                  shipping: order.totals.base_shipping_money_object.display,
-                  tax: order.totals.base_tax_money_object.display,
-                  total: order.totals.base_total_money_object.display,
-                }}
+                totals={order.totals}
+                coupons={order.coupons}
+                taxLines={order.tax_lines}
+                isTaxInclusive={order.is_tax_inclusive}
+                itemsCount={order.items_count}
                 shippingMethodName={order.shipping_method_name}
-                couponCodes={order.totals.coupons.map((coupon) => coupon.code).filter(Boolean)}
                 badge={<Badge variant={paymentBadge.variant}>{paymentBadge.text}</Badge>}
                 actions={
                   paymentActions.length > 0 && (

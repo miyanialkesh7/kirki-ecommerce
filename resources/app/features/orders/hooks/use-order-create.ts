@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router';
@@ -10,6 +10,9 @@ import {
   getOrderRows,
   mergeSelections,
 } from '@/features/orders/lib/order-items';
+import type {
+  OrderCalculationItem,
+} from '@/features/orders/schemas/catalog/order';
 import type { OrderFormInput, OrderFormPayload } from '@/features/orders/schemas/forms/order-form';
 import { OrderCalculationRequestSchema, OrderFormSchema } from '@/features/orders/schemas/forms/order-form';
 import { useCreateOrderMutation, useOrderCalculationQuery } from '@/features/orders/services/order';
@@ -22,6 +25,7 @@ import { getDefaults } from '@/libs/zod';
 import { isDefined } from '@/utils/object';
 
 const CALCULATION_DEBOUNCE_DELAY = 500;
+const RECONCILE_GUARD_DURATION = CALCULATION_DEBOUNCE_DELAY + 50;
 
 type UseOrderCreateResult = {
   form: UseFormReturn<OrderFormInput, unknown, OrderFormPayload>;
@@ -30,8 +34,10 @@ type UseOrderCreateResult = {
   selections: ProductSelection[];
   rows: OrderItem[];
   calculation: ReturnType<typeof useOrderCalculationQuery>['data'];
+  calculationItemById: Map<number, OrderCalculationItem>;
   isCalculating: boolean;
   isCreating: boolean;
+  rejectedCouponCodes: string[];
   handleAddItems: (nextSelections: ProductSelection[]) => void;
   handleQuantityChange: (index: number, quantity: number) => void;
   handleRemoveItem: (index: number) => void;
@@ -55,6 +61,10 @@ export const useOrderCreate = (): UseOrderCreateResult => {
     name: 'items',
   });
 
+  const isReconcilingRef = useRef(false);
+  const reconcileTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [rejectedCouponCodes, setRejectedCouponCodes] = useState<string[]>([]);
+
   const watchedValues = useWatch({ control: form.control });
   const debouncedValues = useDebounce(watchedValues, CALCULATION_DEBOUNCE_DELAY);
   const calculationPayload = useMemo(
@@ -63,8 +73,76 @@ export const useOrderCreate = (): UseOrderCreateResult => {
   );
   const { data: calculation, isFetching: isCalculating } = useOrderCalculationQuery(
     calculationPayload,
-    calculationPayload.items.length > 0,
+    calculationPayload.items.length > 0 && !isReconcilingRef.current,
   );
+
+  const calculationItemById = useMemo(
+    () => new Map((calculation?.items ?? []).map((item) => [item.id, item])),
+    [calculation],
+  );
+
+  useEffect(() => {
+    if (!calculation) {
+      return;
+    }
+
+    let didCorrect = false;
+
+    pickedItems.forEach((pickedItem, index) => {
+      const calculationItem = calculationItemById.get(index);
+
+      if (calculationItem && calculationItem.quantity !== pickedItem.quantity) {
+        form.setValue(`items.${index}.quantity`, calculationItem.quantity, {
+          shouldValidate: false,
+          shouldDirty: false,
+        });
+        didCorrect = true;
+      }
+    });
+
+    const submittedCoupons = form.getValues('coupon_codes') ?? [];
+    const acceptedCodes = new Set(calculation.coupons.map((coupon) => coupon.code));
+    const rejectedCodes = submittedCoupons
+      .map((coupon) => coupon.code)
+      .filter((code): code is string => isDefined(code) && !acceptedCodes.has(code));
+
+    if (rejectedCodes.length > 0) {
+      form.setValue(
+        'coupon_codes',
+        submittedCoupons.filter((coupon) => !rejectedCodes.includes(coupon.code ?? '')),
+        { shouldValidate: false, shouldDirty: false },
+      );
+      setRejectedCouponCodes(rejectedCodes);
+      didCorrect = true;
+    } else {
+      setRejectedCouponCodes([]);
+    }
+
+    const submittedShippingMethod = form.getValues('shipping_method');
+
+    if (
+      isDefined(calculation.shipping_method) &&
+      String(calculation.shipping_method) !== submittedShippingMethod
+    ) {
+      form.setValue('shipping_method', String(calculation.shipping_method), {
+        shouldValidate: false,
+        shouldDirty: false,
+      });
+      didCorrect = true;
+    }
+
+    if (didCorrect) {
+      isReconcilingRef.current = true;
+      clearTimeout(reconcileTimeoutRef.current);
+      reconcileTimeoutRef.current = setTimeout(() => {
+        isReconcilingRef.current = false;
+      }, RECONCILE_GUARD_DURATION);
+    }
+    // Reconciliation must run only when a new calculation result arrives, reading the
+    // current form state fresh each time - re-running it for every keystroke that
+    // changes `pickedItems`/`form` identity would fight the user's own edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calculation]);
 
   const displayByVariantId = useMemo(
     () => getDisplayByVariantId(selections),
@@ -122,8 +200,10 @@ export const useOrderCreate = (): UseOrderCreateResult => {
     selections,
     rows,
     calculation,
+    calculationItemById,
     isCalculating,
     isCreating: createMutation.isPending,
+    rejectedCouponCodes,
     handleAddItems,
     handleQuantityChange,
     handleRemoveItem,

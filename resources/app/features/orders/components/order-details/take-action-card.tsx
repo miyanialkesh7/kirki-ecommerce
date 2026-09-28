@@ -14,14 +14,14 @@ import {
   type OrderAction,
 } from '@/features/orders/lib/order-actions';
 import { getFulfillmentBadgeInfo, getFulfillmentHint } from '@/features/orders/lib/order-badge';
-import type { OrderItem } from '@/features/orders/schemas/catalog/order';
+import type { Order } from '@/features/orders/schemas/catalog/order';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
 type TakeActionCardProps = {
-  order: OrderItem;
+  order: Order;
   onAction: (action: OrderAction) => void;
   isPerforming?: boolean;
 };
