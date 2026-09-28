@@ -141,9 +141,12 @@ const PaymentSummaryCard = ({
                   </Button>
                 </DiscountPopover>
               ) : (
-                <Text variant="tiny" cssOverride={styles.info}>
-                  {__('Discount', 'kirki-ecommerce')}
-                </Text>
+                <>
+                  <Text variant="tiny" cssOverride={styles.info}>
+                    {__('Discount', 'kirki-ecommerce')}
+                  </Text>
+                  <Text variant="small">{EMPTY_AMOUNT}</Text>
+                </>
               )}
             </Flex>
           ) : (
@@ -266,7 +269,7 @@ const styles = defineStyles({
   dashedCard: {
     padding: theme.spacing[3],
     border: `1px dashed ${theme.colors.border.alt}`,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
   },
   buttonLink: {
     color: theme.colors.text.emphasis,

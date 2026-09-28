@@ -29,7 +29,7 @@ import OrderDetailsSkeleton from '@/features/orders/skeletons/order-details-skel
 import { ShowMoreIcon } from '@/icons';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
-import { defineStyles } from '@/theme/mixins';
+import { defineStyles, mergeCss } from '@/theme/mixins';
 import { __, sprintf } from '@/wpi18n';
 
 const OrderDetails = () => {
@@ -139,7 +139,7 @@ const OrderDetails = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Card cssOverride={cardStyles.innerCard}>
+                  <Card cssOverride={mergeCss(cardStyles.innerCard, { overflow: 'hidden' })}>
                     <CardContent cssOverride={styles.zeroPadding}>
                       <ItemsTable items={order.items} isTaxInclusive={order.is_tax_inclusive} />
                     </CardContent>
