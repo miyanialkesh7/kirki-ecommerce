@@ -239,7 +239,7 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
               {__('Cancel', 'kirki-ecommerce')}
             </Button>
             <Button variant="primary" onClick={handleConfirm}>
-              {__('Save', 'kirki-ecommerce')}
+              {__('Apply', 'kirki-ecommerce')}
             </Button>
           </Flex>
         </Flex>

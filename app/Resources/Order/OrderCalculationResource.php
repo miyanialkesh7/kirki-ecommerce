@@ -58,18 +58,18 @@ class OrderCalculationResource extends Resource
 
                 'base_tax_total_money_object' => Money::prepare_amount_object_from_minor($result->base_tax_total),
 
-                'coupons' => $this->format_coupon_results($result->coupon_results),
-
                 'base_shipping_amount_money_object' => Money::prepare_amount_object_from_minor($shipping_amount),
 
                 'base_shipping_strikethrough_money_object' => Money::prepare_amount_object_from_minor($result->base_shipping_subtotal),
 
                 'base_total_money_object' => Money::prepare_amount_object_from_minor($result->base_total),
 
-                'tax_lines' => $this->format_tax_breakdown(
-                    array_merge($this->flatten_item_tax_lines($result), $result->shipping_tax_lines)
-                ),
             ],
+
+            'tax_lines' => $this->format_tax_breakdown(
+                array_merge($this->flatten_item_tax_lines($result), $result->shipping_tax_lines)
+            ),
+            'coupons' => $this->format_coupon_results($result->coupon_results),
 
             'items_count' => $result->items_count,
             'items' => $this->prepare_items($result->items, $result),
