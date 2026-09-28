@@ -117,13 +117,12 @@ class VariantResource extends Resource
     }
 
     /**
-     * Resolve the variant product featured media ID
-     * 
-     * @param Collection|null $media
-     * 
-     * @return int|null
-     * 
+     * Resolve the variant product featured media ID.
+     *
      * @since 1.0.0
+     *
+     * @param Collection|null $media
+     * @return int|null
      */
     protected function get_product_featured_image($media)
     {

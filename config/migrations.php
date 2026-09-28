@@ -73,6 +73,7 @@ use Kirki\Ecommerce\Database\Migrations\AlterOrderItemsAddRegularPriceColumns;
 use Kirki\Ecommerce\Database\Migrations\AddScheduledAtToProductsTable;
 use Kirki\Ecommerce\Database\Migrations\CreateFailedJobsTable;
 use Kirki\Ecommerce\Database\Migrations\CreateJobsTable;
+use Kirki\Ecommerce\Database\Migrations\DropSchedulerJobsTable;
 
 return [
     CreateLanguagesTable::class,
@@ -158,4 +159,5 @@ return [
     AddScheduledAtToProductsTable::class,
     CreateJobsTable::class,
     CreateFailedJobsTable::class,
+    DropSchedulerJobsTable::class,
 ];

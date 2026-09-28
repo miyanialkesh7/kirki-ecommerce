@@ -602,7 +602,7 @@ class OrderManager
     public function send_invoice_email(int $id)
     {
         // @todo: implement once the order email layer exists. The plugin has no mailable,
-        // template or renderer yet, only the EmailSettings option and SendEmailJob.
+        // template or renderer yet, only the EmailSettings option.
         return false;
     }
 
