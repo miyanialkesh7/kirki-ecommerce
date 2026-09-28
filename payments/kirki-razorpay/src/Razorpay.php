@@ -222,7 +222,7 @@ class Razorpay extends PaymentProvider
         // Respond with a 200 status code to acknowledge the notification.
         http_response_code(200);
 
-        throw_if(__('Invalid Payload From Razorpay.', 'kirki-ecommerce-razorpay'));
+        throw_if(empty($payload), __('Invalid Payload From Razorpay.', 'kirki-ecommerce-razorpay'));
 
         if (!$this->client->is_verified($payload)) {
             throw_anyway(__('Webhook Notification Is Not Valid.', 'kirki-ecommerce-razorpay'));
