@@ -160,6 +160,8 @@ class Razorpay extends PaymentProvider
 
         $order_uuid = $event->payload->payment->entity->notes->order_uuid ?? null;
         $order = OrderManager::find_by_uuid($order_uuid);
+        throw_if(!$order, __('Razorpay Error: Order Not Found.', 'kirki-ecommerce-razorpay'));
+
         if ($order->payment_status === PaymentStatus::PAID) {
             return true;
         }
