@@ -89,7 +89,7 @@ export const getOperatorOptions = (
       { label: __('< (Less than)', 'kirki-ecommerce'), value: '<' },
     ];
   }
-  return [{ label: __('is', 'kirki-ecommerce'), value: 'is' }];
+  return [{ label: __('is', 'kirki-ecommerce'), value: '=' }];
 };
 
 export type DestinationSelection = {

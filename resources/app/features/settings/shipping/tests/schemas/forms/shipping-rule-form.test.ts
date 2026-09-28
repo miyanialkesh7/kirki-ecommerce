@@ -6,15 +6,15 @@ describe('ShippingRuleFormSchema', () => {
   it('reshapes the flat form into the nested relation/conditions/action structure', () => {
     const result = ShippingRuleFormSchema.parse({
       condition: 'product_categories',
-      operator: 'is',
-      condition_value: 'Shoes',
+      operator: '=',
+      condition_value: '1',
       action: 'set_shipping_cost',
       action_value: '10',
     });
 
     expect(result).toEqual({
       relation: 'AND',
-      conditions: [{ type: 'product_categories', operator: 'is', value: 'Shoes' }],
+      conditions: [{ type: 'product_categories', operator: '=', value: '1' }],
       action: { type: 'set_shipping_cost', value: '10' },
     });
   });
@@ -22,8 +22,8 @@ describe('ShippingRuleFormSchema', () => {
   it('nulls action.value for non-cost actions even when action_value is set', () => {
     const result = ShippingRuleFormSchema.parse({
       condition: 'product_categories',
-      operator: 'is',
-      condition_value: 'Shoes',
+      operator: '=',
+      condition_value: '1',
       action: 'hide_method',
       action_value: '10',
     });

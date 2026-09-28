@@ -21,7 +21,7 @@ describe('buildRuleDefaultValues', () => {
 
   it('hydrates a product_categories condition as-is', () => {
     const rule: ShippingRule = {
-      conditions: [{ type: 'product_categories', operator: 'is', value: 'Shoes' }],
+      conditions: [{ type: 'product_categories', operator: '=', value: '1' }],
       action: { type: 'set_shipping_cost', value: 10 },
     };
 
@@ -29,8 +29,8 @@ describe('buildRuleDefaultValues', () => {
 
     expect(result).toMatchObject({
       condition: 'product_categories',
-      operator: 'is',
-      condition_value: 'Shoes',
+      operator: '=',
+      condition_value: '1',
       action: 'set_shipping_cost',
       action_value: 10,
       selected_country: null,
@@ -41,7 +41,7 @@ describe('buildRuleDefaultValues', () => {
     const rule: ShippingRule = {
       conditions: [{
         type: 'destination_region',
-        operator: 'is',
+        operator: '=',
         value: { country: 'US', states: ['CA', 'NY'] },
       }],
       action: { type: 'disable_shipping_method', value: '' },
@@ -69,7 +69,7 @@ describe('buildRuleDefaultValues', () => {
 describe('mergeRuleIntoMethodRules', () => {
   const rule: ShippingRuleFormPayload = {
     relation: 'AND',
-    conditions: [{ type: 'set_free_shipping', operator: 'is', value: null }],
+    conditions: [{ type: 'set_free_shipping', operator: '=', value: null }],
     action: { type: 'set_free_shipping', value: null },
   };
 
@@ -135,9 +135,9 @@ describe('getOperatorOptions', () => {
   });
 
   it.each(['product_categories', 'shipping_profile', 'destination_region', undefined])(
-    'offers only "is" for %s',
+    'offers only "is" (stored as "=") for %s',
     (condition) => {
-      expect(getOperatorOptions(condition)).toEqual([{ label: 'is', value: 'is' }]);
+      expect(getOperatorOptions(condition)).toEqual([{ label: 'is', value: '=' }]);
     },
   );
 });
