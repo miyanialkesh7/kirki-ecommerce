@@ -1,15 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import ActionGroup from '@/components/ui/action-group';
+import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { FieldError } from '@/components/ui/field';
 import Flex from '@/components/ui/flex';
 import Text from '@/components/ui/text';
 import { useCustomerQuery } from '@/features/customers';
 import AddCustomerDialog from '@/features/orders/components/order-create/customer/add-customer-dialog';
-import CustomerInfoDialog from '@/features/orders/components/order-create/customer/customer-info-dialog';
+import AddressDialog from '@/features/orders/components/order-create/customer/address-dialog';
+import ContactInfoDialog from '@/features/orders/components/order-create/customer/customer-info-dialog';
 import CustomerSearchDropdown from '@/features/orders/components/order-create/customer/customer-search-dropdown';
 import CustomerSummary from '@/features/orders/components/order-create/customer/customer-summary';
 import {
@@ -18,7 +26,7 @@ import {
   toOrderAddresses,
 } from '@/features/orders/lib/customer-address';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
-import { EditIcon, TrashIcon } from '@/icons';
+import { ShowMoreIcon } from '@/icons';
 import { useCountriesQuery } from '@/services/country';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
@@ -54,7 +62,9 @@ const WATCHED_ADDRESS_FIELDS = [
 const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps) => {
   const form = useFormContext<OrderFormInput>();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
+  const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [isChangingCustomer, setIsChangingCustomer] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState('');
   const snapshot = useRef(form.getValues());
@@ -139,30 +149,42 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
   return (
     <Card cssOverride={cardStyles.formCard}>
       <CardHeader cssOverride={styles.headerRow}>
-        <CardTitle>
-          <Text variant="small" weight="medium">
-            {__('Customer', 'kirki-ecommerce')}
-          </Text>
-        </CardTitle>
+        <Flex gap={2} align="center">
+          <CardTitle>
+            <Text variant="small" weight="medium">
+              {__('Customer', 'kirki-ecommerce')}
+            </Text>
+          </CardTitle>
+          {customer && !customer.user_id && (
+            <Badge variant="info">{__('Guest', 'kirki-ecommerce')}</Badge>
+          )}
+        </Flex>
         {customer && !readonly && (
-          <ActionGroup>
-            <Button
-              variant="secondary"
-              size="icon"
-              aria-label="Remove customer"
-              onClick={handleRemove}
-            >
-              <TrashIcon />
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              aria-label="Edit customer information"
-              onClick={() => setInfoDialogOpen(true)}
-            >
-              <EditIcon />
-            </Button>
-          </ActionGroup>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" aria-label={__('More options', 'kirki-ecommerce')}>
+                <ShowMoreIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setShippingDialogOpen(true)}>
+                {__('Edit shipping address', 'kirki-ecommerce')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setBillingDialogOpen(true)}>
+                {__('Edit billing address', 'kirki-ecommerce')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setContactDialogOpen(true)}>
+                {__('Edit contact information', 'kirki-ecommerce')}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={handleRemove}
+                cssOverride={{ color: theme.colors.text.critical }}
+              >
+                {__('Remove customer', 'kirki-ecommerce')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </CardHeader>
       <CardContent>
@@ -216,10 +238,32 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
         />
       )}
 
-      {!readonly && infoDialogOpen && (
-        <CustomerInfoDialog
+      {!readonly && customer && contactDialogOpen && (
+        <ContactInfoDialog
           open
-          onOpenChange={setInfoDialogOpen}
+          onOpenChange={setContactDialogOpen}
+          onSave={onSave}
+          isSaving={isSaving}
+        />
+      )}
+
+      {!readonly && customer && shippingDialogOpen && (
+        <AddressDialog
+          open
+          onOpenChange={setShippingDialogOpen}
+          type="shipping"
+          customer={customer}
+          onSave={onSave}
+          isSaving={isSaving}
+        />
+      )}
+
+      {!readonly && customer && billingDialogOpen && (
+        <AddressDialog
+          open
+          onOpenChange={setBillingDialogOpen}
+          type="billing"
+          customer={customer}
           onSave={onSave}
           isSaving={isSaving}
         />

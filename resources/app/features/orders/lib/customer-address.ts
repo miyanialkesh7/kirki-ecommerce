@@ -95,6 +95,37 @@ const addressName = (
   email: address?.email || customer.email || '',
 });
 
+const ADDRESS_TYPE_LABELS: Record<string, string> = {
+  home: 'Home',
+  office: 'Office',
+  others: 'Other',
+};
+
+export const getAddressSummaryLabel = (
+  address: CustomerAddress,
+  countries: Country[],
+): string => {
+  const typeLabel = address.label || ADDRESS_TYPE_LABELS[address.type ?? ''] || 'Address';
+
+  const lines = buildAddressLines(
+    {
+      addressLine1: address.address_line1,
+      addressLine2: address.address_line2,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postal_code,
+      country: address.country,
+    },
+    countries,
+  );
+
+  if (!lines) {
+    return typeLabel;
+  }
+
+  return `${typeLabel} — ${lines.line1}`;
+};
+
 export const toOrderAddresses = (customer: Customer): Partial<OrderFormInput> => {
   const addresses = customer.addresses ?? [];
   const shipping = addresses.find((address) => address.is_default_shipping) ?? null;
