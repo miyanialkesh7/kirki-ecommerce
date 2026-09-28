@@ -56,9 +56,9 @@ const ProductSelectionCard = ({
         </Button>
       </CardHeader>
       <CardContent>
-        <Card cssOverride={cardStyles.innerCard}>
+        <Card cssOverride={mergeCss(cardStyles.innerCard, { overflow: 'hidden' })}>
           <CardContent cssOverride={styles.zeroPadding}>
-            <Table>
+            <Table cssOverride={styles.itemsTable}>
               <TableBody>
                 {rows.map((row) => (
                   <OrderItemRow
@@ -93,5 +93,10 @@ const styles = defineStyles({
   },
   zeroPadding: {
     padding: 0,
+  },
+  itemsTable: {
+    '& th, & td': {
+      padding: '10px',
+    },
   },
 });

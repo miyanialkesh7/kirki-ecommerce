@@ -76,7 +76,7 @@ export default QuantityStepper;
 
 const styles = defineStyles({
   group: {
-    width: '104px',
+    width: '88px',
   },
   input: {
     textAlign: 'center',

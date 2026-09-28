@@ -4,6 +4,7 @@ import ActionGroup from '@/components/ui/action-group';
 import Button from '@/components/ui/button';
 import Flex from '@/components/ui/flex';
 import Image from '@/components/ui/image';
+import PriceText from '@/components/ui/price-text';
 import { TableCell, TableRow } from '@/components/ui/table';
 import Text from '@/components/ui/text';
 import QuantityStepper from '@/features/orders/components/order-create/order-item/quantity-stepper';
@@ -46,7 +47,10 @@ const OrderItemRow = ({ row, onQuantityChange, onRemove }: OrderItemRowProps) =>
           </Flex>
         </Flex>
       </TableCell>
-      <TableCell>
+      <TableCell alignment="right" cssOverride={{ width: '88px' }}>
+        <PriceText salePrice={display.salePrice} regularPrice={display.regularPrice} />
+      </TableCell>
+      <TableCell cssOverride={{ width: '88px' }}>
         <QuantityStepper
           value={quantity}
           max={quantityLimit?.max}
@@ -54,14 +58,14 @@ const OrderItemRow = ({ row, onQuantityChange, onRemove }: OrderItemRowProps) =>
           onChange={(nextQuantity) => onQuantityChange(index, nextQuantity)}
         />
       </TableCell>
-      <TableCell alignment="right" cssOverride={{ width: '160px' }}>
+      <TableCell alignment="right" cssOverride={{ width: '88px' }}>
         <Text variant="small">{lineTotal}</Text>
       </TableCell>
       <TableCell onlyCheckbox>
         <ActionGroup>
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon"
             aria-label="Remove item"
             onClick={() => onRemove(index)}
           >
