@@ -25,11 +25,7 @@ final class KirkiEcommerce
      */
     public static function handle_activation()
     {
-        // require_once KIRKI_ECOMMERCE_PLUGIN_PATH . '/bootstrap/app.php';
-
-        // migrator()->run();
-        // Scheduler::setup();
-        // Utils::generate_site_pages();
+        //
     }
 
     /**

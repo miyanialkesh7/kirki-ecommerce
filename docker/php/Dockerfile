@@ -22,6 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Forwards WP_URL's port to nginx so WordPress can reach itself; see docker-entrypoint.sh.
+RUN apt-get update && apt-get install -y --no-install-recommends socat \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY docker/php/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
