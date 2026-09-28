@@ -14,7 +14,7 @@ import { useOrderCreate } from '@/features/orders/hooks/use-order-create';
 import { SelectProductsDialog } from '@/features/products';
 import { __ } from '@/wpi18n';
 
-const OrderCreate = () => {
+const OrderCreateContent = () => {
   const navigate = useNavigate();
   const handleBack = () => {
     void navigate(-1);
@@ -25,12 +25,9 @@ const OrderCreate = () => {
     pickerOpen,
     setPickerOpen,
     selections,
-    rows,
     calculation,
-    calculationItemById,
     isCalculating,
     isCreating,
-    rejectedCouponCodes,
     handleAddItems,
     handleQuantityChange,
     handleRemoveItem,
@@ -46,66 +43,72 @@ const OrderCreate = () => {
   return (
     <Page containerSize="xl">
       <Form {...form}>
-        <OrderCreateProvider
-          value={{ calculation, calculationItemById, rows, isCalculating, rejectedCouponCodes }}
-        >
-          <PageHeading
-            text={__('Create order', 'kirki-ecommerce')}
-            sticky
-            actions={
-              <>
-                <Button variant="ghost" onClick={handleBack}>
-                  {__('Cancel', 'kirki-ecommerce')}
-                </Button>
-                <Button variant="primary" onClick={handleSubmit} loading={isCreating}>
-                  {__('Save', 'kirki-ecommerce')}
-                </Button>
-              </>
-            }
-            hasBack
-            onBack={handleBack}
-          />
-          <PageContent>
-            <Flex gap={4}>
-              <Flex direction="column" gap={4} cssOverride={{ width: '70%' }}>
-                <ProductSelectionCard
-                  onOpenPicker={() => setPickerOpen(true)}
-                  onQuantityChange={handleQuantityChange}
-                  onRemoveItem={handleRemoveItem}
-                />
-                <PaymentSummaryCard
-                  totals={calculation?.totals}
-                  coupons={calculation?.coupons}
-                  taxLines={calculation?.tax_lines}
-                  isTaxInclusive={calculation?.is_tax_inclusive}
-                  itemsCount={calculation?.items_count}
-                  availableShippingMethods={calculation?.available_shipping_methods}
-                  shippingMethodName={selectedShippingMethodName}
-                  isCalculating={isCalculating}
-                  isDiscountEditable
-                  isShippingEditable
-                />
-              </Flex>
-
-              <Flex direction="column" gap={4} cssOverride={{ width: '30%' }}>
-                <CustomerCard />
-                <NotesCard />
-              </Flex>
+        <PageHeading
+          text={__('Create order', 'kirki-ecommerce')}
+          sticky
+          actions={
+            <>
+              <Button variant="ghost" onClick={handleBack}>
+                {__('Cancel', 'kirki-ecommerce')}
+              </Button>
+              <Button variant="primary" onClick={handleSubmit} loading={isCreating}>
+                {__('Save', 'kirki-ecommerce')}
+              </Button>
+            </>
+          }
+          hasBack
+          onBack={handleBack}
+        />
+        <PageContent>
+          <Flex gap={4}>
+            <Flex direction="column" gap={4} cssOverride={{ width: '70%' }}>
+              <ProductSelectionCard
+                onOpenPicker={() => setPickerOpen(true)}
+                onQuantityChange={handleQuantityChange}
+                onRemoveItem={handleRemoveItem}
+              />
+              <PaymentSummaryCard
+                totals={calculation?.totals}
+                coupons={calculation?.coupons}
+                taxLines={calculation?.tax_lines}
+                isTaxInclusive={calculation?.is_tax_inclusive}
+                itemsCount={calculation?.items_count}
+                availableShippingMethods={calculation?.available_shipping_methods}
+                shippingMethodName={selectedShippingMethodName}
+                isCalculating={isCalculating}
+                isDiscountEditable
+                isShippingEditable
+              />
             </Flex>
-          </PageContent>
 
-          {pickerOpen && (
-            <SelectProductsDialog
-              open
-              onOpenChange={setPickerOpen}
-              onAdd={handleAddItems}
-              selectedProducts={selections}
-              expandAll
-            />
-          )}
-        </OrderCreateProvider>
+            <Flex direction="column" gap={4} cssOverride={{ width: '30%' }}>
+              <CustomerCard />
+              <NotesCard />
+            </Flex>
+          </Flex>
+        </PageContent>
+
+        {pickerOpen && (
+          <SelectProductsDialog
+            open
+            onOpenChange={setPickerOpen}
+            onAdd={handleAddItems}
+            selectedProducts={selections}
+            expandAll
+          />
+        )}
       </Form>
     </Page>
+  );
+};
+
+OrderCreateContent.displayName = 'OrderCreateContent';
+
+const OrderCreate = () => {
+  return (
+    <OrderCreateProvider>
+      <OrderCreateContent />
+    </OrderCreateProvider>
   );
 };
 

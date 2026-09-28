@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import { endpoints } from '@/config/endpoints';
+import { OrderCreateProvider } from '@/features/orders/contexts/order-create-context';
 import { useOrderCreate } from '@/features/orders/hooks/use-order-create';
 import type { ProductSelection } from '@/features/products';
 import type { MoneyObject } from '@/schemas/shared/api';
@@ -115,7 +116,9 @@ const renderUseOrderCreate = () => {
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter>
+        <OrderCreateProvider>{children}</OrderCreateProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 

@@ -7,7 +7,7 @@ import Image from '@/components/ui/image';
 import { TableCell, TableRow } from '@/components/ui/table';
 import Text from '@/components/ui/text';
 import QuantityStepper from '@/features/orders/components/order-create/order-item/quantity-stepper';
-import { useOrderCreateContext } from '@/features/orders/contexts/order-create-context';
+import { useOrderCreate } from '@/features/orders/hooks/use-order-create';
 import { getQuantityLimit } from '@/features/orders/lib/order-items';
 import type { OrderItem } from '@/features/orders/types';
 
@@ -21,7 +21,7 @@ type OrderItemRowProps = {
 
 const OrderItemRow = ({ row, onQuantityChange, onRemove }: OrderItemRowProps) => {
   const { display, quantity, index } = row;
-  const { calculationItemById, calculation } = useOrderCreateContext();
+  const { calculationItemById, calculation } = useOrderCreate();
   const calculationItem = calculationItemById.get(index);
   const quantityLimit = getQuantityLimit(display);
   const lineTotal = calculationItem

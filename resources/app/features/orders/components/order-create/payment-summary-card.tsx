@@ -1,4 +1,3 @@
-import { PlusCircle } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import Button from '@/components/ui/button';
@@ -129,58 +128,56 @@ const PaymentSummaryCard = ({
             )}
           </Flex>
 
-          {coupons.map((coupon, index) => (
-            <Flex key={coupon.code ?? index} justify="space-between">
-              {index === 0 ? (
-                isDiscountEditable ? (
-                  <DiscountPopover>
-                    <Button variant="link" cssOverride={styles.buttonLink}>
-                      <Flex gap={1} align="center" cssOverride={styles.info}>
-                        <PlusCircle color={theme.colors.text.emphasis} size={16} />
-                        <Text variant="tiny" color="emphasis" weight="medium">
-                          {__('Edit Discounts', 'kirki-ecommerce')}
-                        </Text>
-                      </Flex>
-                    </Button>
-                  </DiscountPopover>
-                ) : (
-                  <Text variant="tiny" color="emphasis" cssOverride={styles.info}>
-                    {__('Discount', 'kirki-ecommerce')}
-                  </Text>
-                )
-              ) : (
-                <Text cssOverride={styles.info} />
-              )}
-              <Flex justify="space-between" grow={1}>
-                <Text variant="small" color="secondary">
-                  {getCouponLabel(coupon)}
-                </Text>
-                <Text variant="small">
-                  {sprintf('-%s', coupon.base_discount_amount_money_object.display)}
-                </Text>
-              </Flex>
-            </Flex>
-          ))}
-
-          {coupons.length === 0 && (
+          {coupons.length === 0 ? (
             <Flex justify="space-between">
               {isDiscountEditable ? (
                 <DiscountPopover>
                   <Button variant="link" cssOverride={styles.buttonLink}>
                     <Flex gap={1} align="center" cssOverride={styles.info}>
-                      <PlusCircle color={theme.colors.text.emphasis} size={16} />
                       <Text variant="tiny" color="emphasis" weight="medium">
-                        {__('Discount', 'kirki-ecommerce')}
+                        {__('Edit Discount', 'kirki-ecommerce')}
                       </Text>
                     </Flex>
                   </Button>
                 </DiscountPopover>
               ) : (
-                <Text variant="tiny" color="emphasis" cssOverride={styles.info}>
+                <Text variant="tiny" cssOverride={styles.info}>
                   {__('Discount', 'kirki-ecommerce')}
                 </Text>
               )}
             </Flex>
+          ) : (
+            coupons.map((coupon, index) => (
+              <Flex key={coupon.code ?? index} justify="space-between">
+                {index === 0 ? (
+                  isDiscountEditable ? (
+                    <DiscountPopover>
+                      <Button variant="link" cssOverride={styles.buttonLink}>
+                        <Flex gap={1} align="center" cssOverride={styles.info}>
+                          <Text variant="tiny" color="emphasis" weight="medium">
+                            {__('Edit Discount', 'kirki-ecommerce')}
+                          </Text>
+                        </Flex>
+                      </Button>
+                    </DiscountPopover>
+                  ) : (
+                    <Text variant="tiny" cssOverride={styles.info}>
+                      {__('Discount', 'kirki-ecommerce')}
+                    </Text>
+                  )
+                ) : (
+                  <Text cssOverride={styles.info} />
+                )}
+                <Flex justify="space-between" grow={1}>
+                  <Text variant="small" color="secondary">
+                    {getCouponLabel(coupon)}
+                  </Text>
+                  <Text variant="small">
+                    {sprintf('-%s', coupon.base_discount_amount_money_object.display)}
+                  </Text>
+                </Flex>
+              </Flex>
+            ))
           )}
 
           <Separator />
@@ -202,7 +199,6 @@ const PaymentSummaryCard = ({
               >
                 <Button variant="link" cssOverride={styles.buttonLink}>
                   <Flex gap={1} align="center" cssOverride={styles.info}>
-                    <PlusCircle color={theme.colors.text.emphasis} size={16} />
                     <Text variant="tiny" color="emphasis" weight="medium">
                       {__('Edit Shipping', 'kirki-ecommerce')}
                     </Text>
@@ -210,7 +206,7 @@ const PaymentSummaryCard = ({
                 </Button>
               </ShippingPopover>
             ) : (
-              <Text variant="tiny" color="emphasis" weight="medium" cssOverride={styles.info}>
+              <Text variant="tiny" weight="medium" cssOverride={styles.info}>
                 {__('Shipping', 'kirki-ecommerce')}
               </Text>
             )}

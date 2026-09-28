@@ -4,7 +4,7 @@ import Flex from '@/components/ui/flex';
 import { Table, TableBody } from '@/components/ui/table';
 import Text from '@/components/ui/text';
 import OrderItemRow from '@/features/orders/components/order-create/order-item/order-item-row';
-import { useOrderCreateContext } from '@/features/orders/contexts/order-create-context';
+import { useOrderCreate } from '@/features/orders/hooks/use-order-create';
 import { PlusIcon, ProductIcon } from '@/icons';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
@@ -22,7 +22,7 @@ const ProductSelectionCard = ({
   onQuantityChange,
   onRemoveItem,
 }: ProductSelectionCardProps) => {
-  const { rows } = useOrderCreateContext();
+  const { rows } = useOrderCreate();
 
   if (rows.length === 0) {
     return (
