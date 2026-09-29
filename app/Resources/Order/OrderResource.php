@@ -179,6 +179,9 @@ class OrderResource extends Resource
             $invoiced_strikethrough = $this->prepare_strikethrough_price($item, $product_coupon_discount['invoiced'], $item->invoiced_subtotal, $item->invoiced_regular_price, $item->invoiced_regular_tax_total, $invoiced_subtotal_exclusive, $item->invoiced_tax_total, $this->currency_code);
             $base_strikethrough = $this->prepare_strikethrough_price($item, $product_coupon_discount['base'], $item->base_subtotal, $item->base_regular_price, $item->base_regular_tax_total, $base_subtotal_exclusive, $item->base_tax_total, null);
 
+            $invoiced_strikethrough_amounts = $this->get_strikethrough_amounts($item, $product_coupon_discount['invoiced'], $item->invoiced_subtotal, $item->invoiced_regular_price, $item->invoiced_regular_tax_total, $invoiced_subtotal_exclusive, $item->invoiced_tax_total);
+            $base_strikethrough_amounts = $this->get_strikethrough_amounts($item, $product_coupon_discount['base'], $item->base_subtotal, $item->base_regular_price, $item->base_regular_tax_total, $base_subtotal_exclusive, $item->base_tax_total);
+
             $order_items[] = [
                 'id' => $item->id,
                 'product_id' => $item->product_id,
@@ -196,6 +199,14 @@ class OrderResource extends Resource
                 'invoiced_strikethrough_price_inclusive_money_object' => $invoiced_strikethrough['inclusive'],
                 'base_strikethrough_price_exclusive_money_object' => $base_strikethrough['exclusive'],
                 'base_strikethrough_price_inclusive_money_object' => $base_strikethrough['inclusive'],
+                'invoiced_unit_price_exclusive_money_object' => $this->prepare_unit_amount_object($invoiced_subtotal_exclusive, $item->quantity, $this->currency_code),
+                'invoiced_unit_price_inclusive_money_object' => $this->prepare_unit_amount_object($this->derive_inclusive_amount($invoiced_subtotal_exclusive, $item->invoiced_tax_total), $item->quantity, $this->currency_code),
+                'base_unit_price_exclusive_money_object' => $this->prepare_unit_amount_object($base_subtotal_exclusive, $item->quantity, null),
+                'base_unit_price_inclusive_money_object' => $this->prepare_unit_amount_object($this->derive_inclusive_amount($base_subtotal_exclusive, $item->base_tax_total), $item->quantity, null),
+                'invoiced_unit_strikethrough_price_exclusive_money_object' => $this->prepare_unit_amount_object($invoiced_strikethrough_amounts['exclusive'], $item->quantity, $this->currency_code),
+                'invoiced_unit_strikethrough_price_inclusive_money_object' => $this->prepare_unit_amount_object($invoiced_strikethrough_amounts['inclusive'], $item->quantity, $this->currency_code),
+                'base_unit_strikethrough_price_exclusive_money_object' => $this->prepare_unit_amount_object($base_strikethrough_amounts['exclusive'], $item->quantity, null),
+                'base_unit_strikethrough_price_inclusive_money_object' => $this->prepare_unit_amount_object($base_strikethrough_amounts['inclusive'], $item->quantity, null),
                 'invoiced_tax_total_money_object' => Money::prepare_amount_object_from_minor($item->invoiced_tax_total, $this->currency_code),
                 'base_tax_total_money_object' => Money::prepare_amount_object_from_minor($item->base_tax_total),
                 'tax_lines' => $this->format_tax_breakdown(($item->taxes ?: collection())->all()),
@@ -241,6 +252,36 @@ class OrderResource extends Resource
      */
     protected function prepare_strikethrough_price($item, $product_coupon_discount, $subtotal_amount, $regular_price_amount, $regular_tax_total, $current_price_exclusive, $current_price_tax, $currency_code)
     {
+        $amounts = $this->get_strikethrough_amounts($item, $product_coupon_discount, $subtotal_amount, $regular_price_amount, $regular_tax_total, $current_price_exclusive, $current_price_tax);
+
+        if ($amounts['exclusive'] === null) {
+            return ['exclusive' => null, 'inclusive' => null];
+        }
+
+        return [
+            'exclusive' => Money::prepare_amount_object_from_minor($amounts['exclusive'], $currency_code),
+            'inclusive' => Money::prepare_amount_object_from_minor($amounts['inclusive'], $currency_code),
+        ];
+    }
+
+    /**
+     * Get the line item's tax-exclusive and tax-inclusive "was" amounts, in
+     * minor units - the figures prepare_strikethrough_price() formats, kept
+     * unformatted so per-unit figures can be derived from them.
+     *
+     * @since 1.0.0
+     *
+     * @param \Kirki\Ecommerce\App\Models\OrderItem $item                     Order item to price.
+     * @param int                                    $product_coupon_discount  Discount from item-scoped coupons, in minor units, in the currency being rendered.
+     * @param int                                    $subtotal_amount          The item's subtotal, in minor units, in the currency being rendered.
+     * @param int                                    $regular_price_amount     The item's regular unit price, in minor units, in the currency being rendered.
+     * @param int                                    $regular_tax_total        The item's regular-price total's own tax, in minor units, in the currency being rendered.
+     * @param int                                    $current_price_exclusive  The item's current-price exclusive amount, in minor units, in the currency being rendered.
+     * @param int                                    $current_price_tax        That current price's own tax, in minor units, in the currency being rendered.
+     * @return array{exclusive: int|null, inclusive: int|null} Both null when nothing should be struck through.
+     */
+    protected function get_strikethrough_amounts($item, $product_coupon_discount, $subtotal_amount, $regular_price_amount, $regular_tax_total, $current_price_exclusive, $current_price_tax)
+    {
         if ($product_coupon_discount > 0) {
             $strikethrough_amount = $subtotal_amount;
         } elseif ($item->base_regular_price > $item->base_price) {
@@ -255,10 +296,31 @@ class OrderResource extends Resource
             ? $this->derive_inclusive_amount($strikethrough_amount, $regular_tax_total)
             : $this->derive_inclusive_amount_at_rate($strikethrough_amount, $current_price_exclusive, $current_price_tax);
 
-        return [
-            'exclusive' => Money::prepare_amount_object_from_minor($strikethrough_amount, $currency_code),
-            'inclusive' => Money::prepare_amount_object_from_minor($inclusive_amount, $currency_code),
-        ];
+        return ['exclusive' => $strikethrough_amount, 'inclusive' => $inclusive_amount];
+    }
+
+    /**
+     * Prepare the per-unit money object for a line amount - the line amount
+     * divided by the item's quantity, rounded up to the currency's minor
+     * unit, so unit × quantity may exceed the line amount by up to
+     * quantity − 1 minor units. The line amount stays authoritative.
+     *
+     * @since 1.0.0
+     *
+     * @param int|null    $line_amount   Line amount, in minor units, or null when there is none.
+     * @param int         $quantity      The item's quantity.
+     * @param string|null $currency_code Currency code to render the amount in, or null for the store's base currency.
+     * @return \Kirki\Ecommerce\App\DTO\MoneyDTO|null Null when the line amount is null.
+     */
+    protected function prepare_unit_amount_object($line_amount, $quantity, $currency_code)
+    {
+        if ($line_amount === null) {
+            return null;
+        }
+
+        $quantity = max(1, (int) $quantity);
+
+        return Money::prepare_amount_object_from_minor(intdiv($line_amount + $quantity - 1, $quantity), $currency_code);
     }
 
     /**
