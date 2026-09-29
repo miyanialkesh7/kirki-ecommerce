@@ -2,7 +2,11 @@
 
 namespace Kirki\Ecommerce\App\Services;
 
+use Kirki\Ecommerce\App\Events\Inventory\VariantLowStockEvent;
+use Kirki\Ecommerce\App\Events\Inventory\VariantOutOfStockEvent;
 use Kirki\Ecommerce\App\Models\Order;
+use Kirki\Ecommerce\App\Models\Variant;
+use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\Framework\Exceptions\NotFoundException;
 use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Framework\Http\Response;
@@ -19,16 +23,21 @@ class InventoryService
     /** @var VariantService */
     protected $variant_service;
 
+    /** @var AvailabilityService */
+    protected $availability_service;
+
     /**
-     * Set up the service with the variant service.
+     * Set up the service with the variant and availability services.
      *
      * @since 1.0.0
      *
-     * @param VariantService $variant_service Variant lookup and quantity updates.
+     * @param VariantService      $variant_service      Variant lookup and quantity updates.
+     * @param AvailabilityService $availability_service Low-stock threshold resolution.
      */
-    public function __construct(VariantService $variant_service)
+    public function __construct(VariantService $variant_service, AvailabilityService $availability_service)
     {
         $this->variant_service = $variant_service;
+        $this->availability_service = $availability_service;
     }
 
     /**
@@ -125,7 +134,13 @@ class InventoryService
 
         throw_if($variant->track_inventory && !$variant->allow_back_order && $variant->available_quantity < $quantity, __('Insufficient stock.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
 
-        return $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+        $is_decremented = $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+
+        if ($is_decremented) {
+            $this->dispatch_stock_level_events($variant, $quantity);
+        }
+
+        return $is_decremented;
     }
 
     /**
@@ -154,7 +169,13 @@ class InventoryService
 
         throw_if(!$variant->allow_back_order && $variant->available_quantity < $quantity, __('Insufficient stock to reserve.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
 
-        return $this->variant_service->increment($variant_id, 'committed_quantity', $quantity) && $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+        $is_reserved = $this->variant_service->increment($variant_id, 'committed_quantity', $quantity) && $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+
+        if ($is_reserved) {
+            $this->dispatch_stock_level_events($variant, $quantity);
+        }
+
+        return $is_reserved;
     }
 
     /**
@@ -245,5 +266,39 @@ class InventoryService
         $order->items->each(function ($item) {
             $this->confirm_reserved_stock($item->variant_id, $item->quantity);
         });
+    }
+
+    /**
+     * Dispatch the low-stock or out-of-stock event when a stock reduction crosses that level.
+     *
+     * Only a crossing alerts, so further reductions below a level stay quiet
+     * until the variant is restocked above it. Running out takes precedence,
+     * so one reduction never raises both.
+     *
+     * @since 1.0.0
+     *
+     * @param Variant $variant  The variant as loaded before the reduction.
+     * @param int     $quantity Amount the available quantity was reduced by.
+     * @return void
+     */
+    protected function dispatch_stock_level_events(Variant $variant, int $quantity)
+    {
+        if (!$variant->track_inventory || $quantity <= 0) {
+            return;
+        }
+
+        $before = (int) $variant->available_quantity;
+        $after = $before - $quantity;
+
+        if ($before > 0 && $after <= 0) {
+            VariantOutOfStockEvent::dispatch($variant);
+            return;
+        }
+
+        $threshold = $this->availability_service->resolve_low_stock_threshold($variant, (int) Settings::get('product.low_stock_threshold', 0));
+
+        if ($threshold > 0 && $before > $threshold && $after <= $threshold) {
+            VariantLowStockEvent::dispatch($variant);
+        }
     }
 }

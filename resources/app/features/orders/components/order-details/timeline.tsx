@@ -47,7 +47,7 @@ const Timeline = ({ orderId }: TimelineProps) => {
     }
 
     createActivityMutation.mutate(
-      { orderId, data: { message: trimmed } },
+      { orderId, data: { message: trimmed, notify_customer: true } },
       { onSuccess: () => setMessage('') },
     );
   };
@@ -102,6 +102,11 @@ const Timeline = ({ orderId }: TimelineProps) => {
                         <Text variant="small" color="secondary">
                           {entry.description}
                         </Text>
+                        {entry.notify_customer && (
+                          <Text variant="tiny" color="subdued">
+                            {__('Customer notified', 'kirki-ecommerce')}
+                          </Text>
+                        )}
                       </Flex>
                       <Flex gap={2} align="center">
                         <Text variant="tiny" color="subdued" data-comment-time="true">

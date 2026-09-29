@@ -12,7 +12,15 @@ use Kirki\Ecommerce\App\Constants\Order\OrderStatus;
 use Kirki\Ecommerce\App\Constants\Order\OrderActivityType;
 use Kirki\Ecommerce\App\DTO\Refund\CreateRefundPayloadDTO;
 use Kirki\Ecommerce\App\DTO\Refund\UpdateRefundPayloadDTO;
+use Kirki\Ecommerce\App\Events\Order\OrderCancelledEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderCompletedEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderOnHoldEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderPaymentFailedEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderProcessingEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderShippedEvent;
 use Kirki\Ecommerce\App\Facades\OrderActivity;
+use Kirki\Ecommerce\App\Jobs\SendOrderMailJob;
+use Kirki\Ecommerce\App\Mails\Customers\CustomerNewOrderMail;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Services\InventoryService;
 use Kirki\Ecommerce\App\Services\OrderService;
@@ -148,7 +156,13 @@ class OrderManager
                 'cancelled_at' => Date::now(),
             ]);
             
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::CANCELLED);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::CANCELLED);
+
+            if ($order->order_status !== $status_before) {
+                OrderCancelledEvent::dispatch($order);
+            }
         }
 
         return $is_cancelled;
@@ -170,11 +184,16 @@ class OrderManager
             ? OrderAction::RESUME_FULFILLMENT
             : OrderAction::MARK_AS_PROCESSING;
 
-        $is_updated = $this->order_service->apply_order_action($id, $order->order_status, $action);
+        $status_before = $order->order_status;
+        $is_updated = $this->order_service->apply_order_action($id, $status_before, $action);
 
         if ($is_updated) {
             $order = $this->order_service->find_order_or_fail($id);
             OrderActivity::log($order, $is_resuming ? OrderActivityType::FULFILLMENT_RESUMED : OrderActivityType::PROCESSING);
+
+            if (!$is_resuming && $order->order_status !== $status_before) {
+                OrderProcessingEvent::dispatch($order);
+            }
         }
 
         return $is_updated;
@@ -194,7 +213,13 @@ class OrderManager
         $is_on_hold = $this->order_service->apply_order_action($id, $order->order_status, OrderAction::MARK_AS_HOLD);
 
         if ($is_on_hold) {
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::ON_HOLD);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::ON_HOLD);
+
+            if ($order->order_status !== $status_before) {
+                OrderOnHoldEvent::dispatch($order);
+            }
         }
 
         return $is_on_hold;
@@ -215,7 +240,13 @@ class OrderManager
 
         if ($is_shipped) {
             $this->order_service->partial_update_order($id, ['shipped_at' => Date::now()]);
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::SHIPPED);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::SHIPPED);
+
+            if ($order->order_status !== $status_before) {
+                OrderShippedEvent::dispatch($order);
+            }
         }
 
         return $is_shipped;
@@ -243,7 +274,10 @@ class OrderManager
                 $this->inventory_service->confirm_all_reserved_stock($order);
             }
 
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::DELIVERED);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::DELIVERED);
+            $this->dispatch_completed_event($order, $status_before);
         }
 
         return $is_delivered;
@@ -322,7 +356,10 @@ class OrderManager
                 $this->inventory_service->confirm_all_reserved_stock($order);
             }
 
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::PAYMENT_COMPLETED);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::PAYMENT_COMPLETED);
+            $this->dispatch_completed_event($order, $status_before);
         }
 
         return $is_paid;
@@ -350,6 +387,10 @@ class OrderManager
     /**
      * Mark an order's payment as failed and log the activity.
      *
+     * The payment-failed event is dispatched only when the payment was not
+     * already failed, so a gateway repeating its failure notification does
+     * not notify anyone twice.
+     *
      * @since 1.0.0
      *
      * @param int $id Order ID.
@@ -358,6 +399,7 @@ class OrderManager
     public function mark_payment_as_failed(int $id)
     {
         $order = $this->order_service->find_order_or_fail($id);
+        $was_failed = $order->payment_status === PaymentStatus::FAILED;
         $order_status = OrderStatus::find_by_pair($order->fulfillment_status, PaymentStatus::FAILED);
 
         $is_updated = $this->order_service->partial_update_order($id, [
@@ -366,7 +408,12 @@ class OrderManager
         ]);
 
         if ($is_updated) {
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::PAYMENT_FAILED);
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::PAYMENT_FAILED);
+
+            if (!$was_failed) {
+                OrderPaymentFailedEvent::dispatch($order);
+            }
         }
 
         return $is_updated;
@@ -624,18 +671,36 @@ class OrderManager
     }
 
     /**
-     * Resend the order confirmation email to the customer.
-     *
-     * Not implemented yet; always returns false.
+     * Queue the order confirmation email to the customer again.
      *
      * @since 1.0.0
      *
      * @param int $id Order ID.
-     * @return bool
+     * @return bool Always true; an unknown order throws instead.
+     * @throws \Exception When the order does not exist.
      */
     public function resend_order_email(int $id)
     {
-        // @todo: implement by dispatching SendOrderMailJob for the order.
-        return false;
+        $order = $this->order_service->find_order_or_fail($id);
+
+        SendOrderMailJob::dispatch($order, CustomerNewOrderMail::class, (string) $order->customer_email);
+
+        return true;
+    }
+
+    /**
+     * Dispatch the order-completed event when this transition is the one that completed the order.
+     *
+     * @since 1.0.0
+     *
+     * @param Order  $order         The order after the transition.
+     * @param string $status_before The order status before the transition.
+     * @return void
+     */
+    protected function dispatch_completed_event(Order $order, string $status_before)
+    {
+        if ($status_before !== OrderStatus::COMPLETED && $order->order_status === OrderStatus::COMPLETED) {
+            OrderCompletedEvent::dispatch($order);
+        }
     }
 }

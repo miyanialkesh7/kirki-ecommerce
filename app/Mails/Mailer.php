@@ -160,9 +160,23 @@ abstract class Mailer implements Mailable
      */
     public function is_enabled()
     {
-        $settings = Settings::get('email');
+        return static::is_enabled_key($this->option_key());
+    }
 
-        return $settings->get($this->option_key() . '.is_enabled') ?? false;
+    /**
+     * Determine whether the notification at the given settings key is enabled.
+     *
+     * For callers that must decide before a mail can be constructed, such as
+     * WordPress hooks choosing whether to replace a core email.
+     *
+     * @since 1.0.0
+     *
+     * @param string $option_key Dot-notation key of the notification within the email settings.
+     * @return bool
+     */
+    public static function is_enabled_key(string $option_key)
+    {
+        return (bool) (Settings::get('email')->get($option_key . '.is_enabled') ?? false);
     }
 
     /**

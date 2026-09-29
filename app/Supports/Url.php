@@ -12,6 +12,7 @@
 namespace Kirki\Ecommerce\App\Supports;
 
 use Kirki\Ecommerce\Framework\Route;
+use WP_User;
 
 /**
  * Builds storefront and admin URLs for the plugin's pages.
@@ -169,6 +170,20 @@ class Url
     public static function get_login_url($redirect = '')
     {
         return wp_login_url($redirect);
+    }
+
+    /**
+     * Get the WordPress URL where a user sets a new password with a reset key.
+     *
+     * @since 1.0.0
+     *
+     * @param WP_User $user User the key belongs to.
+     * @param string  $key  Password reset key from get_password_reset_key().
+     * @return string
+     */
+    public static function get_password_reset_url(WP_User $user, string $key)
+    {
+        return network_site_url('wp-login.php?action=rp&key=' . $key . '&login=' . rawurlencode($user->user_login), 'login');
     }
 
     /**

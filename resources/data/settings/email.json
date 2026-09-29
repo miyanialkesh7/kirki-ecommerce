@@ -553,7 +553,7 @@
         "is_enabled": true,
         "subject": "New Account",
         "heading": "Welcome to {store_name}",
-        "message": "<div><span style=\"font-size: 13px;\">Hi {full_name}</span></div><div><span style=\"font-size: 13px;\">Thanks for creating an account on {store_name}. Here’s a copy of your user details.</span></div><div>{user_info_table}</div>",
+        "message": "<div><span style=\"font-size: 13px;\">Hi {full_name}</span></div><div><span style=\"font-size: 13px;\">Thanks for creating an account on {store_name}. Here’s a copy of your user details.</span></div><div>{user_info_table}</div><div>{set_password_link}</div>",
         "shortcodes": [
           {
             "label": "Full Name",
@@ -570,6 +570,10 @@
           {
             "label": "User Table",
             "value": "{user_info_table}"
+          },
+          {
+            "label": "Set Password Link",
+            "value": "{set_password_link}"
           },
           {
             "label": "Store Name",

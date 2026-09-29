@@ -90,7 +90,7 @@ class OrderActivityController
 
         $this->order_service->find_order_or_fail($order_id);
 
-        $activity = OrderActivity::comment($order_id, $request->string('message'), user()->get_id() ?: null);
+        $activity = OrderActivity::comment($order_id, $request->string('message'), user()->get_id() ?: null, $request->bool('notify_customer'));
 
         return response()->json([
             'data' => OrderActivityResource::make($activity),

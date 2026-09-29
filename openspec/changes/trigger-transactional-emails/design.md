@@ -109,3 +109,12 @@ Out-of-stock takes precedence, so one reduction never sends both emails. The thr
 ## Migration Plan
 
 No schema or data migration. Deploying turns on the new emails immediately for every template that is already enabled. Every seeded template is enabled by default, which is the intended outcome. To roll back, revert. Jobs already queued for removed job classes fail to unserialize and are dropped after their tries.
+
+## Corrections during implementation
+
+- **"Transition applied" is not the same as "method returned true" (D2/D3).** `OrderService::apply_order_action()` returns `true` when the action has *no* transition from the current status. So a gateway repeating "paid" on a completed order, for example, re-runs the success branch. Every order event is therefore dispatched only when `order_status` actually changed: before ≠ after for cancel, on-hold, processing and shipped, and before ≠ COMPLETED = after for completed. The payment-failed event keeps its own "was not already FAILED" check.
+- **Admins can put an order on hold only from `failed_processing`** in `order-state-matrix.json`. The on-hold email follows whatever the matrix allows, and the tests reach on-hold through that status.
+- **`config/listeners.cache.php` is gitignored** and rewritten on every boot while `KIRKI_ECOMMERCE_MODE` is `development`, so there is nothing to commit (task 2.6).
+- **Order-note preview (D5).** `EmailPreviewService` is unchanged. `CustomerOrderNoteMail` falls back to the order's `admin_notes` when no note is passed, and the preview's sample order already has one.
+- **Queued order mails need a fully loaded order.** A note-event order loaded with a bare `Order::find()` failed to render once the job ran (`OrderResource` got a null `items`). Loading it with `OrderService::find_order()`, eager-loaded like every `OrderManager` path, fixes it. The order, note and inventory tests render a queued job after a serialize round trip to guard this.
+- **"Notify customer" checkbox removed (user decision, after implementation).** The timeline composer no longer shows the checkbox and always sends `notify_customer: true`, so every admin comment emails the customer for now. The API flag, activity metadata and "Customer notified" marker are unchanged, so a checkbox or private-note option can come back without backend changes.

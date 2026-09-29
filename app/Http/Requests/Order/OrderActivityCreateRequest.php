@@ -22,6 +22,7 @@ class OrderActivityCreateRequest extends Request
         return [
             'order_id' => 'required|integer',
             'message' => 'required|string',
+            'notify_customer' => 'nullable|boolean',
         ];
     }
 
@@ -35,6 +36,7 @@ class OrderActivityCreateRequest extends Request
         return [
             'order_id' => Sanitizer::INT,
             'message' => Sanitizer::TEXT,
+            'notify_customer' => Sanitizer::BOOL,
         ];
     }
 }
