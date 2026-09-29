@@ -2,11 +2,11 @@
 
 namespace Kirki\Ecommerce\App\Jobs;
 
-use Kirki\Ecommerce\App\Constants\Product\ProductStatus;
-use Kirki\Ecommerce\App\Models\Product;
-use Kirki\Ecommerce\App\Scheduler\Contracts\ShouldQueue;
+use Kirki\Ecommerce\App\Mails\Mailer;
+use Kirki\Ecommerce\App\Models\Order;
+use Kirki\Ecommerce\Framework\Contracts\ShouldQueue;
 use Kirki\Ecommerce\Framework\Queue\Concerns\Queueable;
-use Kirki\Ecommerce\Framework\Supports\Facades\Date;
+use Kirki\Ecommerce\Framework\Queue\Concerns\SerializesModels;
 
 /**
  * Publishes a scheduled product once its scheduled_at has arrived.
@@ -17,11 +17,19 @@ use Kirki\Ecommerce\Framework\Supports\Facades\Date;
  *
  * @since 1.0.0
  */
-class PublishScheduledProductJob implements ShouldQueue
+class SendOrderPlacedEmail implements ShouldQueue
 {
     use Queueable;
+    use SerializesModels;
 
-    const QUEUE = 'scheduled-products';
+    const QUEUE = 'emails';
+
+    /**
+     * Delete the job if the model is missing
+     * 
+     * @var bool
+     */
+    protected $delete_when_missing_models = true;
 
     /**
      * The number of times the job may be attempted.
@@ -40,9 +48,23 @@ class PublishScheduledProductJob implements ShouldQueue
     /**
      * The product ID to publish.
      *
-     * @var int
+     * @var Order
      */
-    public $product_id;
+    public $order;
+
+    /**
+     * The mailer class that is responsible for generating the email content
+     * 
+     * @var string
+     */
+    public $mailer_class;
+
+    /**
+     * The email address where to send the mail.
+     * 
+     * @var string
+     */
+    public $email;
 
     /**
      * Create a new job instance.
@@ -54,11 +76,14 @@ class PublishScheduledProductJob implements ShouldQueue
      *
      * @since 1.0.0
      *
-     * @param int $product_id The product ID to publish.
+     * @param Order $order The product ID to publish.
      */
-    public function __construct(int $product_id)
+    public function __construct(Order $order, string $mailer_class, string $email)
     {
-        $this->product_id = $product_id;
+        $this->order = $order;
+        $this->mailer_class = $mailer_class;
+        $this->email = $email;
+
         $this->on_queue(static::QUEUE);
     }
 
@@ -71,16 +96,11 @@ class PublishScheduledProductJob implements ShouldQueue
      */
     public function handle()
     {
-        $product = Product::query()->where('id', $this->product_id)->first();
-        $now = Date::now()->set_timezone('UTC');
-
-        if (empty($product) || $product->status !== ProductStatus::SCHEDULED || empty($product->scheduled_at) || $product->scheduled_at->gt($now)) {
+        if (!class_exists($this->mailer_class) || !is_subclass_of($this->mailer_class, Mailer::class)) {
             return;
         }
 
-        $product->status = ProductStatus::PUBLISHED;
-        $product->published_at = $now;
-        $product->scheduled_at = null;
-        $product->save();
+        $mailer = new $this->mailer_class($this->order);
+        $mailer->send($this->email);
     }
 }

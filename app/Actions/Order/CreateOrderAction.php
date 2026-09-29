@@ -34,11 +34,10 @@ use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Framework\Http\Response;
 use Kirki\Ecommerce\Framework\Supports\Arr;
 use Kirki\Ecommerce\App\Supports\Currency;
-use Kirki\Ecommerce\App\Constants\Order\OrderActivityType;
-use Kirki\Ecommerce\App\Facades\OrderActivity;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Payment\Facades\Payment;
 use Kirki\Ecommerce\App\Constants\Order\FulfillmentStatus;
+use Kirki\Ecommerce\App\Events\Order\OrderPlaced;
 use Kirki\Ecommerce\App\Models\Address;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Framework\Supports\Facades\DB;
@@ -207,7 +206,7 @@ class CreateOrderAction
 
             $order = $order->fresh('items', 'order_coupons.order_item_coupons');
 
-            OrderActivity::log($order, OrderActivityType::ORDER_PLACED);
+            OrderPlaced::dispatch($order);
 
             DB::commit();
 

@@ -1,7 +1,8 @@
 <?php
 
-namespace Kirki\Ecommerce\App\Events;
+namespace Kirki\Ecommerce\App\Events\Order;
 
+use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Framework\Concerns\Dispatchable;
 
 /**
@@ -9,11 +10,11 @@ use Kirki\Ecommerce\Framework\Concerns\Dispatchable;
  *
  * @since 1.0.0
  */
-class OrderShipped
+class OrderPlaced
 {
     use Dispatchable;
 
-    /** @var mixed */
+    /** @var Order */
     public $order;
 
     /**
@@ -23,7 +24,7 @@ class OrderShipped
      *
      * @param mixed $order The order that was shipped.
      */
-    public function __construct($order)
+    public function __construct(Order $order)
     {
         $this->order = $order;
     }

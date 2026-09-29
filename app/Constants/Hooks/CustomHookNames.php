@@ -15,4 +15,5 @@ class CustomHookNames
     public const ACCOUNT_ROUTE_CONFIG = 'kecom_account_route_config';
     public const ACCOUNT_MENU_ITEMS = 'kecom_account_menu_items';
     public const SITE_PAGES = 'kecom_site_pages';
+    public const ORDER_PLACED = 'kecom_order_placed';
 }
