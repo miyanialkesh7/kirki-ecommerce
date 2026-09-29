@@ -69,12 +69,12 @@ const CustomerSummary = ({
       )}
 
       {billingAddress && (
-        <Flex gap={2} align="flex-start">
+        <Flex gap={2} align="flex-start" cssOverride={styles.hoverParent}>
           <span css={scoped(styles.iconSlot)}>
             <LocationIcon />
           </span>
           <Flex direction="column" gap={2} cssOverride={styles.addressContent}>
-            <Text variant="small" color="subdued">
+            <Text variant="tiny" color="secondary">
               {__('Billing Address', 'kirki-ecommerce')}
             </Text>
             <Text variant="small">
@@ -88,19 +88,21 @@ const CustomerSummary = ({
             size="icon"
             aria-label={__('Copy billing address', 'kirki-ecommerce')}
             onClick={() => handleCopyAddress(billingAddress)}
+            data-hover-address="true"
+            cssOverride={{ ...styles.hoverReveal, color: theme.colors.icon.primary }}
           >
-            <Copy size={16} />
+            <Copy size={16} color={theme.colors.icon.primary} />
           </Button>
         </Flex>
       )}
 
       {shippingAddress && (
-        <Flex gap={2} align="flex-start">
+        <Flex gap={2} align="flex-start" cssOverride={styles.hoverParent}>
           <span css={scoped(styles.iconSlot)}>
             <TruckIcon style={{ opacity: 0.5 }} />
           </span>
           <Flex direction="column" gap={2} cssOverride={styles.addressContent}>
-            <Text variant="small" color="subdued">
+            <Text variant="tiny" color="secondary">
               {__('Shipping Address', 'kirki-ecommerce')}
             </Text>
             <Text variant="small">
@@ -114,6 +116,8 @@ const CustomerSummary = ({
             size="icon"
             aria-label={__('Copy shipping address', 'kirki-ecommerce')}
             onClick={() => handleCopyAddress(shippingAddress)}
+            data-hover-address="true"
+            cssOverride={styles.hoverReveal}
           >
             <Copy size={16} />
           </Button>
@@ -130,6 +134,14 @@ export default CustomerSummary;
 const styles = defineStyles({
   addressContent: {
     flex: 1,
+  },
+  hoverParent: {
+    '&:hover [data-hover-address]': {
+      visibility: 'visible',
+    },
+  },
+  hoverReveal: {
+    visibility: 'hidden',
   },
   initialsAvatar: {
     ...flexCenter(),

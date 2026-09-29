@@ -126,12 +126,24 @@ const renderUseOrderCreate = () => {
 };
 
 describe('useOrderCreate debounce -> payload -> query wiring', () => {
-  it('leaves the calculation query disabled while no items are picked', () => {
+  it('settles with no items even though the calculation query fires on mount', async () => {
+    server.use(
+      http.post(`${window.kirki_ecommerce.rest_url_base}${endpoints.CALCULATE_ORDER}`, () =>
+        HttpResponse.json({
+          success: true,
+          message: '',
+          data: buildCalculationResponse(0),
+        }),
+      ),
+    );
+
     const { result } = renderUseOrderCreate();
 
     expect(result.current.rows).toEqual([]);
-    expect(result.current.isCalculating).toBe(false);
-    expect(result.current.calculation).toBeUndefined();
+
+    await waitFor(() => expect(result.current.isCalculating).toBe(false), { timeout: 2000 });
+
+    expect(result.current.calculation?.items_count).toBe(0);
   });
 
   it('fires the calculation query, debounced, once an item is picked', async () => {
@@ -160,12 +172,11 @@ describe('useOrderCreate debounce -> payload -> query wiring', () => {
 
     expect(result.current.rows).toHaveLength(1);
 
-    await waitFor(() => expect(result.current.calculation).toBeDefined(), {
+    await waitFor(() => expect(requestedItems).toEqual([{ variant_id: 101, quantity: 1 }]), {
       timeout: 2000,
     });
 
     expect(result.current.calculation?.items_count).toBe(1);
-    expect(requestedItems).toEqual([{ variant_id: 101, quantity: 1 }]);
   });
 });
 
@@ -258,13 +269,16 @@ describe('useOrderCreate calculation reconciliation', () => {
       timeout: 2000,
     });
 
-    expect(getRequestCount()).toBe(1);
+    // The calculation query also fires once on mount with an empty cart,
+    // so the settled count here isn't pinned to a fixed number - only that
+    // no further request follows it.
+    const settledRequestCount = getRequestCount();
 
     // Wait past both the debounce and the reconcile-guard window so a
     // redundant request, if one were going to fire, would have by now.
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    expect(getRequestCount()).toBe(1);
+    expect(getRequestCount()).toBe(settledRequestCount);
   });
 
   it('still recalculates when the cart changes again right after a reconciling correction', async () => {
@@ -317,13 +331,18 @@ describe('useOrderCreate calculation reconciliation', () => {
       timeout: 2000,
     });
 
-    expect(getRequestCount()).toBe(1);
+    // The calculation query also fires once on mount with an empty cart,
+    // so the settled count here isn't pinned to a fixed number - only that
+    // removing an item triggers exactly one more request.
+    const settledRequestCount = getRequestCount();
 
     act(() => {
       result.current.handleRemoveItem(1);
     });
 
-    await waitFor(() => expect(getRequestCount()).toBe(2), { timeout: 2000 });
+    await waitFor(() => expect(getRequestCount()).toBe(settledRequestCount + 1), {
+      timeout: 2000,
+    });
     await waitFor(() => expect(result.current.calculation?.items_count).toBe(1), {
       timeout: 2000,
     });

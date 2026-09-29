@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-import CheckboxField from '@/components/form/checkbox-field';
 import TextField from '@/components/form/text-field';
 import Button from '@/components/ui/button';
 import {
@@ -65,10 +64,6 @@ const ContactInfoDialog = ({ open, onOpenChange, onSave, isSaving }: ContactInfo
             <TextField<OrderFormInput>
               name="shipping_phone"
               label={__('Phone Number', 'kirki-ecommerce')}
-            />
-            <CheckboxField<OrderFormInput>
-              name="should_update_contact_info"
-              label={__('Update customer account', 'kirki-ecommerce')}
             />
           </Flex>
         </DialogBody>

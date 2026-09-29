@@ -6,7 +6,6 @@ import { getStateLabel, isAddressFieldRequired } from '@/libs/address-rules';
 import {
   isEmptyValue,
   nullishShape,
-  numberOrNull,
   prepareFormSchema,
   required,
   requiredWhen,
@@ -51,7 +50,6 @@ const OrderFormShape = prepareFormSchema(
 
     payment_provider: stringOrNull(),
     shipping_method: required(z.string(), __('Shipping method is required', 'kirki-ecommerce')),
-    shipping_id: numberOrNull(),
 
     shipping_first_name: required(z.string(), __('First name is required', 'kirki-ecommerce')),
     shipping_last_name: required(z.string(), __('Last name is required', 'kirki-ecommerce')),
@@ -75,7 +73,6 @@ const OrderFormShape = prepareFormSchema(
     shipping_company: stringOrNull(),
 
     is_billing_same_as_shipping: z.boolean().nullish().default(false),
-    billing_id: numberOrNull(),
     billing_first_name: requiredWhen(
       z.string().nullish(),
       (values) => !values.is_billing_same_as_shipping && isEmptyValue(values.billing_first_name),
@@ -119,10 +116,6 @@ const OrderFormShape = prepareFormSchema(
     billing_phone: stringOrNull(),
     billing_email: stringOrNull(),
     billing_company: stringOrNull(),
-
-    should_update_contact_info: z.boolean().nullish().default(false),
-    should_update_shipping_address: z.boolean().nullish().default(false),
-    should_update_billing_address: z.boolean().nullish().default(false),
 
     admin_notes: stringOrNull(),
     flags: z.array(z.string()).nullish(),
@@ -177,7 +170,6 @@ const OrderFormSchema = OrderFormShape.transform((values) => ({
 
   payment_provider: values.payment_provider ?? null,
   shipping_method: values.shipping_method,
-  shipping_id: values.shipping_id,
   shipping_first_name: values.shipping_first_name,
   shipping_last_name: values.shipping_last_name,
   shipping_address_line1: values.shipping_address_line1,
@@ -191,12 +183,7 @@ const OrderFormSchema = OrderFormShape.transform((values) => ({
   shipping_company: values.shipping_company ?? null,
 
   is_billing_same_as_shipping: values.is_billing_same_as_shipping,
-  billing_id: values.billing_id,
   ...buildBillingFields(values),
-
-  should_update_contact_info: values.should_update_contact_info ?? false,
-  should_update_shipping_address: values.should_update_shipping_address ?? false,
-  should_update_billing_address: values.should_update_billing_address ?? false,
 
   admin_notes: values.admin_notes ?? null,
   flags: values.flags ?? null,

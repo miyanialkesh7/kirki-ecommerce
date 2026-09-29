@@ -66,7 +66,6 @@ describe('OrderFormSchema', () => {
       coupon_codes: [],
       payment_provider: null,
       shipping_method: 'flat_rate',
-      shipping_id: null,
       shipping_first_name: 'John',
       shipping_last_name: 'Doe',
       shipping_address_line1: '221B Baker Street',
@@ -79,7 +78,6 @@ describe('OrderFormSchema', () => {
       shipping_email: null,
       shipping_company: null,
       is_billing_same_as_shipping: true,
-      billing_id: null,
       billing_first_name: 'John',
       billing_last_name: 'Doe',
       billing_address_line1: '221B Baker Street',
@@ -91,9 +89,6 @@ describe('OrderFormSchema', () => {
       billing_phone: null,
       billing_email: null,
       billing_company: null,
-      update_customer_contact_info: false,
-      update_customer_shipping_address: false,
-      update_customer_billing_address: false,
       admin_notes: null,
       flags: null,
       is_manual: true,
@@ -180,7 +175,12 @@ describe('OrderFormSchema', () => {
     expect(
       OrderFormSchema.parse({
         ...base,
-        coupon_codes: [buildCoupon(1, '  SAVE10  '), buildCoupon(2, '  '), buildCoupon(3, null), buildCoupon(4, 'WELCOME')],
+        coupon_codes: [
+          buildCoupon(1, '  SAVE10  '),
+          buildCoupon(2, '  '),
+          buildCoupon(3, null),
+          buildCoupon(4, 'WELCOME'),
+        ],
       }).coupon_codes,
     ).toEqual(['SAVE10', 'WELCOME']);
     expect(OrderFormSchema.parse({ ...base, coupon_codes: [] }).coupon_codes).toEqual([]);
@@ -206,8 +206,6 @@ describe('OrderFormSchema', () => {
     expect(result.customer_email).toBeNull();
     expect(result.consents).toBeNull();
     expect(result.payment_provider).toBeNull();
-    expect(result.shipping_id).toBeNull();
-    expect(result.billing_id).toBeNull();
     expect(result.shipping_address_line2).toBeNull();
     expect(result.shipping_phone).toBeNull();
     expect(result.shipping_email).toBeNull();
@@ -296,7 +294,8 @@ describe('OrderFormSchema', () => {
 
     it('rejects a missing state when the country requires one', () => {
       expect(
-        OrderFormSchema.safeParse({ ...base, shipping_country: 'JP', shipping_state: null }).success,
+        OrderFormSchema.safeParse({ ...base, shipping_country: 'JP', shipping_state: null })
+          .success,
       ).toBe(false);
     });
 

@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import CheckboxField from '@/components/form/checkbox-field';
 import CountryField from '@/components/form/country-field';
 import StateField from '@/components/form/state-field';
 import TextField from '@/components/form/text-field';
 import Button from '@/components/ui/button';
+import Combobox from '@/components/ui/combobox';
 import {
   Dialog,
   DialogBody,
@@ -18,17 +18,8 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import Flex from '@/components/ui/flex';
 import Grid from '@/components/ui/grid';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { Customer } from '@/features/customers';
-import { getAddressSummaryLabel } from '@/features/orders/lib/customer-address';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
-import { useCountriesQuery } from '@/services/country';
 import { __ } from '@/wpi18n';
 
 type AddressType = 'shipping' | 'billing';
@@ -49,7 +40,6 @@ const ADDRESS_TITLES: Record<AddressType, string> = {
 
 const FIELD_NAMES = {
   shipping: {
-    id: 'shipping_id',
     firstName: 'shipping_first_name',
     lastName: 'shipping_last_name',
     email: 'shipping_email',
@@ -60,10 +50,8 @@ const FIELD_NAMES = {
     postalCode: 'shipping_postal_code',
     country: 'shipping_country',
     phone: 'shipping_phone',
-    updateAddressBook: 'should_update_shipping_address',
   },
   billing: {
-    id: 'billing_id',
     firstName: 'billing_first_name',
     lastName: 'billing_last_name',
     email: 'billing_email',
@@ -74,12 +62,10 @@ const FIELD_NAMES = {
     postalCode: 'billing_postal_code',
     country: 'billing_country',
     phone: 'billing_phone',
-    updateAddressBook: 'should_update_billing_address',
   },
 } as const satisfies Record<AddressType, Record<string, keyof OrderFormInput>>;
 
 const ADDRESS_FIELD_KEYS = [
-  'shipping_id',
   'shipping_first_name',
   'shipping_last_name',
   'shipping_email',
@@ -90,7 +76,6 @@ const ADDRESS_FIELD_KEYS = [
   'shipping_state',
   'shipping_postal_code',
   'shipping_country',
-  'billing_id',
   'billing_first_name',
   'billing_last_name',
   'billing_email',
@@ -113,58 +98,55 @@ const AddressDialog = ({
 }: AddressDialogProps) => {
   const form = useFormContext<OrderFormInput>();
   const snapshot = useRef(form.getValues());
-  const [selectedAddressId, setSelectedAddressId] = useState('');
 
   const fields = FIELD_NAMES[type];
   const country = useWatch({ control: form.control, name: fields.country });
-  const { data: countries = [] } = useCountriesQuery({ limit: -1 });
 
-  const isApplyingSelectionRef = useRef(false);
-  const watchedFieldValues = useWatch({
-    control: form.control,
-    name: [
-      fields.firstName,
-      fields.lastName,
-      fields.email,
-      fields.addressLine1,
-      fields.addressLine2,
-      fields.city,
-      fields.state,
-      fields.postalCode,
-      fields.country,
-      fields.phone,
-    ],
-  });
+  const addressOptions = useMemo(
+    () =>
+      (customer.addresses ?? []).map((address) => {
+        const name = [
+          address.first_name || customer.first_name,
+          address.last_name || customer.last_name,
+        ]
+          .filter(Boolean)
+          .join(' ');
 
-  useEffect(() => {
-    if (isApplyingSelectionRef.current) {
-      isApplyingSelectionRef.current = false;
-      return;
-    }
+        const addressLine = [address.address_line1, address.address_line2, address.city]
+          .filter(Boolean)
+          .join(', ');
 
-    setSelectedAddressId('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires whenever any watched address field changes, not on identity of the array itself
-  }, watchedFieldValues);
+        return {
+          value: String(address.id),
+          label: name,
+          description: addressLine || undefined,
+        };
+      }),
+    [customer.addresses, customer.first_name, customer.last_name],
+  );
 
-  const handleSelectAddress = (value: string) => {
-    isApplyingSelectionRef.current = true;
-    setSelectedAddressId(value);
+  const handleSelectAddress = (nextValue: string | string[]) => {
+    const value = Array.isArray(nextValue) ? (nextValue[0] ?? '') : nextValue;
 
     const address = (customer.addresses ?? []).find((item) => String(item.id) === value);
     if (!address) {
       return;
     }
 
-    form.setValue(fields.id, address.id ?? null, { shouldDirty: true });
-    form.setValue(fields.firstName, address.first_name ?? '', { shouldDirty: true });
-    form.setValue(fields.lastName, address.last_name ?? '', { shouldDirty: true });
-    form.setValue(fields.addressLine1, address.address_line1 ?? '', { shouldDirty: true });
-    form.setValue(fields.addressLine2, address.address_line2 ?? '', { shouldDirty: true });
-    form.setValue(fields.city, address.city ?? '', { shouldDirty: true });
-    form.setValue(fields.state, address.state ?? '', { shouldDirty: true });
-    form.setValue(fields.postalCode, address.postal_code ?? '', { shouldDirty: true });
-    form.setValue(fields.country, address.country ?? '', { shouldDirty: true });
-    form.setValue(fields.phone, address.phone ?? '', { shouldDirty: true });
+    form.setValues(
+      {
+        [fields.firstName]: address.first_name ?? '',
+        [fields.lastName]: address.last_name ?? '',
+        [fields.addressLine1]: address.address_line1 ?? '',
+        [fields.addressLine2]: address.address_line2 ?? '',
+        [fields.city]: address.city ?? '',
+        [fields.state]: address.state ?? '',
+        [fields.postalCode]: address.postal_code ?? '',
+        [fields.country]: address.country ?? '',
+        [fields.phone]: address.phone ?? '',
+      },
+      { shouldDirty: true },
+    );
   };
 
   const handleCancel = () => {
@@ -203,20 +185,15 @@ const AddressDialog = ({
         </DialogHeader>
         <DialogBody>
           <Flex direction="column" gap={4}>
-            <Field>
+            <Field cssOverride={{ width: 'max-content' }}>
               <FieldLabel>{__('Address', 'kirki-ecommerce')}</FieldLabel>
-              <Select value={selectedAddressId} onValueChange={handleSelectAddress}>
-                <SelectTrigger>
-                  <SelectValue placeholder={__('Select address', 'kirki-ecommerce')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(customer.addresses ?? []).map((address) => (
-                    <SelectItem key={address.id} value={String(address.id)}>
-                      {getAddressSummaryLabel(address, countries)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                options={addressOptions}
+                value=""
+                onChange={handleSelectAddress}
+                placeholder={__('Select address', 'kirki-ecommerce')}
+                searchPlaceholder={__('Search addresses', 'kirki-ecommerce')}
+              />
             </Field>
 
             <CountryField<OrderFormInput> name={fields.country} />
@@ -255,11 +232,6 @@ const AddressDialog = ({
             </Grid>
 
             <TextField<OrderFormInput> name={fields.phone} label={__('Phone', 'kirki-ecommerce')} />
-
-            <CheckboxField<OrderFormInput>
-              name={fields.updateAddressBook}
-              label={__('Update customer address book', 'kirki-ecommerce')}
-            />
           </Flex>
         </DialogBody>
         <DialogFooter>
