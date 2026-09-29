@@ -158,7 +158,7 @@ abstract class Mailer implements Mailable
      *
      * @return bool
      */
-    protected function is_enabled()
+    public function is_enabled()
     {
         $settings = Settings::get('email');
 
