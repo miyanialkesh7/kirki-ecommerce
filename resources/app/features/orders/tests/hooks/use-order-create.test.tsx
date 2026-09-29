@@ -266,4 +266,66 @@ describe('useOrderCreate calculation reconciliation', () => {
 
     expect(getRequestCount()).toBe(1);
   });
+
+  it('still recalculates when the cart changes again right after a reconciling correction', async () => {
+    const { getRequestCount } = mockCalculationResponse((body) => {
+      const items = (body.items as { variant_id: number; quantity: number }[]) ?? [];
+
+      return buildCalculationResponse(items.length, {
+        items: items.map((item, index) => ({
+          id: index,
+          quantity: item.variant_id === 101 ? 1 : item.quantity,
+          base_subtotal_exclusive_money_object: money(0),
+          base_subtotal_inclusive_money_object: money(0),
+          applied_product_coupons: [],
+        })),
+      });
+    });
+
+    const twoVariantSelection: ProductSelection = {
+      ...productSelection(),
+      variants: [
+        ...productSelection().variants,
+        {
+          variantId: 102,
+          variantLabel: 'Second',
+          thumbnail: null,
+          inStock: true,
+          availableQuantity: 10,
+          allowBackOrder: false,
+          trackInventory: true,
+          hasLimitPerOrder: false,
+          maxPerOrder: null,
+          regularPrice: money(10),
+          salePrice: null,
+        },
+      ],
+    };
+
+    const { result } = renderUseOrderCreate();
+
+    act(() => {
+      result.current.handleAddItems([twoVariantSelection]);
+    });
+
+    act(() => {
+      result.current.handleQuantityChange(0, 5);
+    });
+
+    await waitFor(() => expect(result.current.calculation).toBeDefined(), { timeout: 2000 });
+    await waitFor(() => expect(result.current.form.getValues('items.0.quantity')).toBe(1), {
+      timeout: 2000,
+    });
+
+    expect(getRequestCount()).toBe(1);
+
+    act(() => {
+      result.current.handleRemoveItem(1);
+    });
+
+    await waitFor(() => expect(getRequestCount()).toBe(2), { timeout: 2000 });
+    await waitFor(() => expect(result.current.calculation?.items_count).toBe(1), {
+      timeout: 2000,
+    });
+  });
 });

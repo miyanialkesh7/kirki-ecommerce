@@ -12,10 +12,18 @@ import {
   mergeSelections,
 } from '@/features/orders/lib/order-items';
 import type {
+  OrderCalculation,
   OrderCalculationItem,
 } from '@/features/orders/schemas/catalog/order';
-import type { OrderFormInput, OrderFormPayload } from '@/features/orders/schemas/forms/order-form';
-import { OrderCalculationRequestSchema, OrderFormSchema } from '@/features/orders/schemas/forms/order-form';
+import type {
+  OrderCalculationRequestPayload,
+  OrderFormInput,
+  OrderFormPayload,
+} from '@/features/orders/schemas/forms/order-form';
+import {
+  OrderCalculationRequestSchema,
+  OrderFormSchema,
+} from '@/features/orders/schemas/forms/order-form';
 import { useCreateOrderMutation, useOrderCalculationQuery } from '@/features/orders/services/order';
 import type { OrderItem } from '@/features/orders/types';
 import type { ProductSelection } from '@/features/products';
@@ -27,7 +35,6 @@ import { isDefined } from '@/utils/object';
 import { _n, sprintf } from '@/wpi18n';
 
 const CALCULATION_DEBOUNCE_DELAY = 500;
-const RECONCILE_GUARD_DURATION = CALCULATION_DEBOUNCE_DELAY + 50;
 
 export type OrderCreateContextValue = {
   form: UseFormReturn<OrderFormInput, unknown, OrderFormPayload>;
@@ -35,7 +42,7 @@ export type OrderCreateContextValue = {
   setPickerOpen: (open: boolean) => void;
   selections: ProductSelection[];
   rows: OrderItem[];
-  calculation: ReturnType<typeof useOrderCalculationQuery>['data'];
+  calculation?: OrderCalculation;
   calculationItemById: Map<number, OrderCalculationItem>;
   isCalculating: boolean;
   isCreating: boolean;
@@ -64,12 +71,17 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
     defaultValues: { ...getDefaults(OrderFormSchema), items: [] },
   });
 
-  const { fields: pickedItems, update: updateItems, remove: removeItems, replace: replaceItems } = useFieldArray({
+  const {
+    fields: pickedItems,
+    update: updateItems,
+    remove: removeItems,
+    replace: replaceItems,
+  } = useFieldArray({
     control: form.control,
     name: 'items',
   });
 
-  const reconcileTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const reconciledPayloadRef = useRef<OrderCalculationRequestPayload | null>(null);
   const pendingCouponCorrectionRef = useRef<string[] | null>(null);
   const [rejectedCouponCodes, setRejectedCouponCodes] = useState<string[]>([]);
 
@@ -79,9 +91,14 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
     () => OrderCalculationRequestSchema.parse(debouncedValues),
     [debouncedValues],
   );
+  const isReconciledPayload = useMemo(
+    () => JSON.stringify(calculationPayload) === JSON.stringify(reconciledPayloadRef.current),
+    [calculationPayload],
+  );
+
   const { data: calculation, isFetching: isCalculating } = useOrderCalculationQuery(
     calculationPayload,
-    calculationPayload.items.length > 0 && !reconcileTimeoutRef.current,
+    !isReconciledPayload,
   );
 
   const calculationItemById = useMemo(
@@ -90,7 +107,7 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
   );
 
   useEffect(() => {
-    if (!calculation) {
+    if (!isDefined(calculation)) {
       return;
     }
 
@@ -130,7 +147,10 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
           (coupon) => !rejectedCodes.includes(coupon.code ?? ''),
         );
 
-        form.setValue('coupon_codes', correctedCoupons, { shouldValidate: false, shouldDirty: false });
+        form.setValue('coupon_codes', correctedCoupons, {
+          shouldValidate: false,
+          shouldDirty: false,
+        });
         setRejectedCouponCodes(rejectedCodes);
         toast.error(
           sprintf(
@@ -167,10 +187,7 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
     }
 
     if (didCorrect) {
-      clearTimeout(reconcileTimeoutRef.current);
-      reconcileTimeoutRef.current = setTimeout(() => {
-        reconcileTimeoutRef.current = undefined;
-      }, RECONCILE_GUARD_DURATION);
+      reconciledPayloadRef.current = OrderCalculationRequestSchema.parse(form.getValues());
     }
     // Reconciliation must run only when a new calculation result arrives, reading the
     // current form state fresh each time - re-running it for every keystroke that
@@ -178,10 +195,7 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calculation]);
 
-  const displayByVariantId = useMemo(
-    () => getDisplayByVariantId(selections),
-    [selections],
-  );
+  const displayByVariantId = useMemo(() => getDisplayByVariantId(selections), [selections]);
 
   const rows = getOrderRows(pickedItems, displayByVariantId);
 
@@ -200,9 +214,7 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
     removeItems(index);
     setSelections((previous) =>
       previous.reduce<ProductSelection[]>((allSelectedProducts, selection) => {
-        const variants = selection.variants.filter(
-          (variant) => variant.variantId !== variantId,
-        );
+        const variants = selection.variants.filter((variant) => variant.variantId !== variantId);
 
         if (variants.length > 0) {
           allSelectedProducts.push({ ...selection, variants });
