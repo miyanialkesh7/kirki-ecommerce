@@ -232,14 +232,15 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
                   </Text>
                   <Button
                     variant="ghost"
-                    size="icon-xs"
+                    size="icon"
                     aria-label={__('Dismiss', 'kirki-ecommerce')}
                     onClick={() => handleDismissRejectedCode(code)}
                   >
-                    <X size={16} />
+                    <X size={12} />
                   </Button>
                 </Flex>
               }
+              cssOverride={{ borderRadius: theme.radius.md, boxShadow: theme.shadow.card }}
             />
           ))}
 

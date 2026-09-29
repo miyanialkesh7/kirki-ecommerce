@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import Button from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,6 +98,10 @@ const PaymentSummaryCard = ({
   const shippingDisplay = totals?.base_shipping_amount_money_object.display ?? EMPTY_AMOUNT;
   const orderTotalDisplay = totals?.base_total_money_object.display ?? EMPTY_AMOUNT;
 
+  const isProductSelected = useMemo(() => {
+    return isDefined(itemsCount) && itemsCount > 0;
+  }, [itemsCount]);
+
   return (
     <Card cssOverride={cardStyles.formCard}>
       <CardHeader cssOverride={styles.headerRow}>
@@ -115,11 +119,11 @@ const PaymentSummaryCard = ({
             <Text variant="small" color="secondary" cssOverride={styles.info}>
               {__('Subtotal', 'kirki-ecommerce')}
             </Text>
-            {isDefined(itemsCount) && itemsCount > 0 ? (
+            {isProductSelected ? (
               <Flex justify="space-between" grow={1}>
                 {/* translators: %s: number of items */}
                 <Text variant="small" color="secondary">
-                  {sprintf(__('%s items', 'kirki-ecommerce'), itemsCount)}
+                  {sprintf(__('%s items', 'kirki-ecommerce'), itemsCount ?? 0)}
                 </Text>
                 <Text>{subtotalDisplay}</Text>
               </Flex>
@@ -128,7 +132,7 @@ const PaymentSummaryCard = ({
             )}
           </Flex>
 
-          {coupons.length === 0 ? (
+          {isProductSelected && coupons.length === 0 ? (
             <Flex justify="space-between">
               {isDiscountEditable ? (
                 <DiscountPopover>
@@ -153,7 +157,7 @@ const PaymentSummaryCard = ({
             coupons.map((coupon, index) => (
               <Flex key={coupon.code ?? index} justify="space-between">
                 {index === 0 ? (
-                  isDiscountEditable ? (
+                  isProductSelected && isDiscountEditable ? (
                     <DiscountPopover>
                       <Button variant="link" cssOverride={styles.buttonLink}>
                         <Flex gap={1} align="center" cssOverride={styles.info}>
@@ -195,7 +199,7 @@ const PaymentSummaryCard = ({
           </Flex>
 
           <Flex justify="space-between">
-            {isShippingEditable ? (
+            {isProductSelected && isShippingEditable ? (
               <ShippingPopover
                 availableShippingMethods={availableShippingMethods}
                 isLoading={isCalculating}

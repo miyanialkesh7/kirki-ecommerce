@@ -30,7 +30,7 @@ class CustomerSeeder extends Seeder
             $is_shipping_same_as_billing = $index % 2 === 0;
 
             $shipping_address = $this->make_address_data($customer_data, [
-                'address_line1' => $this->get_address_line($index, 'shipping'),
+                'address_line1' => $this->get_address_line($index),
                 'city' => $this->get_city($index),
                 'state' => $this->get_state($index),
                 'country' => $this->get_country($index),
@@ -43,7 +43,7 @@ class CustomerSeeder extends Seeder
 
             if (!$is_shipping_same_as_billing) {
                 $addresses[] = $this->make_address_data($customer_data, [
-                    'address_line1' => $this->get_address_line($index + 1, 'billing'),
+                    'address_line1' => $this->get_address_line($index + 1),
                     'city' => $this->get_city($index + 1),
                     'state' => $this->get_state($index + 1),
                     'country' => $this->get_country($index + 1),
@@ -101,10 +101,9 @@ class CustomerSeeder extends Seeder
      * @since 1.0.0
      *
      * @param int    $index Customer index.
-     * @param string $type  Address type; 'billing' prefixes the street with "Billing: ".
      * @return string Street address line.
      */
-    protected function get_address_line($index, $type)
+    protected function get_address_line($index)
     {
         $addresses = [
             '742 Evergreen Terrace',
@@ -120,10 +119,6 @@ class CustomerSeeder extends Seeder
         ];
 
         $line = $addresses[$index % count($addresses)];
-
-        if ($type === 'billing') {
-            return 'Billing: ' . $line;
-        }
 
         return $line;
     }

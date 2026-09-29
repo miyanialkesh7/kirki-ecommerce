@@ -58,13 +58,16 @@ const ContactInfoDialog = ({ open, onOpenChange, onSave, isSaving }: ContactInfo
                 label={__('Last Name', 'kirki-ecommerce')}
               />
             </Grid>
-            <TextField<OrderFormInput> name="shipping_email" label={__('Email', 'kirki-ecommerce')} />
+            <TextField<OrderFormInput>
+              name="shipping_email"
+              label={__('Email', 'kirki-ecommerce')}
+            />
             <TextField<OrderFormInput>
               name="shipping_phone"
               label={__('Phone Number', 'kirki-ecommerce')}
             />
             <CheckboxField<OrderFormInput>
-              name="update_customer_contact_info"
+              name="should_update_contact_info"
               label={__('Update customer account', 'kirki-ecommerce')}
             />
           </Flex>

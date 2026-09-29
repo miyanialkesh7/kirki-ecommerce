@@ -30,11 +30,7 @@ const stateRequiredMessage = (country: unknown) => {
  * country with no subdivisions, or no postal codes, must not block the form
  * on a value it has none of.
  */
-const addressFieldRequired = (
-  country: unknown,
-  field: 'state' | 'postal_code',
-  value: unknown,
-) => {
+const addressFieldRequired = (country: unknown, field: 'state' | 'postal_code', value: unknown) => {
   return isAddressFieldRequired(country as string | null | undefined, field) && isEmptyValue(value);
 };
 
@@ -124,9 +120,9 @@ const OrderFormShape = prepareFormSchema(
     billing_email: stringOrNull(),
     billing_company: stringOrNull(),
 
-    update_customer_contact_info: z.boolean().nullish().default(false),
-    update_customer_shipping_address: z.boolean().nullish().default(false),
-    update_customer_billing_address: z.boolean().nullish().default(false),
+    should_update_contact_info: z.boolean().nullish().default(false),
+    should_update_shipping_address: z.boolean().nullish().default(false),
+    should_update_billing_address: z.boolean().nullish().default(false),
 
     admin_notes: stringOrNull(),
     flags: z.array(z.string()).nullish(),
@@ -198,9 +194,9 @@ const OrderFormSchema = OrderFormShape.transform((values) => ({
   billing_id: values.billing_id,
   ...buildBillingFields(values),
 
-  update_customer_contact_info: values.update_customer_contact_info ?? false,
-  update_customer_shipping_address: values.update_customer_shipping_address ?? false,
-  update_customer_billing_address: values.update_customer_billing_address ?? false,
+  should_update_contact_info: values.should_update_contact_info ?? false,
+  should_update_shipping_address: values.should_update_shipping_address ?? false,
+  should_update_billing_address: values.should_update_billing_address ?? false,
 
   admin_notes: values.admin_notes ?? null,
   flags: values.flags ?? null,

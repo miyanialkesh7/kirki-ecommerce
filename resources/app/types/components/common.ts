@@ -8,14 +8,7 @@ type StyleProps = {
 };
 
 type GapValue = SpacingKey | (string & {});
-type FlexAlign =
-  | 'flex-start'
-  | 'flex-end'
-  | 'center'
-  | 'baseline'
-  | 'stretch'
-  | 'start'
-  | 'end';
+type FlexAlign = 'flex-start' | 'flex-end' | 'center' | 'baseline' | 'stretch' | 'start' | 'end';
 type FlexJustify =
   | 'flex-start'
   | 'flex-end'
@@ -116,4 +109,3 @@ export type {
   TableDensity,
   TooltipPosition,
 };
-

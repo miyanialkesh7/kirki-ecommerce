@@ -18,7 +18,13 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import Flex from '@/components/ui/flex';
 import Grid from '@/components/ui/grid';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Customer } from '@/features/customers';
 import { getAddressSummaryLabel } from '@/features/orders/lib/customer-address';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
@@ -54,7 +60,7 @@ const FIELD_NAMES = {
     postalCode: 'shipping_postal_code',
     country: 'shipping_country',
     phone: 'shipping_phone',
-    updateAddressBook: 'update_customer_shipping_address',
+    updateAddressBook: 'should_update_shipping_address',
   },
   billing: {
     id: 'billing_id',
@@ -68,7 +74,7 @@ const FIELD_NAMES = {
     postalCode: 'billing_postal_code',
     country: 'billing_country',
     phone: 'billing_phone',
-    updateAddressBook: 'update_customer_billing_address',
+    updateAddressBook: 'should_update_billing_address',
   },
 } as const satisfies Record<AddressType, Record<string, keyof OrderFormInput>>;
 
@@ -179,11 +185,9 @@ const AddressDialog = ({
       const dirtyFields = form.formState.dirtyFields;
       const areAddressFieldsDirty = ADDRESS_FIELD_KEYS.some((key) => Boolean(dirtyFields[key]));
 
-      form.setValue(
-        'is_billing_same_as_shipping',
-        isSameDefaultAddress && !areAddressFieldsDirty,
-        { shouldDirty: true },
-      );
+      form.setValue('is_billing_same_as_shipping', isSameDefaultAddress && !areAddressFieldsDirty, {
+        shouldDirty: true,
+      });
     }
 
     onSave?.();
@@ -218,11 +222,20 @@ const AddressDialog = ({
             <CountryField<OrderFormInput> name={fields.country} />
 
             <Grid>
-              <TextField<OrderFormInput> name={fields.firstName} label={__('First name', 'kirki-ecommerce')} />
-              <TextField<OrderFormInput> name={fields.lastName} label={__('Last name', 'kirki-ecommerce')} />
+              <TextField<OrderFormInput>
+                name={fields.firstName}
+                label={__('First name', 'kirki-ecommerce')}
+              />
+              <TextField<OrderFormInput>
+                name={fields.lastName}
+                label={__('Last name', 'kirki-ecommerce')}
+              />
             </Grid>
 
-            <TextField<OrderFormInput> name={fields.addressLine1} label={__('Address', 'kirki-ecommerce')} />
+            <TextField<OrderFormInput>
+              name={fields.addressLine1}
+              label={__('Address', 'kirki-ecommerce')}
+            />
             <TextField<OrderFormInput>
               name={fields.addressLine2}
               label={__('Apartment, suite, etc. (optional)', 'kirki-ecommerce')}
@@ -235,7 +248,10 @@ const AddressDialog = ({
                 name={fields.state}
                 label={__('State', 'kirki-ecommerce')}
               />
-              <TextField<OrderFormInput> name={fields.postalCode} label={__('Zip code', 'kirki-ecommerce')} />
+              <TextField<OrderFormInput>
+                name={fields.postalCode}
+                label={__('Zip code', 'kirki-ecommerce')}
+              />
             </Grid>
 
             <TextField<OrderFormInput> name={fields.phone} label={__('Phone', 'kirki-ecommerce')} />
