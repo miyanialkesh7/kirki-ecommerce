@@ -24,8 +24,6 @@ if (!defined('ABSPATH')) {
 
 use Kirki\Ecommerce\App\KirkiEcommerce;
 
-use function Kirki\Ecommerce\Framework\app;
-
 /**
  * The kirki ecommerce plugin version
  * @var string

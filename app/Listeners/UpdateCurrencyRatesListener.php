@@ -3,17 +3,17 @@
 namespace Kirki\Ecommerce\App\Listeners;
 
 use Kirki\Ecommerce\App\Constants\OptionKeys;
-use Kirki\Ecommerce\App\Events\SettingsChanged;
+use Kirki\Ecommerce\App\Events\SettingsChangedEvent;
 use Kirki\Ecommerce\App\Facades\CurrencyExchange;
 use Kirki\Ecommerce\Framework\Listener;
 use Kirki\Ecommerce\App\Supports\Facades\Settings;
 
 /**
- * Listener for SettingsChanged that syncs exchange rates after the currency settings are saved.
+ * Listener for SettingsChangedEvent that syncs exchange rates after the currency settings are saved.
  *
  * @since 1.0.0
  */
-class UpdateCurrencyRates extends Listener
+class UpdateCurrencyRatesListener extends Listener
 {
     /**
      * @inheritDoc
@@ -30,10 +30,10 @@ class UpdateCurrencyRates extends Listener
      *
      * @since 1.0.0
      *
-     * @param SettingsChanged $event The dispatched event.
+     * @param SettingsChangedEvent $event The dispatched event.
      * @return void
      */
-    public function handle(SettingsChanged $event)
+    public function handle(SettingsChangedEvent $event)
     {
         if ($event->key !== OptionKeys::CURRENCY_SETTINGS) {
             return;

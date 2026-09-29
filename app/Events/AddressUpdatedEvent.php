@@ -10,7 +10,7 @@ use Kirki\Ecommerce\Framework\Concerns\Dispatchable;
  *
  * @since 1.0.0
  */
-class AddressUpdated
+class AddressUpdatedEvent
 {
     use Dispatchable;
 

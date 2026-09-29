@@ -6,11 +6,14 @@ use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Framework\Concerns\Dispatchable;
 
 /**
- * Event for an order that has been shipped.
+ * Event for an order that has been placed.
+ *
+ * Dispatched after the order's transaction commits, so listeners always see
+ * a persisted order and a failing listener can never roll the order back.
  *
  * @since 1.0.0
  */
-class OrderPlaced
+class OrderPlacedEvent
 {
     use Dispatchable;
 
@@ -18,11 +21,11 @@ class OrderPlaced
     public $order;
 
     /**
-     * Create the event for a shipped order.
+     * Create the event for a placed order.
      *
      * @since 1.0.0
      *
-     * @param mixed $order The order that was shipped.
+     * @param Order $order The order that was placed.
      */
     public function __construct(Order $order)
     {

@@ -13,7 +13,7 @@
  * Requires Plugins:  kirki-ecommerce
  */
 
-use Kirki\Ecommerce\App\Constants\Hooks\CustomHookNames;
+use Kirki\Ecommerce\App\Constants\Hooks\DeveloperHookNames;
 use Kirki\Ecommerce\Payments\Authorizenet;
 
 if (!defined('ABSPATH')) {
@@ -27,11 +27,11 @@ register_activation_hook(__FILE__, 'kirki_authorizenet_register_payment_provider
 
 function kirki_authorizenet_register_payment_provider()
 {
-    if (!class_exists(CustomHookNames::class)) {
+    if (!class_exists(DeveloperHookNames::class)) {
         return;
     }
 
-    add_filter(CustomHookNames::ECOMMERCE_PAYMENT_PROVIDERS, function ($providers) {
+    add_filter(DeveloperHookNames::PAYMENT_PROVIDERS, function ($providers) {
         $providers[Authorizenet::class] = new Authorizenet();
 
         return $providers;

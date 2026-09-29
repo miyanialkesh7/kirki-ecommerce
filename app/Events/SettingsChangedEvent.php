@@ -9,7 +9,7 @@ use Kirki\Ecommerce\Framework\Concerns\Dispatchable;
  *
  * @since 1.0.0
  */
-class SettingsChanged
+class SettingsChangedEvent
 {
     use Dispatchable;
 

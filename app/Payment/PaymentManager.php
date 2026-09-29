@@ -2,7 +2,7 @@
 
 namespace Kirki\Ecommerce\App\Payment;
 
-use Kirki\Ecommerce\App\Constants\Hooks\CustomHookNames;
+use Kirki\Ecommerce\App\Constants\Hooks\DeveloperHookNames;
 use Kirki\Ecommerce\App\DTO\Payment\PaymentActionDTO;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Payment\Providers\PayPal;
@@ -47,7 +47,7 @@ class PaymentManager
     public function init_registry()
     {
         $providers = apply_filters(
-            CustomHookNames::ECOMMERCE_PAYMENT_PROVIDERS,
+            DeveloperHookNames::PAYMENT_PROVIDERS,
             array_merge(
                 OfflinePaymentFactory::make(),
                 [new PayPal()]

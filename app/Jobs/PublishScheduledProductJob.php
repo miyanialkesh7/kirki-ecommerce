@@ -4,7 +4,7 @@ namespace Kirki\Ecommerce\App\Jobs;
 
 use Kirki\Ecommerce\App\Constants\Product\ProductStatus;
 use Kirki\Ecommerce\App\Models\Product;
-use Kirki\Ecommerce\App\Scheduler\Contracts\ShouldQueue;
+use Kirki\Ecommerce\Framework\Contracts\ShouldQueue;
 use Kirki\Ecommerce\Framework\Queue\Concerns\Queueable;
 use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 

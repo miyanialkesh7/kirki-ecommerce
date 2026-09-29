@@ -9,7 +9,7 @@ use Kirki\Ecommerce\Framework\Concerns\Dispatchable;
  *
  * @since 1.0.0
  */
-class OrderShipped
+class OrderShippedEvent
 {
     use Dispatchable;
 
