@@ -7,7 +7,7 @@ namespace Kirki\Ecommerce\App\Constants\Hooks;
  *
  * @since 1.0.0
  */
-class DeveloperHookNames
+class DevHookNames
 {
     public const PAYMENT_PROVIDERS = 'kirki_ecommerce_payment_providers';
     public const USER_EMAIL_VERIFIED = 'kirki_ecommerce_user_email_verified';

@@ -2,7 +2,7 @@
 
 namespace Kirki\Ecommerce\App\Listeners\Order;
 
-use Kirki\Ecommerce\App\Constants\Hooks\DeveloperHookNames;
+use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
 use Kirki\Ecommerce\App\Events\Order\OrderPlacedEvent;
 use Kirki\Ecommerce\Framework\Listener;
 
@@ -24,6 +24,6 @@ class BroadcastOrderPlacedListener extends Listener
      */
     public function handle(OrderPlacedEvent $event)
     {
-        do_action(DeveloperHookNames::ORDER_PLACED, $event->order->id, $event->order);
+        do_action(DevHookNames::ORDER_PLACED, $event->order->id, $event->order);
     }
 }

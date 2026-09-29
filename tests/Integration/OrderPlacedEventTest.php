@@ -2,7 +2,7 @@
 
 namespace Kirki\Ecommerce\Tests\Integration;
 
-use Kirki\Ecommerce\App\Constants\Hooks\DeveloperHookNames;
+use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
 use Kirki\Ecommerce\App\Jobs\SendOrderMailJob;
 use Kirki\Ecommerce\App\Mails\Admins\AdminNewOrderMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerNewOrderMail;
@@ -98,7 +98,7 @@ class OrderPlacedEventTest extends RestTestCase
     {
         $received = [];
 
-        add_action(DeveloperHookNames::ORDER_PLACED, function ($order_id, $order) use (&$received) {
+        add_action(DevHookNames::ORDER_PLACED, function ($order_id, $order) use (&$received) {
             $received = [$order_id, $order];
         }, 10, 2);
 
@@ -118,7 +118,7 @@ class OrderPlacedEventTest extends RestTestCase
     {
         $orders_before = Order::query()->count();
 
-        add_action(DeveloperHookNames::ORDER_PLACED, function () {
+        add_action(DevHookNames::ORDER_PLACED, function () {
             throw new RuntimeException('Third-party hook failed.');
         });
 
@@ -238,9 +238,7 @@ class FakeOrderMail extends Mailer
      *
      * @param Order $order The order.
      */
-    public function __construct(Order $order)
-    {
-    }
+    public function __construct(Order $order) {}
 
     /**
      * @inheritDoc
