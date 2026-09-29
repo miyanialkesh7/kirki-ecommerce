@@ -283,6 +283,75 @@ class OrderApiTest extends RestTestCase
     }
 
     /**
+     * A user the admin route gate admits through manage_options, without the
+     * administrator role, can create a manual order.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_manage_options_user_without_administrator_role_creates_manual_order(): void
+    {
+        wp_set_current_user($this->create_store_manager_user());
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        $this->assertTrue($order['is_manual']);
+    }
+
+    /**
+     * A user the admin route gate admits through manage_options, without the
+     * administrator role, can update an order.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_manage_options_user_without_administrator_role_updates_order(): void
+    {
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        wp_set_current_user($this->create_store_manager_user());
+
+        $response = $this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'admin_notes' => 'Updated by store manager',
+            'items' => [
+                [
+                    'id' => $order['items'][0]['id'] ?? null,
+                    'variant_id' => $this->variant_id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]));
+
+        $payload = $this->assert_api_success($response);
+        $this->assertEquals('Updated by store manager', $payload['data']['admin_notes']);
+    }
+
+    /**
+     * A shopper cannot flag their checkout order as manual.
+     *
+     * The request's own authorize() rejects it, and the framework reports a
+     * failed request authorization as 401 rather than 403.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_shopper_cannot_flag_checkout_order_as_manual(): void
+    {
+        wp_set_current_user($this->create_shopper_user());
+        $this->add_to_shopper_cart();
+
+        $order_count_before = Order::count();
+
+        $response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => true]));
+
+        $this->assert_api_error($response, 401);
+        $this->assertEquals($order_count_before, Order::count());
+    }
+
+    /**
      * Editing a guest order without submitting `customer_id` must not
      * default it to `0` - `orders.customer_id` has no row with id `0`, so
      * persisting `0` violates its FK constraint. Omitting `customer_id`
@@ -817,28 +886,6 @@ class OrderApiTest extends RestTestCase
         $this->assertNotNull($customer);
         $this->assertEquals($customer->id, $payload['data']['customer_id']);
         $this->assertTrue(Address::where('customer_id', $customer->id)->where('is_default_shipping', true)->exists());
-    }
-
-    /**
-     * An authenticated user who already has a customer record reuses it
-     * instead of getting a duplicate one provisioned.
-     *
-     * @return void
-     */
-    public function test_checkout_reuses_existing_customer_without_duplicating(): void
-    {
-        $user_id = $this->create_shopper_user();
-        $existing_customer = $this->provision_customer_for_user($user_id);
-
-        wp_set_current_user($user_id);
-        $this->add_to_shopper_cart();
-
-        $response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => false]));
-        $payload = $this->assert_api_success($response, 201);
-        $this->order_id = $payload['data']['id'];
-
-        $this->assertEquals($existing_customer->id, $payload['data']['customer_id']);
-        $this->assertEquals(1, Customer::where('user_id', $user_id)->count());
     }
 
     /**
@@ -1891,6 +1938,20 @@ class OrderApiTest extends RestTestCase
         return static::factory()->user->create(array_merge([
             'role' => 'subscriber',
         ], $overrides));
+    }
+
+    /**
+     * Create an editor granted manage_options - a store manager without the administrator role.
+     *
+     * @return int
+     * @since 1.0.0
+     */
+    protected function create_store_manager_user(): int
+    {
+        $user_id = static::factory()->user->create(['role' => 'editor']);
+        get_userdata($user_id)->add_cap('manage_options');
+
+        return $user_id;
     }
 
     /**

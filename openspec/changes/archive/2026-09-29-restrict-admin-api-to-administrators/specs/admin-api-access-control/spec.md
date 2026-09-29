@@ -74,3 +74,29 @@ The API SHALL NOT expose development-only or debug endpoints - in particular end
 - **WHEN** any caller, logged in or not, requests `GET /test-public` or `GET /test`
 - **THEN** the route does not exist and no query log or store data is returned
 - **AND** no store setting is changed
+
+### Requirement: Admin checks inside endpoints agree with the route gate
+
+A user the admin route gate admits SHALL NOT be rejected by an admin-only endpoint for lacking a specific WordPress role. Where an endpoint shared with shoppers (checkout) decides whether the caller is a store administrator - to allow ordering for another customer or flagging an order as manual - it SHALL use the same `manage_options` capability as the gate.
+
+#### Scenario: Non-administrator role with manage_options creates a manual order
+
+- **WHEN** a logged-in user whose role is not `administrator` but who holds `manage_options` sends `POST /orders` with `is_manual` set
+- **THEN** the order is created
+- **AND** it is recorded as a manual order
+
+#### Scenario: Non-administrator role with manage_options updates an order
+
+- **WHEN** a logged-in user whose role is not `administrator` but who holds `manage_options` sends `PUT /orders/{id}` for an existing order
+- **THEN** the request is not rejected with `403 Forbidden`
+
+#### Scenario: Shopper cannot flag a checkout order as manual
+
+- **WHEN** a signed-in user without `manage_options` sends `POST /checkout` with `is_manual` set
+- **THEN** the request is rejected with an authorization error
+- **AND** no order is created
+
+#### Scenario: Administrator role without manage_options is not treated as a store admin
+
+- **WHEN** a user has the `administrator` role but `manage_options` has been removed from them
+- **THEN** they are not treated as a store administrator by those checks

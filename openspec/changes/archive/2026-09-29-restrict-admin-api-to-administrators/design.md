@@ -14,15 +14,15 @@ See proposal.md - Why. Current state relevant to the approach:
 
 **Goals:**
 - Close the admin API to everyone without `manage_options`, in the smallest reviewable diff, without editing the framework.
-- Keep the admin API gate and the admin menu gate on the same capability.
+- Keep the admin API gate, the admin menu gate and in-endpoint admin checks on the same capability.
 - Keep `401` (not logged in) and `403` (logged in, not allowed) distinct.
 - Remove debug endpoints that leak data or mutate settings.
 
 **Non-Goals:**
 - Per-resource capabilities, custom roles (shop manager), capability registry, or exposing capabilities to the SPA - follow-up change.
-- Replacing the order `FormRequest` `customer()->is_admin()` checks, or removing the now-unreachable non-admin branch of `OrderCreateRequest::authorize()` - it is still used by `/checkout`.
+- Removing `OrderCreateRequest::authorize()` - it still guards `/checkout`.
 - Hardening the public cart/checkout endpoints (rate limiting etc.).
-- Removing the mock `/online-payments/download/{id}` route.
+- Changing the mock `/online-payments/download/{id}` route - temporary until the live cloud download URL replaces it.
 
 ## Decisions
 
@@ -53,7 +53,26 @@ Customer self-service is correctly "any logged-in user"; controllers already sco
 
 ### Keep the mock download route public
 
-`OnlinePaymentService` builds the add-on zip URL with `Route::url('online-payments/download/' . $id)` and the server downloads it without the user's cookie, so any auth gate would break add-on install. It already has a `@todo` to be replaced by a cloud URL; out of scope here.
+`OnlinePaymentService` builds the add-on zip URL with `Route::url('online-payments/download/' . $id)` and the server downloads it without the user's cookie, so any auth gate would break add-on install. It is temporary - replaced by the live cloud download URL - so it is left as is. Its `[^/]+` route param pattern already stops `../` traversal out of `payments/`.
+
+### One admin gate: drop duplicate checks, align the shared ones
+
+`OrderUpdateRequest::authorize()`, `OrderActionRequest::authorize()` and the manual-order check in `OrderController::store()` only run on admin-only routes, where the route gate has already required `manage_options`. They are removed, leaving the gate as the single check. They were also wrong: they test the `administrator` role, so a custom role granted `manage_options` (or a multisite super admin) passed the gate and was then rejected.
+
+`OrderCreateRequest::authorize()` and the manual-order check in `CheckoutController` also serve the public `/checkout`, where they stop a shopper ordering for another customer or flagging a manual order - they stay. They call `is_admin()`, which changes to `user_can($this->get_id(), Capabilities::MANAGE_OPTIONS)` so "admin" means the same thing as the gate everywhere. `BrandPolicy` also calls it, but is registered and never invoked.
+
+- *Alternative: keep all checks and only change `is_admin()`* - rejected; it leaves three checks that repeat the gate and must be kept in sync with it.
+- *Alternative: switch call sites to `user()->can(...)`* - rejected; the framework's `User::can()` checks `current_user_can()`, the logged-in user, not the `User` instance it is called on.
+- `get_active_role()` still returns the `administrator` role constant for such users; it has no callers outside `User`.
+
+**Correction during implementation:** a `FormRequest` whose `authorize()` returns false is reported as `401`, not `403` - the framework's `Request::authorize_request()` throws `AuthorizationException` without a status code, which defaults to `401`. So a shopper sending `is_manual` to `/checkout` gets `401`. The spec scenario asserts "rejected, no order created" rather than a status; changing the framework's status is out of scope.
+
+### Coupon customer eligibility knows the cart owner
+
+`DiscountService::validate_customers_eligibility()` decides "registered" by `$context->customer_id` alone. A signed-in shopper has no customer record until their first checkout provisions one, so at cart time they count as a guest: "registered customers only" coupons ask them to log in, and guest-only coupons are accepted. `CalculationContextDTO::from_cart()` already reads `$cart->user_id`; it now also stores it as `$context->user_id`, and the rule becomes `!empty($context->customer_id) || !empty($context->user_id)`.
+
+- *Alternative: fall back to `user()->get_id()` like the customer-limit and first-time-buyer checks do* - rejected; for an admin-created manual order the current user is the admin, which would make every guest manual order count as registered. The context's own owner is the right source.
+- Checkout needs no change: a signed-in shopper's customer is resolved before coupon validation, so `customer_id` is already set there. The existing `user()->get_id()` fallbacks in the customer-limit and first-time-buyer checks are left alone (out of scope).
 
 ## Risks / Trade-offs
 

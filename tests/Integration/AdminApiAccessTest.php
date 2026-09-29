@@ -2,6 +2,7 @@
 
 namespace Kirki\Ecommerce\Tests\Integration;
 
+use Kirki\Ecommerce\App\Wordpress\User;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 
 class AdminApiAccessTest extends RestTestCase
@@ -119,6 +120,24 @@ class AdminApiAccessTest extends RestTestCase
         $this->assert_api_error($this->request('GET', 'account/addresses'), 401);
         $this->assert_api_success($this->request('GET', 'cart'));
         $this->assert_api_success($this->request('GET', 'shop/products'));
+    }
+
+    /**
+     * Being a store admin follows the manage_options capability, not the administrator role.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_store_admin_follows_manage_options_not_role(): void
+    {
+        $administrator_id = static::factory()->user->create(['role' => 'administrator']);
+        get_userdata($administrator_id)->add_cap('manage_options', false);
+
+        $editor_id = static::factory()->user->create(['role' => 'editor']);
+        get_userdata($editor_id)->add_cap('manage_options');
+
+        $this->assertFalse((new User($administrator_id))->is_admin());
+        $this->assertTrue((new User($editor_id))->is_admin());
     }
 
     /**

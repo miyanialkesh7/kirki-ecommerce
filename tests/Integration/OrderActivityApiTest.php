@@ -2,7 +2,6 @@
 
 namespace Kirki\Ecommerce\Tests\Integration;
 
-use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Tests\Support\CreatesTestProducts;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 use Kirki\Ecommerce\Tests\Support\SeedsTestShipping;
