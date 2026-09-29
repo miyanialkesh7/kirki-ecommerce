@@ -441,6 +441,103 @@ class AdminOrderResourceCouponFormattingTest extends TestCase
         $this->assertSame(0.0, $strikethrough['inclusive']->raw);
     }
 
+    // prepare_items: per-unit price and per-unit strikethrough price
+
+    protected function prepare_single_item(OrderItem $item, array $order_coupons = [], ?OrderResource $resource = null): array
+    {
+        $reflection = new \ReflectionClass(OrderResource::class);
+        $method = $reflection->getMethod('prepare_items');
+        $method->setAccessible(true);
+
+        $item->set_relation('taxes', collection());
+
+        return $method->invoke($resource ?? $this->resource, [$item], collection($order_coupons))[0];
+    }
+
+    public function test_unit_price_divides_the_line_subtotal_evenly(): void
+    {
+        $item = $this->make_priced_order_item(3500, 3500, 2, 7000, null, 700);
+
+        $prepared = $this->prepare_single_item($item);
+
+        $this->assertSame(35.0, $prepared['invoiced_unit_price_exclusive_money_object']->raw);
+        $this->assertSame(38.5, $prepared['invoiced_unit_price_inclusive_money_object']->raw);
+        $this->assertSame(35.0, $prepared['base_unit_price_exclusive_money_object']->raw);
+        $this->assertSame(38.5, $prepared['base_unit_price_inclusive_money_object']->raw);
+    }
+
+    public function test_unit_price_rounds_up_when_the_line_subtotal_does_not_divide_evenly(): void
+    {
+        $item = $this->make_priced_order_item(333, 333, 3, 1000);
+
+        $prepared = $this->prepare_single_item($item);
+
+        // 1000 / 3 = 333.33 minor, rounded up to 334; the line subtotal stays 1000.
+        $this->assertSame(3.34, $prepared['invoiced_unit_price_exclusive_money_object']->raw);
+        $this->assertSame(10.0, $prepared['invoiced_subtotal_exclusive_money_object']->raw);
+    }
+
+    public function test_unit_price_is_net_of_the_product_coupon_discount(): void
+    {
+        $item = $this->make_priced_order_item(4000, 4000, 2, 8000);
+        $product_coupon = $this->make_order_coupon('PRODUCT10', DiscountTarget::PRODUCTS, 1000, [
+            ['order_item_id' => 101, 'invoiced_discount_amount' => 1000],
+        ]);
+
+        $prepared = $this->prepare_single_item($item, [$product_coupon]);
+
+        // (8000 - 1000) / 2 = 3500; the pre-coupon 8000 / 2 = 4000 is struck through.
+        $this->assertSame(35.0, $prepared['invoiced_unit_price_exclusive_money_object']->raw);
+        $this->assertSame(40.0, $prepared['invoiced_unit_strikethrough_price_exclusive_money_object']->raw);
+    }
+
+    public function test_unit_strikethrough_is_the_regular_price_total_divided_by_quantity_when_on_sale(): void
+    {
+        $item = $this->make_priced_order_item(5000, 4000, 2, 8000, null, 800, null, 1000);
+
+        $prepared = $this->prepare_single_item($item);
+
+        // Line strikethrough: 5000 * 2 = 10000 exclusive, 10000 + 1000 = 11000 inclusive.
+        $this->assertSame(50.0, $prepared['invoiced_unit_strikethrough_price_exclusive_money_object']->raw);
+        $this->assertSame(55.0, $prepared['invoiced_unit_strikethrough_price_inclusive_money_object']->raw);
+        $this->assertSame(50.0, $prepared['base_unit_strikethrough_price_exclusive_money_object']->raw);
+        $this->assertSame(55.0, $prepared['base_unit_strikethrough_price_inclusive_money_object']->raw);
+    }
+
+    public function test_unit_strikethrough_is_null_when_the_line_strikethrough_is_null(): void
+    {
+        $item = $this->make_priced_order_item(2000, 2000, 2, 4000);
+
+        $prepared = $this->prepare_single_item($item);
+
+        $this->assertNull($prepared['invoiced_strikethrough_price_exclusive_money_object']);
+        $this->assertNull($prepared['invoiced_unit_strikethrough_price_exclusive_money_object']);
+        $this->assertNull($prepared['invoiced_unit_strikethrough_price_inclusive_money_object']);
+        $this->assertNull($prepared['base_unit_strikethrough_price_exclusive_money_object']);
+        $this->assertNull($prepared['base_unit_strikethrough_price_inclusive_money_object']);
+    }
+
+    public function test_unit_figures_derive_from_their_own_currencys_line_figures(): void
+    {
+        $resource = new OrderResource([
+            'currency_code' => 'BDT',
+            'base_currency_code' => 'USD',
+            'exchange_rate' => 110.0,
+        ]);
+
+        $item = $this->make_priced_order_item(5000, 4000, 2, 880000, 550000, 88000, 800, 110000, 1000);
+        $item->base_subtotal = 8000;
+
+        $prepared = $this->prepare_single_item($item, [], $resource);
+
+        $this->assertSame(4400.0, $prepared['invoiced_unit_price_exclusive_money_object']->raw);
+        $this->assertSame('BDT', $prepared['invoiced_unit_price_exclusive_money_object']->currency->code);
+        $this->assertSame(40.0, $prepared['base_unit_price_exclusive_money_object']->raw);
+        $this->assertSame('USD', $prepared['base_unit_price_exclusive_money_object']->currency->code);
+        $this->assertSame(5500.0, $prepared['invoiced_unit_strikethrough_price_exclusive_money_object']->raw);
+        $this->assertSame(50.0, $prepared['base_unit_strikethrough_price_exclusive_money_object']->raw);
+    }
+
     // derive_inclusive_amount / derive_inclusive_amount_at_rate / get_items_tax_total
 
     public function test_derive_inclusive_amount_adds_the_tax_directly(): void
