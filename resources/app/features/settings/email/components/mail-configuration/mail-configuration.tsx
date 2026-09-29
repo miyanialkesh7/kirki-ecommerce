@@ -74,10 +74,8 @@ const MailConfiguration = () => {
                 </Flex>
                 {isConfigured && (
                   <Badge variant="success">
-                    <span data-icon="inline-start" aria-hidden="true">
-                      <LucideCircleCheckBig size={16} />
-                    </span>
-                    {__('Completed', 'kirki-ecommerce')}
+                    <LucideCircleCheckBig size={16} />
+                    {__('Configured', 'kirki-ecommerce')}
                   </Badge>
                 )}
               </Flex>
