@@ -155,14 +155,16 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
               {__('Customer', 'kirki-ecommerce')}
             </Text>
           </CardTitle>
-          {customer && !customer.user_id && (
-            <Badge variant="info">{__('Guest', 'kirki-ecommerce')}</Badge>
-          )}
+          {!customerId && <Badge variant="info">{__('Guest', 'kirki-ecommerce')}</Badge>}
         </Flex>
         {customer && !readonly && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" aria-label={__('More options', 'kirki-ecommerce')}>
+              <Button
+                variant="secondary"
+                size="icon"
+                aria-label={__('More options', 'kirki-ecommerce')}
+              >
                 <ShowMoreIcon />
               </Button>
             </DropdownMenuTrigger>
