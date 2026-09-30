@@ -71,7 +71,6 @@ const OrderCreateContent = () => {
                 totals={calculation?.totals}
                 coupons={calculation?.coupons}
                 taxLines={calculation?.tax_lines}
-                isTaxInclusive={calculation?.is_tax_inclusive}
                 itemsCount={calculation?.items_count}
                 availableShippingMethods={calculation?.available_shipping_methods}
                 shippingMethodName={selectedShippingMethodName}

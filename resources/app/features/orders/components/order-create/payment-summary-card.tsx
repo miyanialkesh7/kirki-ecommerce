@@ -45,7 +45,6 @@ type PaymentSummaryCardProps = {
   totals?: PaymentSummaryTotals;
   coupons?: PaymentSummaryCoupon[];
   taxLines?: PaymentSummaryTaxLine[];
-  isTaxInclusive?: boolean;
   itemsCount?: number;
   availableShippingMethods?: OrderCalculation['available_shipping_methods'];
   shippingMethodName?: string | null;
@@ -73,7 +72,6 @@ const PaymentSummaryCard = ({
   totals,
   coupons = [],
   taxLines = [],
-  isTaxInclusive,
   itemsCount,
   availableShippingMethods = [],
   shippingMethodName,
@@ -84,16 +82,10 @@ const PaymentSummaryCard = ({
   actions,
 }: PaymentSummaryCardProps) => {
   const subtotalDisplay = totals
-    ? (isTaxInclusive
-        ? totals.base_items_subtotal_inclusive_money_object
-        : totals.base_items_subtotal_exclusive_money_object
-      ).display
+    ? totals.base_items_subtotal_exclusive_money_object.display
     : EMPTY_AMOUNT;
   const totalDisplay = totals
-    ? (isTaxInclusive
-        ? totals.base_order_total_inclusive_money_object
-        : totals.base_order_total_exclusive_money_object
-      ).display
+    ? totals.base_order_total_exclusive_money_object.display
     : EMPTY_AMOUNT;
   const shippingDisplay = totals?.base_shipping_amount_money_object.display ?? EMPTY_AMOUNT;
   const orderTotalDisplay = totals?.base_total_money_object.display ?? EMPTY_AMOUNT;

@@ -151,7 +151,6 @@ const OrderDetails = () => {
                 totals={order.totals}
                 coupons={order.coupons}
                 taxLines={order.tax_lines}
-                isTaxInclusive={order.is_tax_inclusive}
                 itemsCount={order.items_count}
                 shippingMethodName={order.shipping_method_name}
                 badge={<Badge variant={paymentBadge.variant}>{paymentBadge.text}</Badge>}
