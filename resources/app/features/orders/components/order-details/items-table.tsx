@@ -22,9 +22,12 @@ const ItemsTable = ({ items, isTaxInclusive }: ItemsTableProps) => {
           const subtotal = isTaxInclusive
             ? item.base_subtotal_inclusive_money_object
             : item.base_subtotal_exclusive_money_object;
-          const strikethrough = isTaxInclusive
-            ? item.base_strikethrough_price_inclusive_money_object
-            : item.base_strikethrough_price_exclusive_money_object;
+          const unitPrice = isTaxInclusive
+            ? item.base_unit_price_inclusive_money_object
+            : item.base_unit_price_exclusive_money_object;
+          const unitStrikethrough = isTaxInclusive
+            ? item.base_unit_strikethrough_price_inclusive_money_object
+            : item.base_unit_strikethrough_price_exclusive_money_object;
 
           return (
             <TableRow key={item.id}>
@@ -55,8 +58,8 @@ const ItemsTable = ({ items, isTaxInclusive }: ItemsTableProps) => {
               </TableCell>
               <TableCell alignment="right" cssOverride={{ width: '88px' }}>
                 <PriceText
-                  salePrice={strikethrough ? subtotal : undefined}
-                  regularPrice={strikethrough ?? subtotal}
+                  salePrice={unitStrikethrough ? unitPrice : undefined}
+                  regularPrice={unitStrikethrough ?? unitPrice}
                   direction="column"
                   align="end"
                 />

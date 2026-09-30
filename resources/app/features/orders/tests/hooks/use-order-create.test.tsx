@@ -43,6 +43,8 @@ const buildCalculationResponse = (
       quantity: 1,
       base_subtotal_exclusive_money_object: money(0),
       base_subtotal_inclusive_money_object: money(0),
+      base_unit_price_exclusive_money_object: money(0),
+      base_unit_price_inclusive_money_object: money(0),
       applied_product_coupons: [],
     },
   ],
@@ -183,7 +185,7 @@ describe('useOrderCreate debounce -> payload -> query wiring', () => {
 describe('useOrderCreate calculation reconciliation', () => {
   it('syncs a stock-clamped quantity back onto the form', async () => {
     mockCalculationResponse(() =>
-      buildCalculationResponse(1, { items: [{ id: 0, quantity: 1, base_subtotal_exclusive_money_object: money(0), base_subtotal_inclusive_money_object: money(0), applied_product_coupons: [] }] }),
+      buildCalculationResponse(1, { items: [{ id: 0, quantity: 1, base_subtotal_exclusive_money_object: money(0), base_subtotal_inclusive_money_object: money(0), base_unit_price_exclusive_money_object: money(0), base_unit_price_inclusive_money_object: money(0), applied_product_coupons: [] }] }),
     );
 
     const { result } = renderUseOrderCreate();
@@ -250,7 +252,7 @@ describe('useOrderCreate calculation reconciliation', () => {
   it('does not fire a redundant calculation request solely from reconciling the form', async () => {
     const { getRequestCount } = mockCalculationResponse(() =>
       buildCalculationResponse(1, {
-        items: [{ id: 0, quantity: 1, base_subtotal_exclusive_money_object: money(0), base_subtotal_inclusive_money_object: money(0), applied_product_coupons: [] }],
+        items: [{ id: 0, quantity: 1, base_subtotal_exclusive_money_object: money(0), base_subtotal_inclusive_money_object: money(0), base_unit_price_exclusive_money_object: money(0), base_unit_price_inclusive_money_object: money(0), applied_product_coupons: [] }],
       }),
     );
 
@@ -291,6 +293,8 @@ describe('useOrderCreate calculation reconciliation', () => {
           quantity: item.variant_id === 101 ? 1 : item.quantity,
           base_subtotal_exclusive_money_object: money(0),
           base_subtotal_inclusive_money_object: money(0),
+          base_unit_price_exclusive_money_object: money(0),
+          base_unit_price_inclusive_money_object: money(0),
           applied_product_coupons: [],
         })),
       });
