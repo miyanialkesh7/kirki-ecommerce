@@ -14,6 +14,7 @@
  */
 
 use Kirki\Ecommerce\App\Constants\Hooks\CustomHookNames;
+use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
 use Kirki\Ecommerce\Payments\Redsys;
 
 if (!defined('ABSPATH')) {
@@ -32,10 +33,10 @@ register_activation_hook(__FILE__, 'kirki_redsys_register_payment_provider');
  */
 function kirki_redsys_register_payment_provider()
 {
-    if (!class_exists(CustomHookNames::class)) {
+    if (!class_exists(DevHookNames::class)) {
         return;
     }
-    add_filter(CustomHookNames::ECOMMERCE_PAYMENT_PROVIDERS, function ($providers) {
+    add_filter(DevHookNames::PAYMENT_PROVIDERS, function ($providers) {
         $providers[Redsys::class] = new Redsys();
 
         return $providers;
