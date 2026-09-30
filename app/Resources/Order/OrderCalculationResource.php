@@ -104,15 +104,21 @@ class OrderCalculationResource extends Resource
                 $product_coupon_discount = $this->get_product_coupon_discount_for_item($result->coupon_results, $item->variant_id);
 
                 $subtotal_exclusive = $calculated_item->base_subtotal - $product_coupon_discount;
+                $subtotal_inclusive = $this->derive_inclusive_amount($subtotal_exclusive, $calculated_item->base_tax_amount);
                 $strikethrough = $this->prepare_strikethrough_price($calculated_item, $product_coupon_discount, $subtotal_exclusive);
+                $strikethrough_amounts = $this->get_strikethrough_amounts($calculated_item, $product_coupon_discount, $subtotal_exclusive);
 
                 $cart_items[] = [
                     'id' => $item->id,
                     'quantity' => $item->quantity,
                     'base_subtotal_exclusive_money_object' => Money::prepare_amount_object_from_minor($subtotal_exclusive),
-                    'base_subtotal_inclusive_money_object' => Money::prepare_amount_object_from_minor($this->derive_inclusive_amount($subtotal_exclusive, $calculated_item->base_tax_amount)),
+                    'base_subtotal_inclusive_money_object' => Money::prepare_amount_object_from_minor($subtotal_inclusive),
                     'base_strikethrough_price_exclusive_money_object' => $strikethrough['exclusive'],
                     'base_strikethrough_price_inclusive_money_object' => $strikethrough['inclusive'],
+                    'base_unit_price_exclusive_money_object' => $this->prepare_unit_amount_object($subtotal_exclusive, $item->quantity),
+                    'base_unit_price_inclusive_money_object' => $this->prepare_unit_amount_object($subtotal_inclusive, $item->quantity),
+                    'base_unit_strikethrough_price_exclusive_money_object' => $this->prepare_unit_amount_object($strikethrough_amounts['exclusive'], $item->quantity),
+                    'base_unit_strikethrough_price_inclusive_money_object' => $this->prepare_unit_amount_object($strikethrough_amounts['inclusive'], $item->quantity),
                     'applied_product_coupons' => $this->get_applied_product_coupons_for_item($result->coupon_results, $item->variant_id),
                 ];
             }
@@ -358,6 +364,32 @@ class OrderCalculationResource extends Resource
      */
     protected function prepare_strikethrough_price($calculated_item, $product_coupon_discount, $subtotal_exclusive)
     {
+        $amounts = $this->get_strikethrough_amounts($calculated_item, $product_coupon_discount, $subtotal_exclusive);
+
+        if ($amounts['exclusive'] === null) {
+            return ['exclusive' => null, 'inclusive' => null];
+        }
+
+        return [
+            'exclusive' => Money::prepare_amount_object_from_minor($amounts['exclusive']),
+            'inclusive' => Money::prepare_amount_object_from_minor($amounts['inclusive']),
+        ];
+    }
+
+    /**
+     * Get the line item's tax-exclusive and tax-inclusive "was" amounts, in
+     * minor units - the figures prepare_strikethrough_price() formats, kept
+     * unformatted so per-unit figures can be derived from them.
+     *
+     * @since 1.0.0
+     *
+     * @param \Kirki\Ecommerce\App\DTO\Calculation\CalculationItemDTO $calculated_item         Calculated line item.
+     * @param int                                                     $product_coupon_discount Discount from item-scoped coupons, in minor units.
+     * @param int                                                     $subtotal_exclusive      The item's current-price exclusive subtotal, in minor units.
+     * @return array{exclusive: int|null, inclusive: int|null} Both null when nothing should be struck through.
+     */
+    protected function get_strikethrough_amounts($calculated_item, $product_coupon_discount, $subtotal_exclusive)
+    {
         if ($product_coupon_discount > 0) {
             $strikethrough_amount = $calculated_item->base_subtotal;
         } elseif ($calculated_item->base_subtotal < $calculated_item->base_product_total) {
@@ -370,10 +402,30 @@ class OrderCalculationResource extends Resource
             ? $this->derive_inclusive_amount($strikethrough_amount, $calculated_item->base_regular_tax_amount)
             : $this->derive_inclusive_amount_at_rate($strikethrough_amount, $subtotal_exclusive, $calculated_item->base_tax_amount);
 
-        return [
-            'exclusive' => Money::prepare_amount_object_from_minor($strikethrough_amount),
-            'inclusive' => Money::prepare_amount_object_from_minor($inclusive_amount),
-        ];
+        return ['exclusive' => $strikethrough_amount, 'inclusive' => $inclusive_amount];
+    }
+
+    /**
+     * Prepare the per-unit money object for a line amount - the line amount
+     * divided by the item's quantity, rounded up to the currency's minor
+     * unit, so unit × quantity may exceed the line amount by up to
+     * quantity − 1 minor units. The line amount stays authoritative.
+     *
+     * @since 1.0.0
+     *
+     * @param int|null $line_amount Line amount, in minor units, or null when there is none.
+     * @param int      $quantity    The item's quantity.
+     * @return \Kirki\Ecommerce\App\DTO\MoneyDTO|null Null when the line amount is null.
+     */
+    protected function prepare_unit_amount_object($line_amount, $quantity)
+    {
+        if ($line_amount === null) {
+            return null;
+        }
+
+        $quantity = max(1, (int) $quantity);
+
+        return Money::prepare_amount_object_from_minor(intdiv($line_amount + $quantity - 1, $quantity));
     }
 
     /**

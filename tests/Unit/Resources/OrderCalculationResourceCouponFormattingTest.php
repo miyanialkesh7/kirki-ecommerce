@@ -342,4 +342,65 @@ class OrderCalculationResourceCouponFormattingTest extends TestCase
 
         $this->assertSame(550, $this->call('get_items_tax_total', $items));
     }
+
+    // prepare_items: per-unit price and per-unit strikethrough price
+
+    /**
+     * @param CouponDiscountResultDTO[] $coupon_results
+     */
+    protected function prepare_single_item(object $calculated_item, int $quantity, array $coupon_results = []): array
+    {
+        $calculated_item->id = 1;
+        $calculated_item->variant_id = 101;
+        $calculated_item->quantity = $quantity;
+
+        $result = new \Kirki\Ecommerce\App\DTO\Calculation\CalculationResultDTO();
+        $result->items = [101 => $calculated_item];
+        $result->coupon_results = $coupon_results;
+
+        return $this->call('prepare_items', $result->items, $result)[0];
+    }
+
+    public function test_unit_price_divides_the_line_subtotal_evenly(): void
+    {
+        $prepared = $this->prepare_single_item($this->make_calculated_item(7000, 7000, 700), 2);
+
+        $this->assertSame(35.0, $prepared['base_unit_price_exclusive_money_object']->raw);
+        $this->assertSame(38.5, $prepared['base_unit_price_inclusive_money_object']->raw);
+    }
+
+    public function test_unit_price_rounds_up_when_the_line_subtotal_does_not_divide_evenly(): void
+    {
+        $prepared = $this->prepare_single_item($this->make_calculated_item(1000, 1000), 3);
+
+        $this->assertSame(3.34, $prepared['base_unit_price_exclusive_money_object']->raw);
+        $this->assertSame(10.0, $prepared['base_subtotal_exclusive_money_object']->raw);
+    }
+
+    public function test_unit_price_is_net_of_the_product_coupon_discount(): void
+    {
+        $coupon_result = $this->make_coupon_result($this->make_coupon('ITEM10', DiscountTarget::PRODUCTS), [101 => 1000]);
+
+        $prepared = $this->prepare_single_item($this->make_calculated_item(8000, 8000), 2, [$coupon_result]);
+
+        $this->assertSame(35.0, $prepared['base_unit_price_exclusive_money_object']->raw);
+        $this->assertSame(40.0, $prepared['base_unit_strikethrough_price_exclusive_money_object']->raw);
+    }
+
+    public function test_unit_strikethrough_is_the_regular_price_total_divided_by_quantity_when_on_sale(): void
+    {
+        $prepared = $this->prepare_single_item($this->make_calculated_item(9000, 10000, 900, 1000), 2);
+
+        $this->assertSame(50.0, $prepared['base_unit_strikethrough_price_exclusive_money_object']->raw);
+        $this->assertSame(55.0, $prepared['base_unit_strikethrough_price_inclusive_money_object']->raw);
+    }
+
+    public function test_unit_strikethrough_is_null_when_the_line_strikethrough_is_null(): void
+    {
+        $prepared = $this->prepare_single_item($this->make_calculated_item(4000, 4000, 400), 2);
+
+        $this->assertNull($prepared['base_strikethrough_price_exclusive_money_object']);
+        $this->assertNull($prepared['base_unit_strikethrough_price_exclusive_money_object']);
+        $this->assertNull($prepared['base_unit_strikethrough_price_inclusive_money_object']);
+    }
 }
