@@ -119,7 +119,6 @@ class SiteController
             'attributes',
             'attribute_values',
             'variants.attribute_values',
-            'variants.product',
             'media'
         ])->where('slug', $slug);
 

@@ -3,10 +3,12 @@
 namespace Kirki\Ecommerce\App\Services;
 
 use Exception;
+use Kirki\Ecommerce\App\Mails\Customers\CustomerEmailConfirmationMail;
 use Kirki\Ecommerce\App\Supports\Url;
 use Kirki\Ecommerce\App\Wordpress\User;
 use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 
+use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\throw_anyway;
 use function Kirki\Ecommerce\Framework\throw_if;
 
@@ -119,7 +121,7 @@ class UserService
             'token'  => $token,
         ]);
 
-        $sent = $this->email_service->send_verification_email($user, $verify_url);
+        $sent = app(MailerService::class)->send(CustomerEmailConfirmationMail::make($user, $verify_url), $user->get_email());
 
         throw_if(!$sent, __('Failed to send verification email. Please try again later.', 'kirki-ecommerce'));
 
@@ -129,7 +131,7 @@ class UserService
     /**
      * Verify a user's email address with a token.
      *
-     * On success the kecom_user_email_verified action fires, which links past guest orders.
+     * On success the kirki_ecommerce_user_email_verified action fires, which links past guest orders.
      *
      * @since 1.0.0
      *

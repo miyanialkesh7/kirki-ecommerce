@@ -2,9 +2,10 @@
 
 namespace Kirki\Ecommerce\App\Wordpress;
 
-use Kirki\Ecommerce\App\Constants\Hooks\CustomHookNames;
+use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
 use Kirki\Ecommerce\App\Constants\UserRoles;
-use Kirki\Ecommerce\App\Services\EmailService;
+use Kirki\Ecommerce\App\Mails\Customers\CustomerEmailConfirmationMail;
+use Kirki\Ecommerce\App\Services\MailerService;
 use Kirki\Ecommerce\App\Supports\Url;
 use Kirki\Ecommerce\Framework\Wordpress\User as FrameworkUser;
 
@@ -123,7 +124,7 @@ class User extends FrameworkUser
         $updated = update_user_meta($this->get_id(), static::META_EMAIL_VERIFIED, 1);
 
         if ($updated) {
-            do_action(CustomHookNames::USER_EMAIL_VERIFIED, $this);
+            do_action(DevHookNames::USER_EMAIL_VERIFIED, $this);
         }
 
         return $updated;
@@ -288,7 +289,7 @@ class User extends FrameworkUser
             'token'  => $token,
         ]);
 
-        return app(EmailService::class)->send_verification_email($this, $verify_url);
+        return app(MailerService::class)->send(CustomerEmailConfirmationMail::make($this, $verify_url), $this->get_email());
     }
 
     /**
