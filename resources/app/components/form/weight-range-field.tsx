@@ -1,6 +1,5 @@
 import type { CSSObject } from '@emotion/react';
 import {
-  Controller,
   type FieldArrayPath,
   type FieldPath,
   type FieldValues,
@@ -9,10 +8,11 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import MoneyField from '@/components/form/money-field';
+import NumberField from '@/components/form/number-field';
 import Button from '@/components/ui/button';
 import { Field, FieldError } from '@/components/ui/field';
 import Grid from '@/components/ui/grid';
-import Input from '@/components/ui/input';
 import Text from '@/components/ui/text';
 import { PlusIcon, TrashIcon } from '@/icons';
 import { theme } from '@/theme';
@@ -53,8 +53,6 @@ const WeightRangeField = <
     | { from?: RowErrorMessage; to?: RowErrorMessage; base_amount?: RowErrorMessage }[]
     | undefined;
   const arrayLevelMessage = Array.isArray(arrayError) ? undefined : arrayError?.message;
-  const rowErrorFor = (index: number) =>
-    Array.isArray(arrayError) ? arrayError[index] : undefined;
 
   return (
     <Field cssOverride={cssOverride}>
@@ -64,72 +62,24 @@ const WeightRangeField = <
         <Text variant="small">{__('Rate', 'kirki-ecommerce')}</Text>
       </Grid>
       {fields.map((field, index) => {
-        const rowError = rowErrorFor(index);
-
         return (
-          <Grid columns={3} key={field.id}>
-            <Controller
-              control={control}
+          <Grid columns={3} align="start" key={field.id}>
+            <NumberField
+              placeholder={__('e.g. 0', 'kirki-ecommerce')}
+              disabled={disabled}
               name={`${name}.${index}.from` as FieldPath<TFieldValues>}
-              render={({ field: fromField, fieldState }) => (
-                <Input
-                  value={fromField.value ?? ''}
-                  type="number"
-                  placeholder={__('e.g. 0', 'kirki-ecommerce')}
-                  disabled={disabled}
-                  error={Boolean(fieldState.error)}
-                  aria-invalid={fieldState.invalid}
-                  onChange={(event) =>
-                    fromField.onChange(event.target.value === '' ? null : event.target.value)
-                  }
-                  onBlur={fromField.onBlur}
-                  ref={fromField.ref}
-                />
-              )}
+              min={0}
             />
-            <Controller
-              control={control}
+            <NumberField
               name={`${name}.${index}.to` as FieldPath<TFieldValues>}
-              render={({ field: toField, fieldState }) => (
-                <Input
-                  value={toField.value ?? ''}
-                  type="number"
-                  placeholder={__('No limit', 'kirki-ecommerce')}
-                  disabled={disabled}
-                  error={Boolean(fieldState.error)}
-                  aria-invalid={fieldState.invalid}
-                  onChange={(event) =>
-                    toField.onChange(event.target.value === '' ? null : event.target.value)
-                  }
-                  onBlur={toField.onBlur}
-                  ref={toField.ref}
-                />
-              )}
+              placeholder={__('No limit', 'kirki-ecommerce')}
+              disabled={disabled}
             />
             <div css={scoped(styles.rateRow)} data-hover-parent>
-              <Controller
-                control={control}
+              <MoneyField
                 name={`${name}.${index}.base_amount` as FieldPath<TFieldValues>}
-                render={({ field: amountField, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid || undefined}>
-                    <Input
-                      value={amountField.value ?? ''}
-                      type="number"
-                      placeholder={__('e.g. 15', 'kirki-ecommerce')}
-                      disabled={disabled}
-                      error={Boolean(fieldState.error)}
-                      aria-invalid={fieldState.invalid}
-                      onChange={(event) =>
-                        amountField.onChange(event.target.value === '' ? null : event.target.value)
-                      }
-                      onBlur={amountField.onBlur}
-                      ref={amountField.ref}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError>{rowError?.base_amount?.message}</FieldError>
-                    )}
-                  </Field>
-                )}
+                placeholder={__('e.g. 15', 'kirki-ecommerce')}
+                disabled={disabled}
               />
               {fields.length > 1 && (
                 <Button
@@ -148,7 +98,7 @@ const WeightRangeField = <
       })}
       <Button
         variant="ghost"
-        disabled={disabled || isLastRangeUnbounded}
+        disabled={disabled || (fields.length > 0 && isLastRangeUnbounded)}
         onClick={() => append({ from: null, to: null, base_amount: null } as never)}
       >
         <PlusIcon />
