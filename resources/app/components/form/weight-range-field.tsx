@@ -1,6 +1,5 @@
 import type { CSSObject } from '@emotion/react';
 import {
-  Controller,
   type FieldArrayPath,
   type FieldPath,
   type FieldValues,
@@ -10,10 +9,10 @@ import {
 } from 'react-hook-form';
 
 import MoneyField from '@/components/form/money-field';
+import NumberField from '@/components/form/number-field';
 import Button from '@/components/ui/button';
 import { Field, FieldError } from '@/components/ui/field';
 import Grid from '@/components/ui/grid';
-import Input from '@/components/ui/input';
 import Text from '@/components/ui/text';
 import { PlusIcon, TrashIcon } from '@/icons';
 import { theme } from '@/theme';
@@ -65,49 +64,16 @@ const WeightRangeField = <
       {fields.map((field, index) => {
         return (
           <Grid columns={3} align="start" key={field.id}>
-            <Controller
-              control={control}
+            <NumberField
+              placeholder={__('e.g. 0', 'kirki-ecommerce')}
+              disabled={disabled}
               name={`${name}.${index}.from` as FieldPath<TFieldValues>}
-              render={({ field: fromField, fieldState }) => (
-                <Field data-invalid={fieldState.invalid || undefined}>
-                  <Input
-                    value={fromField.value ?? ''}
-                    type="number"
-                    placeholder={__('e.g. 0', 'kirki-ecommerce')}
-                    disabled={disabled}
-                    error={Boolean(fieldState.error)}
-                    aria-invalid={fieldState.invalid}
-                    onChange={(event) =>
-                      fromField.onChange(event.target.value === '' ? null : event.target.value)
-                    }
-                    onBlur={fromField.onBlur}
-                    ref={fromField.ref}
-                  />
-                  {fieldState.invalid && <FieldError>{fieldState.error?.message}</FieldError>}
-                </Field>
-              )}
+              min={0}
             />
-            <Controller
-              control={control}
+            <NumberField
               name={`${name}.${index}.to` as FieldPath<TFieldValues>}
-              render={({ field: toField, fieldState }) => (
-                <Field data-invalid={fieldState.invalid || undefined}>
-                  <Input
-                    value={toField.value ?? ''}
-                    type="number"
-                    placeholder={__('No limit', 'kirki-ecommerce')}
-                    disabled={disabled}
-                    error={Boolean(fieldState.error)}
-                    aria-invalid={fieldState.invalid}
-                    onChange={(event) =>
-                      toField.onChange(event.target.value === '' ? null : event.target.value)
-                    }
-                    onBlur={toField.onBlur}
-                    ref={toField.ref}
-                  />
-                  {fieldState.invalid && <FieldError>{fieldState.error?.message}</FieldError>}
-                </Field>
-              )}
+              placeholder={__('No limit', 'kirki-ecommerce')}
+              disabled={disabled}
             />
             <div css={scoped(styles.rateRow)} data-hover-parent>
               <MoneyField
