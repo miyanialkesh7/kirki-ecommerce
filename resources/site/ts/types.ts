@@ -127,6 +127,7 @@ export type CartUpdateItem = {
   };
   items: CartItem[];
   formatted_items: Record<number, string> | null;
+  invalid_items: Record<number, string>;
 };
 
 export type MoneyObject = {
