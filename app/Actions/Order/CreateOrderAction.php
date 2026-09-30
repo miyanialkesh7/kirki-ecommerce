@@ -268,7 +268,7 @@ class CreateOrderAction
      */
     protected function sync_address(CreateOrderPayloadDTO $dto, $order)
     {
-        if (empty($order->customer_id)) {
+        if (empty($order->customer_id) || $dto->is_manual) {
             return;
         }
 
