@@ -21,12 +21,11 @@ use function Kirki\Ecommerce\Framework\view_data;
 
 $cart = view_data('cart');
 $items = $cart['items'] ?? [];
-$invalid_item_ids = $cart['invalid_item_ids'] ?? [];
 $invalid_items = $cart['invalid_items'] ?? [];
 
 ?>
 <?php Template::get_header(); ?>
-<div class="kecom-cart-page" x-data='cart(<?php echo wp_json_encode($invalid_item_ids ?? []) ?>)'>
+<div class="kecom-cart-page" x-data='cart()'>
     <?php if (!empty($items)) : ?>
         <div class="kecom-cart-grid">
             <!-- Left Part -->
@@ -48,7 +47,7 @@ $invalid_items = $cart['invalid_items'] ?? [];
                     </div>
                 </template>
                 <?php foreach ($items as $item) : ?>
-                    <?php include_view('site.cart.parts.cart-item', ['item' => $item, 'invalid_items' => $invalid_items, 'invalid_item_ids' => $invalid_item_ids]); ?>
+                    <?php include_view('site.cart.parts.cart-item', ['item' => $item, 'invalid_items' => $invalid_items]); ?>
                 <?php endforeach; ?>
             </div>
             <!-- Right Part -->

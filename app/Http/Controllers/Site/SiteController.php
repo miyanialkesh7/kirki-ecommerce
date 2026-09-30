@@ -213,7 +213,7 @@ class SiteController
         $payment_gateways = Payment::get_available_providers();
         $cart = SiteCartResource::make($cart);
 
-        if (!empty($cart['invalid_item_ids'])) {
+        if (!empty($cart['invalid_item'])) {
             wp_safe_redirect(Url::get_cart_url());
             exit;
         }

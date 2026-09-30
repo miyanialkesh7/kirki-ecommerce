@@ -10,8 +10,8 @@ export function cart() {
     success: false,
     error: null as string | null,
     cartData: config.cart,
-    invalidItems: config.cart.invalid_item_ids,
-    invalidItemsMessage: config.cart.invalid_items,
+    invalidItems: config.cart?.invalid_items ? Object.keys(config.cart.invalid_items) : [],
+    invalidItemsMessage: config.cart?.invalid_items || {},
     removeLinkText: '',
 
     format_cart_items() {
@@ -75,13 +75,13 @@ export function cart() {
 
     async removeInvalidItem(id: number) {
       await this.remove(id);
-      this.invalidItems = this.invalidItems.filter((item: number) => item !== id);
+      this.invalidItems = this.invalidItems.filter((item: string) => item !== String(id));
       this.removeLinkText = __('Remove', 'kirki-ecommerce');
       this.removeLinkText += ` (${this.invalidItems.length})`;
     },
 
     removeInvalidItems() {
-      this.invalidItems.forEach((item: number) => {
+      this.invalidItems.forEach((item: string) => {
         const removeItemButton = document.querySelector(`.kecom-cart-item-remove[id="${item}"]`)!;
         if (removeItemButton) {
           const removeButton = removeItemButton as HTMLAnchorElement;

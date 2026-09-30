@@ -130,7 +130,6 @@ class PageInlineScript extends BaseHook
             'pricing'          => $cart['pricing'] ?? [],
             'items'            => $cart['items'] ?? [],
             'invalid_items'    => $cart['invalid_items'] ?? [],
-            'invalid_item_ids' => $cart['invalid_item_ids'] ?? [],
         );
         $config['cart'] = $cart_config;
 

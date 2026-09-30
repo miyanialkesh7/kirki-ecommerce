@@ -16,7 +16,6 @@ $currency  = $data['currency'] ?? [];
 $product   = $item['product'] ?? [];
 $media     = $product['media'] ?? [];
 $quantity  = intval($item['quantity'] ?? 1);
-$invalid_item_ids = $data['invalid_item_ids'] ?? [];
 $invalid_items = $data['invalid_items'] ?? [];
 
 // Determine the upper bound on quantity in the cart.
@@ -36,7 +35,7 @@ if (! empty($product['has_limit_per_order']) && ! empty($product['max_per_order'
 $max_quantity = empty($limits) ? 'undefined' : min($limits);
 ?>
 
-<div class="kecom-cart-item <?php echo in_array($item['id'], $invalid_item_ids) ? 'disabled' : ''; ?>" id="<?php echo esc_html($item['id']); ?>" x-data="<?php echo esc_attr(sprintf('quantitySelector({ min:1, max:%s, initial:%d, onChange: (q) => update(%d,q) })', $max_quantity, $quantity, $item['id'])); ?>">
+<div class="kecom-cart-item <?php echo in_array($item['id'], array_keys($invalid_items)) ? 'disabled' : ''; ?>" id="<?php echo esc_html($item['id']); ?>" x-data="<?php echo esc_attr(sprintf('quantitySelector({ min:1, max:%s, initial:%d, onChange: (q) => update(%d,q) })', $max_quantity, $quantity, $item['id'])); ?>">
     <?php include_view('site.cart.parts.item.image', ['media' => $media, 'product' => $product]); ?>
     <div class="kecom-cart-item-container">
         <?php include_view('site.cart.parts.item.info', ['product' => $product, 'item' => $item]); ?>

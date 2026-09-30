@@ -30,9 +30,7 @@ class CartResource extends BaseCartResource
 
         $data = parent::to_array();
 
-        $resolved_items = $this->resolve_invalid_items($data);
-
-        $data = array_merge($data, $resolved_items);
+        $data['invalid_items'] = $this->resolve_invalid_items($data);
 
         return $data;
     }
@@ -51,7 +49,6 @@ class CartResource extends BaseCartResource
     {
 
         $invalid_items = [];
-        $invalid_item_ids = [];
 
         if (!empty($resource)) {
             $items = $resource['items'] ?? [];
@@ -60,16 +57,14 @@ class CartResource extends BaseCartResource
 
                 if (isset($product['in_stock']) && !$product['in_stock']) {
                     $invalid_items[$item['id']] =  __('Out of Stock', 'kirki-ecommerce');
-                    $invalid_item_ids[] = $item['id'];
                 }
 
                 if (isset($product['is_available']) && !$product['is_available']) {
                     $invalid_items[$item['id']] =  __('Not Available', 'kirki-ecommerce');
-                    $invalid_item_ids[] = $item['id'];
                 }
             }
         }
 
-        return compact('invalid_items', 'invalid_item_ids');
+        return $invalid_items;
     }
 }
