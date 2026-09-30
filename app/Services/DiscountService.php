@@ -167,7 +167,7 @@ class DiscountService
         $excluded_customers = $coupon->customers->filter(fn($customer) => !empty($customer->pivot['is_excluded']));
         $included_customers = $coupon->customers->reject(fn($customer) => !empty($customer->pivot['is_excluded']));
 
-        $is_registered_customer = !empty($context->customer_id);
+        $is_registered_customer = !empty($context->customer_id) || !empty($context->user_id);
 
         // Include only registered customers
         throw_if($coupon->customer_include_eligibility === CustomerIncludeEligibility::CUSTOMERS && !$is_registered_customer, __('Please login to use this coupon.', 'kirki-ecommerce'), ValidationException::class);

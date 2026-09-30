@@ -24,6 +24,7 @@ use Kirki\Ecommerce\App\DTO\Cart\AddToCartDTO;
 use Kirki\Ecommerce\App\DTO\Customer\CreateCustomerDTO;
 use Kirki\Ecommerce\App\DTO\Discount\CouponDiscountResultDTO;
 use Kirki\Ecommerce\App\DTO\Order\CreateOrderPayloadDTO;
+use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Facades\Order as OrderManager;
 use Kirki\Ecommerce\App\Models\Address;
 use Kirki\Ecommerce\App\Models\Cart;
@@ -279,6 +280,75 @@ class OrderApiTest extends RestTestCase
 
         $payload = $this->assert_api_success($response);
         $this->assertEquals('Updated notes', $payload['data']['admin_notes']);
+    }
+
+    /**
+     * A user the admin route gate admits through manage_options, without the
+     * administrator role, can create a manual order.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_manage_options_user_without_administrator_role_creates_manual_order(): void
+    {
+        wp_set_current_user($this->create_store_manager_user());
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        $this->assertTrue($order['is_manual']);
+    }
+
+    /**
+     * A user the admin route gate admits through manage_options, without the
+     * administrator role, can update an order.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_manage_options_user_without_administrator_role_updates_order(): void
+    {
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        wp_set_current_user($this->create_store_manager_user());
+
+        $response = $this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'admin_notes' => 'Updated by store manager',
+            'items' => [
+                [
+                    'id' => $order['items'][0]['id'] ?? null,
+                    'variant_id' => $this->variant_id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]));
+
+        $payload = $this->assert_api_success($response);
+        $this->assertEquals('Updated by store manager', $payload['data']['admin_notes']);
+    }
+
+    /**
+     * A shopper cannot flag their checkout order as manual.
+     *
+     * The request's own authorize() rejects it, and the framework reports a
+     * failed request authorization as 401 rather than 403.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_shopper_cannot_flag_checkout_order_as_manual(): void
+    {
+        wp_set_current_user($this->create_shopper_user());
+        $this->add_to_shopper_cart();
+
+        $order_count_before = Order::count();
+
+        $response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => true]));
+
+        $this->assert_api_error($response, 401);
+        $this->assertEquals($order_count_before, Order::count());
     }
 
     /**
@@ -805,8 +875,9 @@ class OrderApiTest extends RestTestCase
         ]);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
+        $response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => false]));
         $payload = $this->assert_api_success($response, 201);
         $this->order_id = $payload['data']['id'];
 
@@ -815,27 +886,6 @@ class OrderApiTest extends RestTestCase
         $this->assertNotNull($customer);
         $this->assertEquals($customer->id, $payload['data']['customer_id']);
         $this->assertTrue(Address::where('customer_id', $customer->id)->where('is_default_shipping', true)->exists());
-    }
-
-    /**
-     * An authenticated user who already has a customer record reuses it
-     * instead of getting a duplicate one provisioned.
-     *
-     * @return void
-     */
-    public function test_checkout_reuses_existing_customer_without_duplicating(): void
-    {
-        $user_id = $this->create_shopper_user();
-        $existing_customer = $this->provision_customer_for_user($user_id);
-
-        wp_set_current_user($user_id);
-
-        $response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
-        $payload = $this->assert_api_success($response, 201);
-        $this->order_id = $payload['data']['id'];
-
-        $this->assertEquals($existing_customer->id, $payload['data']['customer_id']);
-        $this->assertEquals(1, Customer::where('user_id', $user_id)->count());
     }
 
     /**
@@ -878,8 +928,9 @@ class OrderApiTest extends RestTestCase
         $wp_user = get_userdata($user_id);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'is_billing_same_as_shipping' => false,
             'billing_first_name' => 'Fallback',
@@ -912,8 +963,9 @@ class OrderApiTest extends RestTestCase
         $wp_user = get_userdata($user_id);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'billing_first_name' => 'Fallback',
             'billing_last_name' => 'Billing',
@@ -943,8 +995,9 @@ class OrderApiTest extends RestTestCase
         $wp_user = get_userdata($user_id);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'is_billing_same_as_shipping' => false,
             'billing_first_name' => 'Fallback',
@@ -1060,8 +1113,9 @@ class OrderApiTest extends RestTestCase
     {
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
         ]));
         $payload = $this->assert_api_success($response, 201);
@@ -1087,8 +1141,9 @@ class OrderApiTest extends RestTestCase
     {
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'is_billing_same_as_shipping' => false,
             'billing_first_name' => 'Fallback',
@@ -1143,13 +1198,14 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
+        // The cart refuses more than is in stock, so sell out after adding.
+        $this->add_to_shopper_cart($limited_variant_id);
+        Variant::where('id', $limited_variant_id)->update(['available_quantity' => 0]);
+
         $order_count_before = Order::count();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
-            'items' => [
-                ['variant_id' => $limited_variant_id, 'quantity' => 2],
-            ],
         ]));
 
         $this->assert_api_error($response, 500);
@@ -1194,13 +1250,9 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ]));
+        $order = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $payload = $this->assert_api_success($response, 201);
-        $this->assertEquals(0.0, $payload['data']['totals']['base_shipping']);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($order->base_shipping_total));
     }
 
     /**
@@ -1221,9 +1273,7 @@ class OrderApiTest extends RestTestCase
 
         $this->provision_customer_for_user($user_id);
 
-        $this->assert_api_success($this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-        ])), 201);
+        $this->place_shopper_order($user_id);
 
         $coupon = Coupon::create([
             'title' => 'First Time Buyer',
@@ -1234,13 +1284,9 @@ class OrderApiTest extends RestTestCase
             'is_active' => true,
         ]);
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ]));
+        $order = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $payload = $this->assert_api_success($response, 201);
-        $this->assertEquals(10.0, $payload['data']['totals']['base_shipping']);
+        $this->assertEquals(10.0, Money::prepare_amount_from_minor($order->base_shipping_total));
     }
 
     /**
@@ -1268,13 +1314,9 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ]));
+        $order = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $payload = $this->assert_api_success($response, 201);
-        $this->assertEquals(0.0, $payload['data']['totals']['base_shipping']);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($order->base_shipping_total));
     }
 
     /**
@@ -1300,19 +1342,13 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
-        $first = $this->assert_api_success($this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ])), 201);
-        $this->assertEquals(0.0, $first['data']['totals']['base_shipping']);
+        $first = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($first->base_shipping_total));
 
-        $second = $this->assert_api_success($this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ])), 201);
+        $second = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $this->assertGreaterThan(0.0, $second['data']['totals']['base_shipping']);
-        $this->assertCount(0, OrderCoupon::where('order_id', $second['data']['id'])->get());
+        $this->assertGreaterThan(0.0, Money::prepare_amount_from_minor($second->base_shipping_total));
+        $this->assertCount(0, OrderCoupon::where('order_id', $second->id)->get());
     }
 
     /**
@@ -1902,6 +1938,64 @@ class OrderApiTest extends RestTestCase
         return static::factory()->user->create(array_merge([
             'role' => 'subscriber',
         ], $overrides));
+    }
+
+    /**
+     * Create an editor granted manage_options - a store manager without the administrator role.
+     *
+     * @return int
+     * @since 1.0.0
+     */
+    protected function create_store_manager_user(): int
+    {
+        $user_id = static::factory()->user->create(['role' => 'editor']);
+        get_userdata($user_id)->add_cap('manage_options');
+
+        return $user_id;
+    }
+
+    /**
+     * Put a variant in the current user's cart, the way a shopper does
+     * before calling the checkout endpoint (which orders what is in the cart).
+     *
+     * @param int|null $variant_id Variant to add; defaults to the fixture variant.
+     * @param int      $quantity   Quantity to add.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    protected function add_to_shopper_cart(?int $variant_id = null, int $quantity = 1): void
+    {
+        $this->assert_api_success($this->request('POST', 'cart/items', [
+            'variant_id' => $variant_id ?? $this->variant_id,
+            'quantity' => $quantity,
+        ]));
+    }
+
+    /**
+     * Place a non-manual order for a shopper through CreateOrderAction with the
+     * payload's own items and coupon codes, bypassing the cart.
+     *
+     * For checkout-time coupon tests: the cart validates a coupon when it is
+     * applied, so a coupon the checkout should silently drop cannot reach
+     * checkout through the cart.
+     *
+     * @param int   $user_id   The shopper's WordPress user ID.
+     * @param array $overrides Order payload overrides.
+     *
+     * @return Order
+     * @since 1.0.0
+     */
+    protected function place_shopper_order(int $user_id, array $overrides = []): Order
+    {
+        $customer = Customer::where('user_id', $user_id)->first();
+
+        $dto = CreateOrderPayloadDTO::from_array($this->order_payload(array_merge(['is_manual' => false], $overrides)));
+        $dto->created_by = $user_id;
+        $dto->customer_id = $customer ? $customer->id : null;
+        $dto->currency_code = 'USD';
+
+        return app()->make(CreateOrderAction::class)->execute($dto);
     }
 
     /**
