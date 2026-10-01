@@ -91,13 +91,10 @@ const TargetingTab = () => {
               <CustomerSelectionField name="include_customers" />
             )}
 
-            {customerIncludeEligibility !== 'guests' &&
-              customerIncludeEligibility !== 'everyone' && (
-                <CheckboxField
-                  name="first_time_buyer_only"
-                  label={__('First time buyer only', 'kirki-ecommerce')}
-                />
-              )}
+            <CheckboxField
+              name="first_time_buyer_only"
+              label={__('First time buyer only', 'kirki-ecommerce')}
+            />
           </Flex>
         </CardContent>
       </Card>

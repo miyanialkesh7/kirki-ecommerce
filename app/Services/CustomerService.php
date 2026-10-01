@@ -135,6 +135,41 @@ class CustomerService
     }
 
     /**
+     * Resolve the email that identifies a buyer.
+     *
+     * A registered buyer is identified by their customer record's email, then their
+     * WordPress account's email; a guest by the email they entered. Never falls back to
+     * the current user, so an admin acting on someone's order is not mistaken for the buyer.
+     *
+     * @since 1.0.0
+     *
+     * @param int|null    $customer_id   Buyer's customer ID, if any.
+     * @param int|null    $user_id       Buyer's WordPress user ID, if any.
+     * @param string|null $entered_email Email entered for the cart or order, if any.
+     * @return string|null Trimmed, lowercased email, or null when there is none.
+     */
+    public function resolve_buyer_email($customer_id, $user_id, $entered_email)
+    {
+        $email = null;
+
+        if (!empty($customer_id)) {
+            $email = Customer::find($customer_id)->email ?? null;
+        }
+
+        if (empty($email) && !empty($user_id)) {
+            $email = user($user_id)->get_email();
+        }
+
+        if (empty($email)) {
+            $email = $entered_email;
+        }
+
+        $email = strtolower(trim((string) $email));
+
+        return $email !== '' ? $email : null;
+    }
+
+    /**
      * Check whether no other customer is registered with the given email yet.
      *
      * @since 1.0.0

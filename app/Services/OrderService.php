@@ -533,6 +533,77 @@ class OrderService
     }
 
     /**
+     * Count a buyer's prior orders, matched by customer or by email.
+     *
+     * An order counts when it belongs to the customer or was placed with the email,
+     * and is neither failed-cancelled nor refunded. The email comparison relies on the
+     * column's case-insensitive collation.
+     *
+     * @since 1.0.0
+     *
+     * @param int|null    $customer_id      Customer ID, if the buyer has a customer record.
+     * @param string|null $email            Buyer's email, if known.
+     * @param int|null    $exclude_order_id Order to leave out, such as the one being edited.
+     * @return int
+     */
+    public function count_prior_orders($customer_id, $email, $exclude_order_id = null)
+    {
+        if (empty($customer_id) && empty($email)) {
+            return 0;
+        }
+
+        return Order::query()
+            ->where(function (QueryBuilder $query) use ($customer_id, $email) {
+                if (!empty($customer_id)) {
+                    $query->where('customer_id', $customer_id);
+                }
+
+                if (!empty($email)) {
+                    $query->or_where('customer_email', $email);
+                }
+            })
+            ->where_not_in('order_status', [OrderStatus::FAILED_CANCELLED, OrderStatus::REFUNDED])
+            ->when(!empty($exclude_order_id), fn(QueryBuilder $query) => $query->where('id', '!=', $exclude_order_id))
+            ->count();
+    }
+
+    /**
+     * Count a buyer's earlier uses of a coupon, matched by customer or by the order's email.
+     *
+     * A use counts while its usage has not been reversed (for example by cancelling the order).
+     * Guest uses are matched through the email stored on their order.
+     *
+     * @since 1.0.0
+     *
+     * @param int         $coupon_id        Coupon ID.
+     * @param int|null    $customer_id      Customer ID, if the buyer has a customer record.
+     * @param string|null $email            Buyer's email, if known.
+     * @param int|null    $exclude_order_id Order to leave out, such as the one being edited.
+     * @return int
+     */
+    public function count_coupon_usages($coupon_id, $customer_id, $email, $exclude_order_id = null)
+    {
+        if (empty($customer_id) && empty($email)) {
+            return 0;
+        }
+
+        return OrderCoupon::query()
+            ->where('coupon_id', $coupon_id)
+            ->where_null('usage_reversed_at')
+            ->where(function (QueryBuilder $query) use ($customer_id, $email) {
+                if (!empty($customer_id)) {
+                    $query->where('customer_id', $customer_id);
+                }
+
+                if (!empty($email)) {
+                    $query->or_where_in('order_id', Order::query()->select('id')->where('customer_email', $email));
+                }
+            })
+            ->when(!empty($exclude_order_id), fn(QueryBuilder $query) => $query->where('order_id', '!=', $exclude_order_id))
+            ->count();
+    }
+
+    /**
      * Assign a user's matching guest orders to their customer account.
      *
      * Creates the customer record if the user has none yet.

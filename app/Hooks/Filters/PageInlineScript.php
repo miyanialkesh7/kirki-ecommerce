@@ -152,7 +152,8 @@ class PageInlineScript extends BaseHook
 
         $config['checkout_cart'] = [
             'items'                       => $cart['items'] ?? [],
-            'is_billing_same_as_shipping' => (bool) ($cart['is_billing_same_as_shipping'] ?? false),
+            'customer_email'              => $cart['customer_email'] ?? null,
+            'is_billing_same_as_shipping' =>(bool) ($cart['is_billing_same_as_shipping'] ?? false),
             'shipping_address'            => $cart['shipping_address'] ?? null,
             'billing_address'             => $cart['billing_address'] ?? null,
             'pricing'                     => $cart['pricing'] ?? [],

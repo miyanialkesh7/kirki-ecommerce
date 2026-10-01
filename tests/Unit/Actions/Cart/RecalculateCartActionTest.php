@@ -11,6 +11,7 @@ use Kirki\Ecommerce\App\Models\Coupon;
 use Kirki\Ecommerce\App\Services\CartService;
 use Kirki\Ecommerce\App\Services\CouponService;
 use Kirki\Ecommerce\App\Services\DiscountService;
+use Kirki\Ecommerce\App\Services\OrderService;
 use Kirki\Ecommerce\App\Services\ShippingService;
 use Kirki\Ecommerce\Tests\Support\BindsTaxDependencies;
 use Kirki\Ecommerce\Tests\Unit\TestCase;
@@ -574,7 +575,7 @@ class RecalculateCartActionTest extends TestCase
 
         $action = $this->make_action([
             'shipping_service' => $shipping_service,
-            'discount_service' => new DiscountService(),
+            'discount_service' => new DiscountService($this->createMock(OrderService::class)),
             'coupon_service' => $coupon_service,
         ]);
 
