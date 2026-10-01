@@ -27,13 +27,13 @@ class CreateProductTagsTable implements Migration
             $table->unsigned_big_integer('tag_id');
             $table->timestamps();
 
-            $table->primary(['product_id', 'tag_id'], 'pk_product_tag');
+            $table->primary(['product_id', 'tag_id']);
 
-            $table->foreign('product_id')
+            $table->foreign('product_id', 'fk_kecom_product_tags_product_id')
                 ->references('id')
                 ->on('kirki_ecommerce_products')
                 ->cascade_on_delete();
-            $table->foreign('tag_id')
+            $table->foreign('tag_id', 'fk_kecom_product_tags_tag_id')
                 ->references('id')
                 ->on('kirki_ecommerce_tags')
                 ->cascade_on_delete();

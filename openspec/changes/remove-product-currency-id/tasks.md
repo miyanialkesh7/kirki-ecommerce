@@ -6,11 +6,7 @@
 
 ## 2. Database migration
 
-- [ ] 2.1 Determine the live key names on `kirki_ecommerce_products` — the foreign key `fk_kirki_ecommerce_products_currency_id` and the explicit `currency_id` index (derived as `{table}_currency_id_index` through `format_key_name`), plus any backing index the foreign key left behind
-- [ ] 2.2 Add `database/migrations/AlterProductsDropCurrencyId.php` whose `up()` drops the foreign key, then the index(es), then the `currency_id` column — following the order in `AlterCartItemsVariantForeignKeyToCascade`
-- [ ] 2.3 Make each drop tolerant of an already-absent key so the migration survives sites whose key names predate `AlterSchemaKeysToExplicitNames`
-- [ ] 2.4 Write `down()` to restore `currency_id` as a **nullable** column with its index and foreign key — per design.md, the reversal restores shape, not data
-- [ ] 2.5 Register the migration wherever the other `Alter*` migrations are registered, matching how the most recent one was added
+- [ ] 2.1 In `database/migrations/CreateProductsTable.php`, remove the `currency_id` column, its `idx_kecom_products_currency_id` index, and its `fk_kecom_products_currency_id` foreign key. Do not add an alter migration (pre-release policy, `schema-upgrade-migrations`)
 
 ## 3. PHP model, DTOs, and requests
 
@@ -40,8 +36,7 @@
 
 ## 7. Verification
 
-- [ ] 7.1 Run the migration on a database built from scratch through the full migration sequence, and confirm the column, index, and foreign key are gone
-- [ ] 7.2 Run it on a database upgraded from an earlier plugin version, confirming the key names resolve on that path too
+- [ ] 7.1 Run the migrations on a database built from scratch, and confirm `kirki_ecommerce_products` has no `currency_id` column, index, or foreign key
 - [ ] 7.3 Exercise product create, update, and duplicate, plus the product list and detail endpoints, and confirm no layer writes or reads the dropped column
 - [ ] 7.4 Delete a currency that was previously the base and is still referenced by older products — the case recorded in 1.3 — and confirm it now succeeds
 - [ ] 7.5 Confirm money display is unchanged: the product form, variants table, and SEO preview still show the store's base currency symbol and code

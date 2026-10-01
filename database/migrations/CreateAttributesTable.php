@@ -25,14 +25,15 @@ class CreateAttributesTable implements Migration
         Schema::create('kirki_ecommerce_attributes', function (Structure $table) {
             $table->id();
             $table->string('name', 100);
-            $table->string('slug', 100)->unique();
-            $table->enum('type', ['color', 'list'])->default('list');
+            $table->string('slug', 100);
+            $table->string('type', 50)->default('list')->comment('Supported values: color, list');
             $table->unsigned_big_integer('created_by')->nullable();
             $table->unsigned_big_integer('updated_by')->nullable();
             $table->timestamps();
 
-            $table->foreign('created_by')->on('users')->references('ID')->null_on_delete();
-            $table->foreign('updated_by')->on('users')->references('ID')->null_on_delete();
+            $table->unique('slug', 'uq_kecom_attributes_slug');
+            $table->foreign('created_by', 'fk_kecom_attributes_created_by')->on('users')->references('ID')->null_on_delete();
+            $table->foreign('updated_by', 'fk_kecom_attributes_updated_by')->on('users')->references('ID')->null_on_delete();
         });
     }
 

@@ -6,7 +6,7 @@ Keeping it is not neutral. It caused a live bug: the product form took its money
 
 ## What Changes
 
-- Drop the `currency_id` column, its index, and its foreign key from `kirki_ecommerce_products` via a new alter migration.
+- Drop the `currency_id` column, its index, and its foreign key from `kirki_ecommerce_products` by editing `CreateProductsTable` directly. Pre-release builds define each table in a single create migration and require a fresh install (see `schema-upgrade-migrations`), so no alter migration is added.
 - Remove `currency_id` from the `Product` model, both product DTOs, both product request validators, and `DuplicateProductAction`.
 - **BREAKING**: remove the `currency` key from `ProductResource`. Any consumer reading `product.currency` from the REST API must instead read the store's base currency from `/app-config`.
 - Remove the `currency` field and its `currency_id` payload mapping from the product form schema, and drop `ProductCurrencySchema` from the product catalog schema.
@@ -30,7 +30,7 @@ None. This change removes a field; it introduces no new behavior.
 
 ## Impact
 
-**Database** — `kirki_ecommerce_products`: drops column `currency_id`, index `currency_id`, and foreign key `fk_kirki_ecommerce_products_currency_id`. The drop order matters: the foreign key and index must go before the column. Existing rows lose a value nothing reads.
+**Database** — `kirki_ecommerce_products`: `CreateProductsTable` no longer creates column `currency_id`, index `idx_kecom_products_currency_id`, or foreign key `fk_kecom_products_currency_id`. Existing installs pick this up only through a fresh install, consistent with the pre-release migration policy.
 
 **API (breaking)** — `ProductResource` no longer emits `currency`. The plugin is at `1.0.0-alpha.4`, so this is judged acceptable pre-1.0, but it is a public response-shape change and should be called out in release notes rather than shipped silently.
 
@@ -40,4 +40,4 @@ None. This change removes a field; it introduces no new behavior.
 
 **Not affected** — money display. The product form, variants table, and SEO preview already read the base currency directly via `useBaseCurrency`/`useBaseCurrencySymbol`, so removing the column changes no rendered amount or symbol.
 
-**Already covered by existing requirements** — `schema-upgrade-migrations` requires that alter migrations converge existing installations to the current schema; this migration falls under that requirement and needs no change to it.
+**Already covered by existing requirements** — `schema-upgrade-migrations` requires that, before the first stable release, schema changes edit the table's create migration directly. This change falls under that requirement and needs no change to it.

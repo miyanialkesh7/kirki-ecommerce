@@ -213,8 +213,7 @@ one-to-one:
   New account templates can be enabled but never send (section 5).
 - **Payment failed, not failed order.** The template WooCommerce calls "Failed
   order" is *Payment failed* here (settings key `payment_failed`), because it is
-  only ever sent for a failed payment. An upgrade migration moved saved
-  `failed_order` settings to the new key.
+  only ever sent for a failed payment.
 - **Inventory alerts can race.** Two checkouts at the same moment can both see
   stock above the threshold, which may send a duplicate or miss a low-stock
   alert. Alerts are advisory; check the inventory list for the actual numbers.

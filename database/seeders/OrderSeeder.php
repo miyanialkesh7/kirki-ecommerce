@@ -39,7 +39,7 @@ class OrderSeeder extends Seeder
             ],
             'currency_code' => 'USD',
             'payment_provider' => 'paypal',
-            'coupon_code' => 'WINTER20',
+            'coupon_codes' => ['WINTER20'],
             'shipping_method' => 'method-0001',
             'shipping_first_name' => $customer['first_name'],
             'shipping_last_name' => $customer['last_name'],

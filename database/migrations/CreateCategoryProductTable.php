@@ -27,13 +27,13 @@ class CreateCategoryProductTable implements Migration
             $table->unsigned_big_integer('product_id');
             $table->timestamps();
 
-            $table->primary(['category_id', 'product_id'], 'pk_category_product');
+            $table->primary(['category_id', 'product_id']);
 
-            $table->foreign('product_id', 'fk_category_product_product_id')
+            $table->foreign('product_id', 'fk_kecom_category_product_product_id')
                 ->references('id')
                 ->on('kirki_ecommerce_products')
                 ->cascade_on_delete();
-            $table->foreign('category_id', 'fk_category_product_category_id')
+            $table->foreign('category_id', 'fk_kecom_category_product_category_id')
                 ->references('id')
                 ->on('kirki_ecommerce_categories')
                 ->cascade_on_delete();

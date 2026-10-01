@@ -27,16 +27,16 @@ class CreateCouponCategoriesTable implements Migration
             $table->unsigned_big_integer('category_id');
             $table->timestamps();
 
-            $table->primary(['coupon_id', 'category_id'], 'pk_kirki_ecommerce_coupon_categories');
+            $table->primary(['coupon_id', 'category_id']);
 
-            $table->index('coupon_id');
-            $table->index('category_id');
+            $table->index('coupon_id', 'idx_kecom_coupon_categories_coupon_id');
+            $table->index('category_id', 'idx_kecom_coupon_categories_category_id');
 
-            $table->foreign('coupon_id')
+            $table->foreign('coupon_id', 'fk_kecom_coupon_categories_coupon_id')
                 ->references('id')
                 ->on('kirki_ecommerce_coupons')
                 ->cascade_on_delete();
-            $table->foreign('category_id')
+            $table->foreign('category_id', 'fk_kecom_coupon_categories_category_id')
                 ->references('id')
                 ->on('kirki_ecommerce_categories')
                 ->cascade_on_delete();

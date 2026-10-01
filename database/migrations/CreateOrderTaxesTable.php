@@ -36,11 +36,11 @@ class CreateOrderTaxesTable implements Migration
 
             $table->timestamps();
 
-            $table->foreign('order_id', 'fk_kirki_ecommerce_order_taxes_order_id')
+            $table->foreign('order_id', 'fk_kecom_order_taxes_order_id')
                 ->references('id')
                 ->on('kirki_ecommerce_orders')
                 ->cascade_on_delete();
-            $table->foreign('order_item_id', 'fk_kirki_ecommerce_order_taxes_order_item_id')
+            $table->foreign('order_item_id', 'fk_kecom_order_taxes_order_item_id')
                 ->references('id')
                 ->on('kirki_ecommerce_order_items')
                 ->cascade_on_delete();

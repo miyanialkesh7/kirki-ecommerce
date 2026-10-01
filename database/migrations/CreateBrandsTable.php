@@ -25,7 +25,7 @@ class CreateBrandsTable implements Migration
         Schema::create('kirki_ecommerce_brands', function (Structure $table) {
             $table->id();
             $table->string('name', 255);
-            $table->string('slug', 255)->unique();
+            $table->string('slug', 255);
             $table->text('description')->nullable();
             $table->unsigned_big_integer('logo')->nullable();
             $table->string('website_url', 500)->nullable();
@@ -34,11 +34,11 @@ class CreateBrandsTable implements Migration
             $table->unsigned_big_integer('updated_by')->nullable();
             $table->timestamps();
 
-            $table->foreign('created_by')->on('users')->references('ID')->null_on_delete();
-            $table->foreign('updated_by')->on('users')->references('ID')->null_on_delete();
+            $table->unique('slug', 'uq_kecom_brands_slug');
+            $table->foreign('created_by', 'fk_kecom_brands_created_by')->on('users')->references('ID')->null_on_delete();
+            $table->foreign('updated_by', 'fk_kecom_brands_updated_by')->on('users')->references('ID')->null_on_delete();
 
-            $table->index('slug');
-            $table->index('is_active');
+            $table->index('is_active', 'idx_kecom_brands_is_active');
         });
     }
 
