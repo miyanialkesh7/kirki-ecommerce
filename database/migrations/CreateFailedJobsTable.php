@@ -30,7 +30,7 @@ class CreateFailedJobsTable implements Migration
             $table->long_text('exception');
             $table->unsigned_integer('failed_at');
 
-            $table->unique('uuid', 'uq_kirki_ecommerce_failed_jobs_uuid');
+            $table->unique('uuid', 'uq_kecom_failed_jobs_uuid');
         });
     }
 

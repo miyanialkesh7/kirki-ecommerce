@@ -33,8 +33,8 @@ class CreateJobsTable implements Migration
             $table->unsigned_integer('available_at');
             $table->unsigned_integer('created_at');
 
-            $table->index(['reserved_at', 'available_at', 'priority'], 'idx_kirki_ecommerce_jobs_reserved_at_available_at_priority');
-            $table->index('reserved_by', 'idx_kirki_ecommerce_jobs_reserved_by');
+            $table->index(['reserved_at', 'available_at', 'priority'], 'idx_kecom_jobs_reserved_at_available_at_priority');
+            $table->index('reserved_by', 'idx_kecom_jobs_reserved_by');
         });
     }
 

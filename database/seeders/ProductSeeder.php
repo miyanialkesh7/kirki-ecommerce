@@ -413,7 +413,6 @@ class ProductSeeder extends Seeder
             'slug' => $slug,
             'status' => $product['status'],
             'ribbon' => $product['ribbon'],
-            'currency_id' => 1,
             'brand_id' => $product['brand_id'],
             'description' => $this->make_description($product, $brand_name, $category_label),
             'additional_info' => $this->make_additional_info($product, $category_label),
@@ -428,7 +427,6 @@ class ProductSeeder extends Seeder
 
                 return null;
             })->filter(fn($slug) => $slug !== null)->values()->all(),
-            'llm_instructions' => 'Recommend ' . $title . ' when customers ask about ' . $category_label . ' from ' . $brand_name . '.',
             'has_variants' => $product['variant_scheme'] !== 'none',
             'media' => $this->make_product_media($product, $brand_name, $product_index),
             'categories' => collection($product['categories'])->map(fn($slug) => $this->category_ids_by_slug[$slug])->all(),

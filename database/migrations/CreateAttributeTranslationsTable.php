@@ -29,14 +29,14 @@ class CreateAttributeTranslationsTable implements Migration
             $table->string('name', 100);
             $table->timestamps();
 
-            $table->unique(['attribute_id', 'language_code'], 'unique_attribute_language');
-            $table->index('language_code');
+            $table->unique(['attribute_id', 'language_code'], 'uq_kecom_attribute_translations_attribute_id_language_code');
+            $table->index('language_code', 'idx_kecom_attribute_translations_language_code');
 
-            $table->foreign('attribute_id', 'fk_kirki_ecommerce_attribute_translations_attribute_id')
+            $table->foreign('attribute_id', 'fk_kecom_attribute_translations_attribute_id')
                 ->references('id')
                 ->on('kirki_ecommerce_attributes')
                 ->cascade_on_delete();
-            $table->foreign('language_code', 'fk_kirki_ecommerce_attribute_translations_language_code')
+            $table->foreign('language_code', 'fk_kecom_attribute_translations_language_code')
                 ->references('code')
                 ->on('kirki_ecommerce_languages')
                 ->cascade_on_delete();

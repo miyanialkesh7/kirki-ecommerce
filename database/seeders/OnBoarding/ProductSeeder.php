@@ -9,7 +9,6 @@ use Kirki\Ecommerce\App\DTO\Variant\CreateVariantDTO;
 use Kirki\Ecommerce\App\Models\Attribute;
 use Kirki\Ecommerce\App\Models\AttributeValue;
 use Kirki\Ecommerce\App\Models\Category;
-use Kirki\Ecommerce\App\Models\Currency;
 use Kirki\Ecommerce\App\Models\Product;
 use Kirki\Ecommerce\Framework\Database\Seeder;
 use Kirki\Ecommerce\Framework\Supports\Facades\Log;
@@ -62,11 +61,10 @@ class ProductSeeder extends Seeder
 
         $this->importer = new MediaImporter();
         $action = app()->make(CreateProductAction::class);
-        $currency_id = $this->resolve_base_currency_id();
 
         foreach (OnBoardingCatalog::get_products() as $product) {
             $action->execute(
-                $this->make_product_data($product, $currency_id),
+                $this->make_product_data($product),
                 $this->make_variant_data($product)
             );
         }
@@ -81,11 +79,10 @@ class ProductSeeder extends Seeder
      *
      * @since 1.0.0
      *
-     * @param array<string, mixed> $product     Catalog entry.
-     * @param int|null             $currency_id The base currency id.
+     * @param array<string, mixed> $product Catalog entry.
      * @return CreateProductDTO Product payload for the create action.
      */
-    protected function make_product_data(array $product, $currency_id)
+    protected function make_product_data(array $product)
     {
         $category_id = $this->resolve_category_id($product['category_path']);
 
@@ -93,7 +90,6 @@ class ProductSeeder extends Seeder
             'title' => $product['title'],
             'slug' => Str::slug($product['title']),
             'status' => ProductStatus::PUBLISHED,
-            'currency_id' => $currency_id,
             'short_description' => $product['short_description'],
             'description' => $product['description'],
             'seo_title' => $product['title'],
@@ -264,20 +260,6 @@ class ProductSeeder extends Seeder
             ->where('attribute_id', $attribute_id)
             ->where('value', $value)
             ->first();
-    }
-
-    /**
-     * Look up the base currency id.
-     *
-     * @since 1.0.0
-     *
-     * @return int|null Null when no base currency exists.
-     */
-    protected function resolve_base_currency_id()
-    {
-        $currency = Currency::query()->where('is_base', 1)->first();
-
-        return !empty($currency) ? $currency->id : null;
     }
 
     /**

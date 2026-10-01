@@ -33,13 +33,13 @@ class CreateCollectionTranslationsTable implements Migration
             $table->text('seo_keywords')->nullable();
             $table->timestamps();
 
-            $table->unique(['collection_id', 'language_code'], 'unique_collection_language');
+            $table->unique(['collection_id', 'language_code'], 'uq_kecom_collection_translations_collection_id_language_code');
 
-            $table->foreign('collection_id', 'fk_kirki_ecommerce_collection_translations_collection_id')
+            $table->foreign('collection_id', 'fk_kecom_collection_translations_collection_id')
                 ->references('id')
                 ->on('kirki_ecommerce_collections')
                 ->cascade_on_delete();
-            $table->foreign('language_code', 'fk_kirki_ecommerce_collection_translations_language_code')
+            $table->foreign('language_code', 'fk_kecom_collection_translations_language_code')
                 ->references('code')
                 ->on('kirki_ecommerce_languages')
                 ->cascade_on_delete();

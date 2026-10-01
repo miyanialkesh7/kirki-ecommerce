@@ -32,11 +32,11 @@ class CreateOrderItemCouponsTable implements Migration
 
             $table->timestamps();
 
-            $table->foreign('order_item_id', 'fk_kirki_ecommerce_order_item_coupons_order_item_id')
+            $table->foreign('order_item_id', 'fk_kecom_order_item_coupons_order_item_id')
                 ->references('id')
                 ->on('kirki_ecommerce_order_items')
                 ->cascade_on_delete();
-            $table->foreign('order_coupon_id', 'fk_kirki_ecommerce_order_item_coupons_order_coupon_id')
+            $table->foreign('order_coupon_id', 'fk_kecom_order_item_coupons_order_coupon_id')
                 ->references('id')
                 ->on('kirki_ecommerce_order_coupons')
                 ->cascade_on_delete();

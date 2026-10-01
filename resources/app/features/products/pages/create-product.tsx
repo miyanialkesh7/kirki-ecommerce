@@ -15,13 +15,11 @@ import {
 import ProductFormSkeleton from '@/features/products/skeletons/product-form-skeleton';
 import { useShippingBoxesQuery } from '@/features/settings';
 import { getDefaults } from '@/libs/zod';
-import { useDefaultSettingsQuery, useSettingsQuery } from '@/services/settings';
+import { useSettingsQuery } from '@/services/settings';
 import { isDefined } from '@/utils/object';
 
 const CreateProduct = () => {
   const navigate = useNavigate();
-  const { data: defaultSettings, isLoading: isLoadingDefaults } =
-    useDefaultSettingsQuery();
   const { data: productSettings, isLoading: isLoadingSettings } =
     useSettingsQuery('product');
   const { data: shippingBoxes, isLoading: isLoadingBoxes } =
@@ -29,7 +27,7 @@ const CreateProduct = () => {
   const createProductMutation = useCreateProductMutation();
 
   const isLoading =
-    isLoadingDefaults || isLoadingSettings || isLoadingBoxes;
+    isLoadingSettings || isLoadingBoxes;
 
   if (isLoading) {
     return <ProductFormSkeleton />;
@@ -40,7 +38,6 @@ const CreateProduct = () => {
 
   const seededValues: ProductFormInput = {
     ...defaults,
-    currency: defaultSettings?.base_currency ?? null,
     variants: [
       {
         ...getDefaultVariantValues(),

@@ -3,10 +3,15 @@
 namespace Kirki\Ecommerce\Tests\Integration;
 
 use Kirki\Ecommerce\App\Constants\BulkActions;
+use Kirki\Ecommerce\App\Facades\Money;
+use Kirki\Ecommerce\App\Managers\MoneyManager;
+use Kirki\Ecommerce\Tests\Support\CreatesTestProducts;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 
 class CurrencyApiTest extends RestTestCase
 {
+    use CreatesTestProducts;
+
     /**
      * Counter that makes every generated currency code unique.
      *
@@ -158,6 +163,39 @@ class CurrencyApiTest extends RestTestCase
 
         $response = $this->request('GET', 'currencies/' . $this->currency_id);
         $this->assert_api_error($response, 404);
+    }
+
+    /**
+     * A former base currency can be deleted while products created under it still exist.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_delete_former_base_currency_with_existing_products(): void
+    {
+        // Real ISO codes: creating a product formats its prices in the base currency. MoneyManager
+        // keeps the base currency for the whole process, so reload it after each base change the
+        // way a new request would, and drop it afterwards so later tests don't inherit it.
+        try {
+            $old_base = $this->create_currency(['code' => 'EUR', 'name' => 'Old Base', 'is_base' => true]);
+            Money::load_base_currency();
+            $product = $this->create_product();
+            $new_base = $this->create_currency(['code' => 'GBP', 'name' => 'New Base']);
+
+            $this->assert_api_success($this->request('PUT', 'currencies', [
+                'items' => [$this->currency_row($new_base, true)],
+            ]), 201);
+
+            $response = $this->request('DELETE', 'currencies/' . $old_base['id']);
+            $payload = $this->assert_api_success($response);
+
+            $this->assertTrue($payload['data']);
+
+            Money::load_base_currency();
+            $this->assert_api_success($this->request('GET', 'products/' . $product['id']));
+        } finally {
+            static::forget_singleton(MoneyManager::class);
+        }
     }
 
     /**
