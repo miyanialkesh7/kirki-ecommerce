@@ -16,4 +16,5 @@ class DevHookNames
     public const ACCOUNT_MENU_ITEMS = 'kirki_ecommerce_account_menu_items';
     public const SITE_PAGES = 'kirki_ecommerce_site_pages';
     public const ORDER_PLACED = 'kirki_ecommerce_order_placed';
+    public const STORE_CREATED = 'kirki_ecommerce_store_created';
 }

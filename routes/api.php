@@ -51,6 +51,7 @@ Route::get('/payment/webhook/{provider_id}', [WebhookController::class, 'handle_
 Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], function () {
     // Onboarding
     Route::post('/onboarding', [OnboardingController::class, 'store']);
+    Route::post('/onboarding/sample-data', [OnboardingController::class, 'import_sample_data']);
 
     // App Config
     Route::get('/app-config', [AppConfigController::class, 'get']);

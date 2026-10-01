@@ -9,14 +9,14 @@ const StoreContactDetails = () => {
   return (
     <Card
       data-search-id="general.store-contact-details"
-      data-search-keywords="business name, brand name, support email, telephone"
+      data-search-keywords="business name, brand name, support email, telephone, tax id, vat number, tax number"
       cssOverride={cardStyles.formCard}
     >
       <CardHeader>
         <CardTitle>{__('Store Contact Details', 'kirki-ecommerce')}</CardTitle>
         <CardDescription>
           {__(
-            'Store name, logo, email and phone number shown to your customers.',
+            'Store name, logo, email, phone number and Tax ID shown to your customers.',
             'kirki-ecommerce',
           )}
         </CardDescription>
@@ -47,6 +47,12 @@ const StoreContactDetails = () => {
             name="store_phone"
             label={__('Store Phone', 'kirki-ecommerce')}
             placeholder={__('Enter your store phone', 'kirki-ecommerce')}
+          />
+
+          <TextField
+            name="store_tax_id"
+            label={__('Tax ID', 'kirki-ecommerce')}
+            placeholder={__('Permit or VAT number', 'kirki-ecommerce')}
           />
         </Flex>
       </CardContent>

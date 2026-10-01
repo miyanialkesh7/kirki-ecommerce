@@ -1,0 +1,138 @@
+<?php
+
+namespace Kirki\Ecommerce\App\Services;
+
+use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
+use Kirki\Ecommerce\App\Constants\OptionKeys;
+use Kirki\Ecommerce\App\DTO\Onboarding\StoreSetupDTO;
+use Kirki\Ecommerce\App\Supports\Facades\Settings;
+use Kirki\Ecommerce\App\Supports\Utils;
+use Kirki\Ecommerce\Database\Seeders\OnBoarding\OnBoardingSeeder;
+
+use function Kirki\Ecommerce\Framework\app;
+
+defined('ABSPATH') || exit;
+
+/**
+ * Turns the merchant's onboarding answers into a configured store.
+ *
+ * Every step is safe to run again, so a setup that failed partway can simply be
+ * retried. Steps are not wrapped in one transaction: options, posts and the
+ * plugin's own tables cannot share one.
+ *
+ * @since 1.0.0
+ */
+class StoreSetupService
+{
+    /** @var CurrencyService */
+    protected $currency_service;
+
+    /**
+     * Create the service with the currency service.
+     *
+     * @since 1.0.0
+     *
+     * @param CurrencyService $currency_service
+     */
+    public function __construct(CurrencyService $currency_service)
+    {
+        $this->currency_service = $currency_service;
+    }
+
+    /**
+     * Set up the store from the onboarding answers.
+     *
+     * @since 1.0.0
+     *
+     * @param StoreSetupDTO $data The onboarding answers.
+     * @return void
+     * @throws \Exception When a setup step fails.
+     */
+    public function setup(StoreSetupDTO $data)
+    {
+        $this->seed_baseline();
+        $this->save_general_settings($data);
+        $this->save_tax_settings($data);
+        $this->currency_service->ensure_base($data->currency);
+
+        Utils::generate_site_pages();
+
+        $this->apply_presets($data->industry, $data->country);
+
+        do_action(DevHookNames::STORE_CREATED, $data->to_array());
+    }
+
+    /**
+     * Seed the baseline catalog data and settings defaults.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
+    protected function seed_baseline()
+    {
+        $seeder = app()->make(OnBoardingSeeder::class);
+        $seeder->run();
+        $seeder();
+    }
+
+    /**
+     * Save the store identity, address and tax switch to the general settings.
+     *
+     * @since 1.0.0
+     *
+     * @param StoreSetupDTO $data The onboarding answers.
+     * @return void
+     */
+    protected function save_general_settings(StoreSetupDTO $data)
+    {
+        $address = $data->store_address ?? [];
+
+        Settings::get(OptionKeys::GENERAL_SETTINGS)->refresh()->set([
+            'store_name' => $data->store_name,
+            'industry' => $data->industry,
+            'store_tax_id' => $data->is_tax_collected ? $data->store_tax_id : null,
+            'store_address' => [
+                'address_line_1' => $address['address_line_1'] ?? null,
+                'address_line_2' => $address['address_line_2'] ?? null,
+                'city' => $address['city'] ?? null,
+                'state' => $address['state'] ?? null,
+                'postal_code' => $address['postal_code'] ?? null,
+                'country' => $data->country,
+            ],
+            'is_tax_calculation_enabled' => (bool) $data->is_tax_collected,
+        ]);
+    }
+
+    /**
+     * Save whether catalog prices include tax.
+     *
+     * @since 1.0.0
+     *
+     * @param StoreSetupDTO $data The onboarding answers.
+     * @return void
+     */
+    protected function save_tax_settings(StoreSetupDTO $data)
+    {
+        Settings::get(OptionKeys::TAX_SETTINGS)->refresh()->set([
+            'is_tax_inclusive_price' => $data->is_tax_collected && $data->is_tax_inclusive_price,
+        ]);
+    }
+
+    /**
+     * Apply the industry and location based presets for the new store.
+     *
+     * Intentionally empty for now: this is where industry and location specific
+     * settings and data will be loaded.
+     *
+     * @since 1.0.0
+     *
+     * @param string $industry Industry slug.
+     * @param string $country  ISO 3166-1 alpha-2 country code.
+     * @return void
+     */
+    public function apply_presets(string $industry, string $country)
+    {
+        //
+    }
+}

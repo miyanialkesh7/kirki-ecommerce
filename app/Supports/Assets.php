@@ -117,6 +117,8 @@ class Assets
             'is_dev' => app()->is_dev_mode(),
             'is_logged_in' => is_user_logged_in(),
             'login_url' => esc_url(wp_login_url()),
+            'assets_url' => esc_url(KIRKI_ECOMMERCE_ASSETS_URL),
+            'is_onboarded' => Onboarding::is_completed(),
         ];
 
         $config_data = apply_filters(DevHookNames::CONFIG_DATA, $config_data);

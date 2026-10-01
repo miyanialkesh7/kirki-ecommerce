@@ -1,0 +1,127 @@
+import { css, Global } from '@emotion/react';
+import type { ReactNode } from 'react';
+
+import { Card } from '@/components/ui/card';
+import Flex from '@/components/ui/flex';
+import Text from '@/components/ui/text';
+import {
+  COMPLETION_STEP,
+  FORM_STEP_COUNT,
+  getStepTitle,
+  type OnboardingStep,
+} from '@/features/onboarding/lib/steps';
+import { theme } from '@/theme';
+import { defineStyles, scoped } from '@/theme/mixins';
+import { __, sprintf } from '@/wpi18n';
+
+type OnboardingShellProps = {
+  step: OnboardingStep;
+  children: ReactNode;
+};
+
+const OnboardingShell = ({ step, children }: OnboardingShellProps) => {
+  const stepNumber = Math.min(step + 1, FORM_STEP_COUNT);
+  const progress = step === COMPLETION_STEP ? 100 : (stepNumber / FORM_STEP_COUNT) * 100;
+
+  return (
+    <div css={scoped(styles.overlay)}>
+      <Global styles={hideAdminChrome} />
+      <div css={scoped(styles.column)}>
+        <img
+          src={`${window.kirki_ecommerce.assets_url}/images/kirki-ecommerce.svg`}
+          alt={__('Kirki eCommerce', 'kirki-ecommerce')}
+          css={scoped(styles.logo)}
+        />
+        <Flex direction="column" gap={6} cssOverride={styles.body}>
+          <Flex direction="column" gap={2}>
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+              css={scoped(styles.track)}
+            >
+              <div css={scoped(styles.fill)} style={{ width: `${progress}%` }} />
+            </div>
+            <Flex justify="space-between">
+              <Text variant="small" color="secondary">
+                {sprintf(__('Step %1$d of %2$d', 'kirki-ecommerce'), stepNumber, FORM_STEP_COUNT)}
+              </Text>
+              <Text variant="small" color="secondary">
+                {getStepTitle(step)}
+              </Text>
+            </Flex>
+          </Flex>
+          <Card cssOverride={styles.card}>{children}</Card>
+        </Flex>
+      </div>
+    </div>
+  );
+};
+
+OnboardingShell.displayName = 'OnboardingShell';
+
+export default OnboardingShell;
+
+const hideAdminChrome = css({
+  'html.wp-toolbar': {
+    paddingTop: 0,
+  },
+  '#wpadminbar, #adminmenumain, #wpfooter': {
+    display: 'none',
+  },
+});
+
+const styles = defineStyles({
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: theme.zIndex.fullscreen,
+    display: 'flex',
+    overflowY: 'auto',
+    padding: `${theme.spacing[12]} ${theme.spacing[4]}`,
+    // Solid on purpose: the translucent surface tokens would let the admin page
+    // underneath tint the backdrop.
+    backgroundColor: theme.colors.background.solidSurfaceSecondary,
+  },
+  column: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: theme.spacing[12],
+    width: '100%',
+    maxWidth: '460px',
+    margin: 'auto',
+  },
+  logo: {
+    display: 'block',
+    height: '20px',
+    width: 'auto',
+  },
+  body: {
+    width: '100%',
+  },
+  track: {
+    width: '100%',
+    height: '4px',
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.border.default,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: '100%',
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.background.fillBrand,
+    transition: 'width 200ms ease',
+  },
+  card: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    minHeight: '560px',
+    padding: theme.spacing[8],
+    borderRadius: theme.radius.xxl,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    boxShadow: '0px -1px 1px 0.5px #0000001A inset, 0px 0.5px 1px 0px #0000001A inset',
+  },
+});
