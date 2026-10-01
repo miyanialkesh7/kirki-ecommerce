@@ -85,6 +85,18 @@ export const OfflinePaymentSchema = z
 export type OfflinePayment = z.infer<typeof OfflinePaymentSchema>;
 
 /**
+ * `GET /payment-methods` lists every registered provider, offline and online,
+ * with the offline list shape (`icon_media` included so the offline edit
+ * dialog can open straight from a row). `is_offline` discriminates which
+ * per-kind endpoints a row's actions must use.
+ */
+export const PaymentMethodSchema = OfflinePaymentSchema.extend({
+  description: z.string().nullish(),
+});
+
+export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
+
+/**
  * The offline providers embedded in `GET /settings/payment` are the same
  * entity as `GET /offline-payments`, minus `id` — the settings option stores
  * the list verbatim and the documented response omits it (see
