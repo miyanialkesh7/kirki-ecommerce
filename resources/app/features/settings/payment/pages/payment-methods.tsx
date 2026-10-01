@@ -276,6 +276,7 @@ export default PaymentMethods;
 
 const styles = defineStyles({
   methodCard: {
+    borderRadius: theme.radius.xl,
     '& [data-row-actions]': {
       visibility: 'hidden',
     },
