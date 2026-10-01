@@ -25,6 +25,7 @@ class CreateCartsTable implements Migration
         Schema::create('kirki_ecommerce_carts', function (Structure $table) {
             $table->id();
             $table->unsigned_big_integer('user_id')->nullable()->comment('WordPress user ID for owned carts');
+            $table->string('customer_email', 255)->nullable()->comment('Contact email entered by the shopper, used for email-based coupon rules before an order exists');
             $table->string('cart_token')->nullable()->comment('For guest cart tracking');
 
             $table->string('currency_code', 3);
