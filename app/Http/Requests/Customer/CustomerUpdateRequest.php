@@ -70,7 +70,7 @@ class CustomerUpdateRequest extends Request
         return [
             'id' => 'required|integer',
             'first_name' => 'required|string',
-            'last_name' => 'string|nullable',
+            'last_name' => 'required|string',
             'photo' => 'integer|nullable',
             'email' => [
                 'required',

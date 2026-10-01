@@ -1,6 +1,6 @@
-import type { OrderItem } from '@/features/orders/schemas/catalog/order';
+import type { Order } from '@/features/orders/schemas/catalog/order';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
-export const toOrderFormAddresses = (order: OrderItem): Partial<OrderFormInput> => {
+export const toOrderFormAddresses = (order: Order): Partial<OrderFormInput> => {
   const shipping = order.shipping_address;
   const billing = order.billing_address;
 

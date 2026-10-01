@@ -16,7 +16,6 @@ import {
   useOrderActivitiesInfiniteQuery,
 } from '@/features/orders/services/activity';
 import { theme } from '@/theme';
-import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, flexCenter, scoped } from '@/theme/mixins';
 import { createAcronym } from '@/utils';
 import { __ } from '@/wpi18n';
@@ -64,7 +63,7 @@ const Timeline = ({ orderId }: TimelineProps) => {
   };
 
   return (
-    <Card cssOverride={cardStyles.formCard}>
+    <Card cssOverride={{ gap: theme.spacing[3] }}>
       <CardHeader>
         <CardTitle>{__('Timeline', 'kirki-ecommerce')}</CardTitle>
       </CardHeader>
@@ -112,10 +111,9 @@ const Timeline = ({ orderId }: TimelineProps) => {
                           size="icon-sm"
                           aria-label={__('Delete comment', 'kirki-ecommerce')}
                           data-action-group="true"
-                          cssOverride={{ '& svg': { color: theme.colors.icon.critical } }}
                           onClick={() => setPendingDeleteId(entry.id)}
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={12} color={theme.colors.icon.primary} />
                         </Button>
                       </Flex>
                     </Flex>
@@ -124,7 +122,9 @@ const Timeline = ({ orderId }: TimelineProps) => {
 
                 return (
                   <Flex key={entry.id} gap={3} align="center" cssOverride={styles.actionRow}>
-                    <LeadingIconBadge cssOverride={styles.leadingIcon} />
+                    <Flex align="center" justify="center" cssOverride={styles.actionIconSlot}>
+                      <LeadingIconBadge />
+                    </Flex>
                     <Text variant="small" weight="medium" cssOverride={{ flexGrow: 1 }}>
                       {entry.description}
                     </Text>
@@ -183,6 +183,9 @@ const styles = defineStyles({
     },
   },
   leadingIcon: {
+    flexShrink: 0,
+  },
+  actionIconSlot: {
     width: '2rem',
     height: '2rem',
     flexShrink: 0,
@@ -192,7 +195,7 @@ const styles = defineStyles({
     width: '2rem',
     height: '2rem',
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.background.surfaceSecondary,
+    backgroundColor: theme.colors.background.solidSurfaceSecondary,
     color: theme.colors.text.secondary,
     ...theme.typography.micro('medium'),
     position: 'relative',

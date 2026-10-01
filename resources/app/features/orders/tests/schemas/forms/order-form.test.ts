@@ -7,11 +7,20 @@ import {
 import { cacheAddressRules } from '@/libs/address-rules';
 import { getDefaults } from '@/libs/zod';
 
+const buildCoupon = (id: number, code: string | null) => ({
+  id,
+  method: 'code' as const,
+  title: `Coupon ${id}`,
+  code,
+  discount_type: 'amount-off' as const,
+  status: 'active' as const,
+});
+
 describe('OrderFormSchema', () => {
   const base = {
     items: [{ variant_id: 12, quantity: 2 }],
     currency_code: 'USD',
-    coupon_code: null,
+    coupon_codes: [],
     customer_id: 7,
     shipping_method: 'flat_rate',
     shipping_first_name: 'John',
@@ -50,9 +59,12 @@ describe('OrderFormSchema', () => {
 
     expect(result).toEqual({
       customer_id: 7,
+      customer_email: null,
+      consents: null,
       items: [{ variant_id: 12, quantity: 2 }],
       currency_code: 'USD',
-      coupon_code: null,
+      coupon_codes: [],
+      payment_provider: null,
       shipping_method: 'flat_rate',
       shipping_first_name: 'John',
       shipping_last_name: 'Doe',
@@ -159,12 +171,19 @@ describe('OrderFormSchema', () => {
     expect(result.shipping_address_line2).toBe('Flat 2');
   });
 
-  it('trims the coupon code and nulls a blank one', () => {
-    expect(OrderFormSchema.parse({ ...base, coupon_code: '  SAVE10  ' }).coupon_code).toBe(
-      'SAVE10',
-    );
-    expect(OrderFormSchema.parse({ ...base, coupon_code: '   ' }).coupon_code).toBeNull();
-    expect(OrderFormSchema.parse({ ...base, coupon_code: null }).coupon_code).toBeNull();
+  it('outputs the trimmed code of each selected coupon and drops blank ones', () => {
+    expect(
+      OrderFormSchema.parse({
+        ...base,
+        coupon_codes: [
+          buildCoupon(1, '  SAVE10  '),
+          buildCoupon(2, '  '),
+          buildCoupon(3, null),
+          buildCoupon(4, 'WELCOME'),
+        ],
+      }).coupon_codes,
+    ).toEqual(['SAVE10', 'WELCOME']);
+    expect(OrderFormSchema.parse({ ...base, coupon_codes: [] }).coupon_codes).toEqual([]);
   });
 
   it('sends null rather than undefined for every omitted optional field', () => {
@@ -183,7 +202,10 @@ describe('OrderFormSchema', () => {
     });
 
     expect(result.currency_code).toBeNull();
-    expect(result.coupon_code).toBeNull();
+    expect(result.coupon_codes).toEqual([]);
+    expect(result.customer_email).toBeNull();
+    expect(result.consents).toBeNull();
+    expect(result.payment_provider).toBeNull();
     expect(result.shipping_address_line2).toBeNull();
     expect(result.shipping_phone).toBeNull();
     expect(result.shipping_email).toBeNull();
@@ -272,7 +294,8 @@ describe('OrderFormSchema', () => {
 
     it('rejects a missing state when the country requires one', () => {
       expect(
-        OrderFormSchema.safeParse({ ...base, shipping_country: 'JP', shipping_state: null }).success,
+        OrderFormSchema.safeParse({ ...base, shipping_country: 'JP', shipping_state: null })
+          .success,
       ).toBe(false);
     });
 
@@ -338,7 +361,8 @@ describe('OrderCalculationRequestSchema', () => {
       customer_id: null,
       items: [],
       currency_code: null,
-      coupon_code: null,
+      coupon_codes: [],
+      payment_provider: null,
       shipping_method: null,
       shipping_first_name: null,
       shipping_last_name: null,
@@ -350,6 +374,21 @@ describe('OrderCalculationRequestSchema', () => {
       shipping_country: null,
       shipping_phone: null,
       shipping_email: null,
+      shipping_company: null,
+      billing_first_name: null,
+      billing_last_name: null,
+      billing_address_line1: null,
+      billing_address_line2: null,
+      billing_city: null,
+      billing_state: null,
+      billing_postal_code: null,
+      billing_country: null,
+      billing_phone: null,
+      billing_email: null,
+      billing_company: null,
+      customer_email: null,
+      customer_phone: null,
+      is_manual: true,
     });
   });
 
@@ -373,31 +412,53 @@ describe('OrderCalculationRequestSchema', () => {
     expect(result.shipping_address_line2).toBeNull();
   });
 
-  it('maps shipping_postal_code to shipping_postal_code and trims the coupon code', () => {
+  it('maps shipping_postal_code to shipping_postal_code and outputs trimmed coupon codes', () => {
     const result = OrderCalculationRequestSchema.parse({
       shipping_postal_code: 'NW1 6XE',
-      coupon_code: '  SAVE10  ',
+      coupon_codes: [buildCoupon(1, '  SAVE10  '), buildCoupon(2, '  ')],
     });
 
     expect(result.shipping_postal_code).toBe('NW1 6XE');
-    expect(result.coupon_code).toBe('SAVE10');
+    expect(result.coupon_codes).toEqual(['SAVE10']);
   });
 
-  it('omits the billing, notes and manual-order fields from the calculation payload', () => {
+  it('forwards the billing block, shipping_company, payment_provider and customer contact fields, but not shipping_id/billing_id, is_billing_same_as_shipping or admin_notes', () => {
     const result = OrderCalculationRequestSchema.parse({
       billing_first_name: 'Jane',
       billing_postal_code: 'SW1A 2AA',
       shipping_company: 'Acme Ltd',
+      shipping_id: 4,
+      billing_id: 9,
+      payment_provider: 'stripe',
+      customer_email: 'jane@example.com',
+      customer_phone: '+44 20 7925 0918',
       admin_notes: 'Leave at the door',
       is_billing_same_as_shipping: false,
-      is_manual: true,
+      is_manual: false,
     });
 
-    expect(Object.keys(result)).not.toContain('billing_first_name');
-    expect(Object.keys(result)).not.toContain('billing_postal_code');
-    expect(Object.keys(result)).not.toContain('shipping_company');
-    expect(Object.keys(result)).not.toContain('admin_notes');
+    expect(result.billing_first_name).toBe('Jane');
+    expect(result.billing_postal_code).toBe('SW1A 2AA');
+    expect(result.shipping_company).toBe('Acme Ltd');
+    expect(result.payment_provider).toBe('stripe');
+    expect(result.customer_email).toBe('jane@example.com');
+    expect(result.customer_phone).toBe('+44 20 7925 0918');
+    expect(result.is_manual).toBe(false);
+
+    expect(Object.keys(result)).not.toContain('shipping_id');
+    expect(Object.keys(result)).not.toContain('billing_id');
     expect(Object.keys(result)).not.toContain('is_billing_same_as_shipping');
-    expect(Object.keys(result)).not.toContain('is_manual');
+    expect(Object.keys(result)).not.toContain('admin_notes');
+  });
+
+  it('does not default a billing field from shipping, unlike OrderFormSchema', () => {
+    const result = OrderCalculationRequestSchema.parse({
+      is_billing_same_as_shipping: true,
+      shipping_first_name: 'John',
+      shipping_city: 'London',
+    });
+
+    expect(result.billing_first_name).toBeNull();
+    expect(result.billing_city).toBeNull();
   });
 });

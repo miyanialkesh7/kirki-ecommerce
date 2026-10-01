@@ -46,7 +46,7 @@ const isAddressRowTouched = (address: AddressFormValues) =>
 
 const CustomerFormShape = z.object({
   first_name: required(z.string().default(''), __('First name is required', 'kirki-ecommerce')),
-  last_name: z.string().nullish().default(''),
+  last_name: required(z.string().default(''), __('Last name is required', 'kirki-ecommerce')),
   email: required(z.string().default(''), __('Email is required', 'kirki-ecommerce')).pipe(
     z.string().email(__('Please enter a valid email', 'kirki-ecommerce')),
   ),
@@ -113,7 +113,7 @@ const CustomerFormSchema = prepareFormSchema(CustomerFormShape)
   .transform((values) => {
     return {
       first_name: values.first_name,
-      last_name: values.last_name || null,
+      last_name: values.last_name,
       email: values.email,
       phone: values.phone || null,
       language: values.language || null,

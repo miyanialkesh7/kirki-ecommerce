@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Flex from '@/components/ui/flex';
 import { Form } from '@/components/ui/form';
-import { Page, PageContent, PageHeading } from '@/components/ui/page';
+import { Page, PAGE_HEADING_HEIGHT, PageContent, PageHeading } from '@/components/ui/page';
 import Text from '@/components/ui/text';
 import CustomerCard from '@/features/orders/components/order-create/customer-card';
 import NotesCard from '@/features/orders/components/order-create/notes-card';
@@ -29,7 +29,7 @@ import OrderDetailsSkeleton from '@/features/orders/skeletons/order-details-skel
 import { ShowMoreIcon } from '@/icons';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
-import { defineStyles } from '@/theme/mixins';
+import { defineStyles, mergeCss } from '@/theme/mixins';
 import { __, sprintf } from '@/wpi18n';
 
 const OrderDetails = () => {
@@ -129,7 +129,7 @@ const OrderDetails = () => {
         <PageContent>
           <Flex gap={4}>
             <Flex direction="column" gap={4} cssOverride={{ width: '70%' }}>
-              <Card cssOverride={cardStyles.formCard}>
+              <Card cssOverride={{ gap: theme.spacing[2] }}>
                 <CardHeader>
                   <CardTitle>
                     <Text variant="heading6" weight="semibold">
@@ -139,25 +139,20 @@ const OrderDetails = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Card cssOverride={cardStyles.innerCard}>
+                  <Card cssOverride={mergeCss(cardStyles.innerCard, { overflow: 'hidden' })}>
                     <CardContent cssOverride={styles.zeroPadding}>
-                      <ItemsTable items={order.items} />
+                      <ItemsTable items={order.items} isTaxInclusive={order.is_tax_inclusive} />
                     </CardContent>
                   </Card>
                 </CardContent>
               </Card>
 
               <PaymentSummaryCard
-                amounts={{
-                  itemsCount: order.items_count,
-                  subtotal: order.totals.base_subtotal_money_object.display,
-                  discount: order.totals.base_discount_money_object.display,
-                  shipping: order.totals.base_shipping_money_object.display,
-                  tax: order.totals.base_tax_money_object.display,
-                  total: order.totals.base_total_money_object.display,
-                }}
+                totals={order.totals}
+                coupons={order.coupons}
+                taxLines={order.tax_lines}
+                itemsCount={order.items_count}
                 shippingMethodName={order.shipping_method_name}
-                couponCode={order.totals.discount_details?.code}
                 badge={<Badge variant={paymentBadge.variant}>{paymentBadge.text}</Badge>}
                 actions={
                   paymentActions.length > 0 && (
@@ -180,7 +175,16 @@ const OrderDetails = () => {
               <Timeline orderId={order.id} />
             </Flex>
 
-            <Flex direction="column" gap={4} cssOverride={{ width: '30%' }}>
+            <Flex
+              direction="column"
+              gap={4}
+              cssOverride={{
+                width: '30%',
+                position: 'sticky',
+                top: `calc(${PAGE_HEADING_HEIGHT} + ${theme.spacing[8]})`,
+                alignSelf: 'flex-start',
+              }}
+            >
               <TakeActionCard
                 order={order}
                 onAction={handleAction}
@@ -191,7 +195,7 @@ const OrderDetails = () => {
 
               <FlagCard onSave={handleSaveOrder} />
 
-              <NotesCard onSave={handleSaveOrder} isSaving={isSaving} />
+              <NotesCard isEditable={false} />
             </Flex>
           </Flex>
         </PageContent>

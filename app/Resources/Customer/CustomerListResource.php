@@ -3,10 +3,8 @@
 namespace Kirki\Ecommerce\App\Resources\Customer;
 
 use Kirki\Ecommerce\Framework\Resource;
-use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Services\CountryService;
-use Kirki\Ecommerce\Framework\Supports\Arr;
 use Kirki\Ecommerce\Framework\Supports\MediaAttachment;
 
 use function Kirki\Ecommerce\Framework\app;

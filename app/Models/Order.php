@@ -49,6 +49,7 @@ class Order extends Model
         'base_tax_total',
         'invoiced_shipping_tax_amount',
         'base_shipping_tax_amount',
+        'is_tax_inclusive',
         'invoiced_total',
         'base_total',
         'items_count',
@@ -75,6 +76,7 @@ class Order extends Model
         'shipping_phone',
         'shipping_email',
         'shipping_company',
+        'is_billing_same_as_shipping',
         'billing_first_name',
         'billing_last_name',
         'billing_address_line1',
@@ -124,6 +126,7 @@ class Order extends Model
         'base_tax_total' => 'integer',
         'invoiced_shipping_tax_amount' => 'integer',
         'base_shipping_tax_amount' => 'integer',
+        'is_tax_inclusive' => 'boolean',
     ];
 
     /**

@@ -65,11 +65,13 @@ use Kirki\Ecommerce\Database\Migrations\AlterCartsDropDiscountDetails;
 use Kirki\Ecommerce\Database\Migrations\AlterOrdersDropLegacyCouponColumns;
 use Kirki\Ecommerce\Database\Migrations\CreateWishlistTable;
 use Kirki\Ecommerce\Database\Migrations\AddInvoiceNumberToOrdersTable;
+use Kirki\Ecommerce\Database\Migrations\AddIsBillingSameAsShippingFromOrdersTable;
 use Kirki\Ecommerce\Database\Migrations\CreateOrderTaxesTable;
 use Kirki\Ecommerce\Database\Migrations\AlterOrdersAddShippingTaxColumns;
 use Kirki\Ecommerce\Database\Migrations\AlterOrderItemsDropTaxColumns;
 use Kirki\Ecommerce\Database\Migrations\AddRibbonColorToProductsTable;
 use Kirki\Ecommerce\Database\Migrations\AlterOrderItemsAddRegularPriceColumns;
+use Kirki\Ecommerce\Database\Migrations\AlterOrdersAddIsTaxInclusiveColumn;
 use Kirki\Ecommerce\Database\Migrations\AddScheduledAtToProductsTable;
 use Kirki\Ecommerce\Database\Migrations\CreateFailedJobsTable;
 use Kirki\Ecommerce\Database\Migrations\CreateJobsTable;
@@ -154,8 +156,11 @@ return [
     AlterOrdersAddShippingTaxColumns::class,
     AlterOrderItemsDropTaxColumns::class,
 
-    AddRibbonColorToProductsTable::class,
+    // Since v1.0.0-beta.1
     AlterOrderItemsAddRegularPriceColumns::class,
+    AddIsBillingSameAsShippingFromOrdersTable::class,
+    AlterOrdersAddIsTaxInclusiveColumn::class,
+    AddRibbonColorToProductsTable::class,
     AddScheduledAtToProductsTable::class,
     CreateJobsTable::class,
     CreateFailedJobsTable::class,

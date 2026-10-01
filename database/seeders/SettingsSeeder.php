@@ -148,9 +148,9 @@ class SettingsSeeder extends Seeder
                                         "relation" => "AND",
                                         "conditions" => [
                                             [
-                                                "type" => "product_profile",
-                                                "operator" => "=",
-                                                "value" => "fragile"
+                                                "type" => "cart_weight",
+                                                "operator" => ">",
+                                                "value" => 5
                                             ]
                                         ],
                                         "action" => [
@@ -191,9 +191,9 @@ class SettingsSeeder extends Seeder
                                         "relation" => "AND",
                                         "conditions" => [
                                             [
-                                                "type" => "product_profile",
-                                                "operator" => "=",
-                                                "value" => "fragile"
+                                                "type" => "cart_weight",
+                                                "operator" => ">",
+                                                "value" => 5
                                             ]
                                         ],
                                         "action" => [
@@ -230,9 +230,9 @@ class SettingsSeeder extends Seeder
                                         "relation" => "AND",
                                         "conditions" => [
                                             [
-                                                "type" => "product_profile",
-                                                "operator" => "=",
-                                                "value" => "fragile"
+                                                "type" => "cart_weight",
+                                                "operator" => ">",
+                                                "value" => 5
                                             ]
                                         ],
                                         "action" => [
@@ -258,9 +258,9 @@ class SettingsSeeder extends Seeder
                                 "relation" => "AND",
                                 "conditions" => [
                                     [
-                                        "type" => "product_profile",
-                                        "operator" => "=",
-                                        "value" => "fragile"
+                                        "type" => "cart_weight",
+                                        "operator" => ">",
+                                        "value" => 5
                                     ]
                                 ],
                                 "action" => [

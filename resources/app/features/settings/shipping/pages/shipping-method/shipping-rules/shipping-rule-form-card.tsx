@@ -248,7 +248,7 @@ const ShippingRuleFormCard = ({
                   <SelectField
                     name="condition"
                     options={conditionSelectOptions}
-                    placeholder={__('Product profile', 'kirki-ecommerce')}
+                    placeholder={__('Select condition', 'kirki-ecommerce')}
                     onValueChange={() => {
                       form.setValue('operator', '=');
                       form.setValue('condition_value', null);
