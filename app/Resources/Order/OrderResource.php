@@ -84,11 +84,11 @@ class OrderResource extends Resource
                 'base_shipping_strikethrough_money_object' => Money::prepare_amount_object_from_minor($base_shipping_strikethrough),
                 'invoiced_total_money_object' => Money::prepare_amount_object_from_minor($this->invoiced_total, $this->currency_code),
                 'base_total_money_object' => Money::prepare_amount_object_from_minor($this->base_total),
-                'tax_lines' => $this->format_tax_breakdown(
-                    array_merge($this->flatten_item_tax_lines($items), ($this->shipping_taxes ?: collection())->all())
-                ),
             ],
 
+            'tax_lines' => $this->format_tax_breakdown(
+                array_merge($this->flatten_item_tax_lines($items), ($this->shipping_taxes ?: collection())->all())
+            ),
             'coupons' => $this->format_coupon_results($order_coupons),
 
             'items_count' => $this->items_count,
@@ -106,6 +106,8 @@ class OrderResource extends Resource
                 'phone' => $this->shipping_phone,
                 'email' => $this->shipping_email,
             ],
+
+            'is_billing_same_as_shipping' => (bool) $this->is_billing_same_as_shipping,
 
             'billing_address' => [
                 'first_name' => $this->billing_first_name,

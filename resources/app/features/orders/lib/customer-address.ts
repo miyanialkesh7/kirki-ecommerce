@@ -7,12 +7,9 @@ export type AddressLines = {
   line2: string;
 };
 
-type AddressFormValues = Partial<Omit<OrderFormInput, 'items'>>;
+type AddressFormValues = Partial<Omit<OrderFormInput, 'items' | 'coupon_codes'>>;
 
-export const getCountryName = (
-  countries: Country[],
-  code?: string | null,
-): string => {
+export const getCountryName = (countries: Country[], code?: string | null): string => {
   if (!code) {
     return '';
   }
@@ -37,12 +34,7 @@ const buildAddressLines = (
 
   return {
     line1: [parts.addressLine1, parts.addressLine2].filter(Boolean).join(', '),
-    line2: [
-      parts.city,
-      parts.state,
-      parts.postalCode,
-      getCountryName(countries, parts.country),
-    ]
+    line2: [parts.city, parts.state, parts.postalCode, getCountryName(countries, parts.country)]
       .filter(Boolean)
       .join(', '),
   };
@@ -85,15 +77,40 @@ export const formatBillingAddress = (
   );
 };
 
-const addressName = (
-  address: CustomerAddress | null | undefined,
-  customer: Customer,
-) => ({
+const addressName = (address: CustomerAddress | null | undefined, customer: Customer) => ({
   firstName: address?.first_name || customer.first_name || '',
   lastName: address?.last_name || customer.last_name || '',
   phone: address?.phone || customer.phone || '',
   email: address?.email || customer.email || '',
 });
+
+const ADDRESS_TYPE_LABELS: Record<string, string> = {
+  home: 'Home',
+  office: 'Office',
+  others: 'Other',
+};
+
+export const getAddressSummaryLabel = (address: CustomerAddress, countries: Country[]): string => {
+  const typeLabel = address.label || ADDRESS_TYPE_LABELS[address.type ?? ''] || 'Address';
+
+  const lines = buildAddressLines(
+    {
+      addressLine1: address.address_line1,
+      addressLine2: address.address_line2,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postal_code,
+      country: address.country,
+    },
+    countries,
+  );
+
+  if (!lines) {
+    return typeLabel;
+  }
+
+  return `${typeLabel} — ${lines.line1}`;
+};
 
 export const toOrderAddresses = (customer: Customer): Partial<OrderFormInput> => {
   const addresses = customer.addresses ?? [];
