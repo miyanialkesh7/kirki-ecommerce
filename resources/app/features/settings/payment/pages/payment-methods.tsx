@@ -207,7 +207,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
                 </CardContent>
               </Card>
             ) : (
-              <Flex direction="column" gap={3}>
+              <Flex direction="column" gap={2}>
                 {paymentMethods.map((method) => (
                   <Card
                     key={method.id}
