@@ -1,4 +1,4 @@
-import { CardSimIcon, PlusIcon } from 'lucide-react';
+import { CardSimIcon, LandmarkIcon, Map, PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import DropdownButton from '@/components/dropdown-button';
@@ -30,7 +30,6 @@ import {
   useUpdateOfflinePaymentMutation,
 } from '@/features/settings/payment/services/payment';
 import { useConfirmDelete } from '@/hooks';
-import { BankIconLarge, CashIcon } from '@/icons';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';
@@ -149,7 +148,11 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
       );
     }
 
-    return method.is_offline ? <BankIconLarge /> : <CardSimIcon size={20} />;
+    return method.is_offline ? (
+      <LandmarkIcon size={20} color={theme.colors.icon.secondary} />
+    ) : (
+      <CardSimIcon size={20} color={theme.colors.icon.secondary} />
+    );
   };
 
   return (
@@ -201,7 +204,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
                   cssOverride={mergeCss(cardStyles.innerDarkContent, styles.emptyStateContent)}
                 >
                   <Flex direction="column" gap={2} align="center">
-                    <CashIcon />
+                    <Map size={12} color={theme.colors.text.subdued} />
                     <Text color="subdued">{__('No payment added yet', 'kirki-ecommerce')}</Text>
                   </Flex>
                 </CardContent>
