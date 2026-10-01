@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { useState } from 'react';
 
 import ConfirmationDialog from '@/components/modal/confirmation-dialog';
+import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Flex from '@/components/ui/flex';
@@ -103,9 +104,7 @@ const Timeline = ({ orderId }: TimelineProps) => {
                           {entry.description}
                         </Text>
                         {entry.notify_customer && (
-                          <Text variant="tiny" color="subdued">
-                            {__('Customer notified', 'kirki-ecommerce')}
-                          </Text>
+                          <Badge variant="info">{__('Customer notified', 'kirki-ecommerce')}</Badge>
                         )}
                       </Flex>
                       <Flex gap={2} align="center">
@@ -197,9 +196,9 @@ const styles = defineStyles({
     width: '2rem',
     height: '2rem',
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.background.surfaceSecondary,
+    backgroundColor: theme.colors.background.solidSurfaceSecondary,
     color: theme.colors.text.secondary,
-    ...theme.typography.micro('medium'),
+    ...theme.typography.micro('semibold'),
     position: 'relative',
     zIndex: 1,
   },

@@ -19,6 +19,8 @@ use Kirki\Ecommerce\App\Supports\Url;
 use Kirki\Ecommerce\App\Supports\Utils;
 use Kirki\Ecommerce\Framework\Supports\MediaAttachment;
 
+use function Kirki\Ecommerce\Framework\Polyfill\array_find;
+
 $fallback_image_url = Url::get_product_fallback_image();
 $order = $data['order'];
 $customer = $order['customer'] ?? [];
@@ -65,7 +67,7 @@ $billing_state = array_find($billing_country['states'] ?? [], fn($item) => $item
             <div class="kecom-order-details-title-wrap">
                 <div class="kecom-order-details-heading-row">
                     <?php /* translators: %s: order number */ ?>
-                    <h1 class="kecom-order-details-title"><?php printf(esc_html__('Order #%s', 'kirki-ecommerce'), esc_html($order['order_number'] ?? '')); ?></h1>
+                    <h1 class="kecom-order-details-title"><?php printf(esc_html__('Order %s', 'kirki-ecommerce'), esc_html($order['order_number'] ?? '')); ?></h1>
                 </div>
                 <div class="kecom-order-details-placed">
                     <?php esc_html_e('Placed on ', 'kirki-ecommerce'); ?>
@@ -83,25 +85,25 @@ $billing_state = array_find($billing_country['states'] ?? [], fn($item) => $item
             <div class="kecom-order-status-card">
                 <h3 class="kecom-card-title"><?php esc_html_e('Order Activities', 'kirki-ecommerce'); ?></h3>
                 <div class="kecom-order-stepper">
-                    <?php if (count($order_activities)) :?>
+                    <?php if (count($order_activities)) : ?>
                         <?php foreach ($order_activities as $key => $timeline) : ?>
-                                <div class="kecom-order-step <?php echo 0 === $key ? 'kecom-order-step-active' : '' ?> <?php
-                                    echo $timeline['activity_type'] === OrderActivityType::DELIVERED ? 'kecom-order-step-delivered' : '' ?> <?php
-                                        echo $timeline['activity_type'] === OrderActivityType::CANCELLED ? 'kecom-order-step-cancelled' : '' ?>">
-                                    <div class="kecom-order-step-indicator">
-                                        <?php if ($timeline['activity_type'] === OrderActivityType::DELIVERED) : ?>
-                                                <?php Icon::render('check'); ?>
-                                        <?php elseif ($timeline['activity_type'] === OrderActivityType::CANCELLED) : ?>
-                                            <?php Icon::render('cross'); ?>
-                                        <?php else : ?>
-                                            <span class="kecom-order-step-dot"></span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="kecom-order-step-content">
-                                        <h4 class="kecom-order-step-title"><?php echo esc_html(OrderActivityType::get_formatted($timeline['activity_type']) ?? ''); ?></h4>
-                                        <span class="kecom-order-step-date" x-data x-local-time="'<?php echo esc_js($timeline['created_at']); ?>'"></span>
-                                    </div>
+                            <div class="kecom-order-step <?php echo 0 === $key ? 'kecom-order-step-active' : '' ?> <?php
+                                                                                                                    echo $timeline['activity_type'] === OrderActivityType::DELIVERED ? 'kecom-order-step-delivered' : '' ?> <?php
+                                                                                                                                                                                                                            echo $timeline['activity_type'] === OrderActivityType::CANCELLED ? 'kecom-order-step-cancelled' : '' ?>">
+                                <div class="kecom-order-step-indicator">
+                                    <?php if ($timeline['activity_type'] === OrderActivityType::DELIVERED) : ?>
+                                        <?php Icon::render('check'); ?>
+                                    <?php elseif ($timeline['activity_type'] === OrderActivityType::CANCELLED) : ?>
+                                        <?php Icon::render('cross'); ?>
+                                    <?php else : ?>
+                                        <span class="kecom-order-step-dot"></span>
+                                    <?php endif; ?>
                                 </div>
+                                <div class="kecom-order-step-content">
+                                    <h4 class="kecom-order-step-title"><?php echo esc_html(OrderActivityType::get_formatted($timeline['activity_type']) ?? ''); ?></h4>
+                                    <span class="kecom-order-step-date" x-data x-local-time="'<?php echo esc_js($timeline['created_at']); ?>'"></span>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
@@ -211,7 +213,7 @@ $billing_state = array_find($billing_country['states'] ?? [], fn($item) => $item
                             $product_first_image = MediaAttachment::make($product_image['ID'] ?? 0);
                             $image = $item['image'] ? $item['image'] : $product_first_image;
                             $applied_coupons = $item['applied_product_coupons'] ?? [];
-                            ?>
+                        ?>
                             <div class="kecom-product-item">
                                 <div class="kecom-product-image-wrapper">
                                     <?php if (!empty($image) && isset($image['url'])) : ?>
@@ -234,7 +236,7 @@ $billing_state = array_find($billing_country['states'] ?? [], fn($item) => $item
                                             $discount_amount = $coupon['discount_amount_percentage'] ?? '';
                                             $amount = $coupon['invoiced_discount_amount_money_object'] ?? '';
                                             $coupon_text = sprintf(__('%1$s %2$s (-%3$s) Discount Applied', 'kirki-ecommerce'), $code, 'percentage' === $discount_type ? $discount_amount . '%' : '', $amount->display);
-                                            ?>
+                                        ?>
                                             <div class="kecom-product-coupon">
                                                 <span class="kecom-product-coupon-icon"><?php Icon::render('tag'); ?></span>
                                                 <span class="kecom-product-coupon-text"><?php echo esc_html($coupon_text); ?></span>
@@ -316,7 +318,7 @@ $billing_state = array_find($billing_country['states'] ?? [], fn($item) => $item
                             <?php if (! empty($tax_lines) && $is_tax_inclusive) :
                                 /** translators: %s: Tax amount. */
                                 $label = 'VAT' === $tax_lines[0]['name'] ? sprintf(__('Incl. %s VAT', 'kirki-ecommerce'), $tax_total->display ?? '') : sprintf(_n('Incl. %s Tax', 'Incl. %s Taxes', count($tax_lines), 'kirki-ecommerce'), $tax_total->display ?? '');
-                                ?>
+                            ?>
                                 <div class="kecom-inclusive-tax-wrapper">
                                     <span class="kecom-inclusive-tax-summary"><?php echo esc_html($label); ?></span>
                                     <div class="kecom-inclusive-tax-lines">

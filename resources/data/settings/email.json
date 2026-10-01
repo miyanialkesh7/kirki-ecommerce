@@ -143,10 +143,10 @@
           }
         ]
       },
-      "failed_order": {
+      "payment_failed": {
         "is_enabled": true,
-        "subject": "Order Failed",
-        "heading": "Sorry, your order was unsuccessful",
+        "subject": "Payment Failed",
+        "heading": "Sorry, your payment was unsuccessful",
         "message": "<div><span style=\"font-size: 13px;\">Hi {customer_name}</span> </div><div><span style=\"font-size: 13px;\">Unfortunately, we couldn't complete your order due to an issue with your payment method.</span></div><div><span style=\"font-size: 13px;\">If you'd like to continue with your purchase, please return to IONI Store and try a different method of payment.</span></div><div>{order_summary}</div><div>{customer_note}</div><div>{order_detail}</div>",
         "shortcodes": [
           {
@@ -753,10 +753,10 @@
           }
         ]
       },
-      "failed_order": {
+      "payment_failed": {
         "is_enabled": true,
-        "subject": "Order failed",
-        "heading": "Order failed",
+        "subject": "Payment failed",
+        "heading": "Payment failed",
         "message": "<div><span style=\"font-size: 13px;\">Unfortunately, the payment for order from {customer_name} has failed. </span></div><div>{order_summary}</div><div>{customer_note}</div><div>{order_detail}</div>",
         "shortcodes": [
           {

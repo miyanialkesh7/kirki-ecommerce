@@ -44,17 +44,17 @@ empty, they go to the WordPress site admin email.
 | Admin · New order | An order is placed | Store admin |
 | Customer · Cancelled order | The order, or its fulfillment, is cancelled | Customer |
 | Admin · Cancelled order | Same | Store admin |
-| Customer · Failed order | The order's payment changes to failed (admin or payment gateway) | Customer |
-| Admin · Failed order | Same | Store admin |
+| Customer · Payment failed | The order's payment changes to failed (admin or payment gateway) | Customer |
+| Admin · Payment failed | Same | Store admin |
 | Customer · Order on hold | The order's fulfillment is put on hold | Customer |
 | Customer · Order processing | An admin marks the order as processing. *Resuming* from on hold does not send it. | Customer |
 | Customer · Order shipped | The order is marked as shipped. Tracking details added **before** that are included. | Customer |
-| Customer · Order completed | The order becomes both delivered and paid, in whichever order those happen | Customer |
+| Customer · Order completed (subject "Order Delivered") | The order is marked as delivered, whatever its payment status. Paying for it later sends nothing more. | Customer |
 | Customer · Order note | An admin adds a comment in the order's timeline (section 6) | Customer |
 | Customer · Reset password | A customer requests a password reset on the WordPress login page (section 5) | Customer |
-| Customer · New account | A customer account is created: registration, checkout, or an admin creating a customer with a WordPress account (section 5) | Customer |
-| Admin · Low stock | A tracked variant's available stock drops to its low-stock threshold (section 3) | Store admin |
-| Admin · Out of stock | A tracked variant's available stock drops to zero (section 3) | Store admin |
+| Customer · New account | A **new** WordPress account is created for a customer: self-registration, or an admin creating a customer with **Create WordPress user** ticked (section 5) | Customer |
+| Admin · Low stock | Tracked variants' available stock drops to their low-stock threshold. One email per order lists every such variant (section 3) | Store admin |
+| Admin · Out of stock | Tracked variants' available stock drops to zero. One email per order lists every such variant (section 3) | Store admin |
 
 Two templates on the settings page have **no trigger** yet. See section 8.
 
@@ -69,17 +69,24 @@ A notification describes a *change*, so each one fires only when the change
 really happens:
 
 - **Order emails** fire only when the order's status actually changes. For
-  example, a payment gateway that reports "paid" twice for a completed order
-  does not send a second completed email.
-- **Failed payment** fires only when the payment was not already failed, so
+  example, marking a delivered order as delivered again is rejected and sends
+  nothing.
+- **Payment failed** fires only when the payment was not already failed, so
   gateway webhook retries don't email the customer again.
-- **Order completed** fires once: from whichever of *delivered* or *paid*
-  completes the order.
+- **Order delivered** fires once, when the order is marked as delivered. It
+  does not wait for payment, and paying for a delivered order later sends no
+  second email.
 - **Inventory alerts** fire on a **crossing**, not on every sale. Say a variant
   has a threshold of 5. Going from 6 to 5 sends one low-stock alert, and a later
   sale from 5 to 3 sends nothing. If you restock above 5 and it drops again, you
   get a new alert. A single sale that goes straight from above the threshold to
   zero sends only the out-of-stock alert.
+- **Inventory alerts are grouped per order.** When one order (placed or
+  edited) takes several variants across a level, the admin gets **one**
+  low-stock email and/or **one** out-of-stock email listing all of them, not one
+  email per variant. The *Restock Now* button opens the product when every
+  listed variant belongs to one product, otherwise the products list. Separate
+  orders still send separate emails.
 
 The low-stock threshold is the variant's own, when set. Otherwise it is the store
 default under **Settings → Products**. A threshold of 0 (or none) means
@@ -133,10 +140,17 @@ WordPress sends its own password-reset and new-user emails. For **customers**
 
 ### The set-password link on existing sites
 
-Customers created at checkout get a random password, so the new-account email
+Customers an admin creates with **Create WordPress user** get a random password, so the new-account email
 carries a `{set_password_link}` button. The default message includes it. If you
 saved the New account template before this update, your saved message doesn't.
 Open the template and insert **Set Password Link** from the shortcode list.
+
+### Customers linked to an existing account
+
+**Customers → Add** looks up the email address first. If a WordPress user with
+that email already exists, the new customer is **linked** to that account, even
+with **Create WordPress user** ticked. No account is created, so no New account
+email is sent: that person already has a login and a password.
 
 ---
 
@@ -168,8 +182,10 @@ that raises an event never needs to know about email.
    never send mail or do heavy work.
 3. **Job.** Queue one job per recipient: `SendOrderMailJob` (order mails, with
    optional extra scalar constructor arguments), `SendUserMailJob` (account mails
-   with a password link), or `SendVariantMailJob` (inventory mails). Admin
-   recipients come from the `ResolvesStoreAdminEmail` listener trait.
+   with a password link), or `SendInventoryMailJob` (inventory mails, taking a
+   list of variant IDs). Admin recipients come from the `ResolvesStoreAdminEmail`
+   listener trait. To group several changes into one email, buffer them the
+   way `InventoryService::collect_stock_alerts()` does and raise one event.
 
 ---
 
@@ -180,8 +196,10 @@ one-to-one:
 
 - **Processing is a fulfillment step, not "payment received".** WooCommerce sends
   "Processing order" when payment arrives. Here it is sent when an admin marks
-  the order as processing. A payment on its own sends no email, unless it
-  completes a delivered order.
+  the order as processing. A payment on its own sends no email.
+- **"Completed" email follows delivery.** The *Order completed* template (default
+  subject "Order Delivered") is sent when the order is delivered, even if it is
+  not paid yet, not when it becomes both delivered and paid.
 - **Every timeline comment is emailed to the customer.** There is no separate
   "customer note" field and, for now, no private-note option in the admin
   screen. Internal comments are only possible through the API.
@@ -193,6 +211,10 @@ one-to-one:
   order actions are not implemented.
 - **Silent on older WordPress.** Below WordPress 6.0 / 6.1, the Reset password /
   New account templates can be enabled but never send (section 5).
+- **Payment failed, not failed order.** The template WooCommerce calls "Failed
+  order" is *Payment failed* here (settings key `payment_failed`), because it is
+  only ever sent for a failed payment. An upgrade migration moved saved
+  `failed_order` settings to the new key.
 - **Inventory alerts can race.** Two checkouts at the same moment can both see
   stock above the threshold, which may send a duplicate or miss a low-stock
   alert. Alerts are advisory; check the inventory list for the actual numbers.

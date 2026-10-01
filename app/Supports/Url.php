@@ -200,6 +200,18 @@ class Url
     }
 
     /**
+     * Get the admin URL of the products list.
+     *
+     * @since 1.0.0
+     *
+     * @return string
+     */
+    public static function get_products_admin_url()
+    {
+        return admin_url('admin.php?page=kirki-ecommerce#/products');
+    }
+
+    /**
      * Get the admin edit URL for an order.
      *
      * @since 1.0.0

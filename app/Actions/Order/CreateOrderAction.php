@@ -183,15 +183,17 @@ class CreateOrderAction
             $order = $this->order_service->create_order($create_order_dto);
             $this->sync_address($dto, $order);
 
-            foreach ($dto->items as $item_data) {
-                $order_item_dto = $this->prepare_order_item_dto($order->id, $calculated_result->items[$item_data['variant_id']], $dto->currency_code, $order->exchange_rate);
+            $this->inventory_service->collect_stock_alerts(function () use ($dto, $order, $calculated_result) {
+                foreach ($dto->items as $item_data) {
+                    $order_item_dto = $this->prepare_order_item_dto($order->id, $calculated_result->items[$item_data['variant_id']], $dto->currency_code, $order->exchange_rate);
 
-                /* translators: %s: variant ID */
-                throw_if(!$this->inventory_service->has_stock($order_item_dto->variant_id, $order_item_dto->quantity), sprintf(__('Not enough stock for variant: %s', 'kirki-ecommerce'), $order_item_dto->variant_id));
+                    /* translators: %s: variant ID */
+                    throw_if(!$this->inventory_service->has_stock($order_item_dto->variant_id, $order_item_dto->quantity), sprintf(__('Not enough stock for variant: %s', 'kirki-ecommerce'), $order_item_dto->variant_id));
 
-                $this->order_service->create_order_item($order_item_dto);
-                $this->inventory_service->reserve_stock($order_item_dto->variant_id, $order_item_dto->quantity);
-            }
+                    $this->order_service->create_order_item($order_item_dto);
+                    $this->inventory_service->reserve_stock($order_item_dto->variant_id, $order_item_dto->quantity);
+                }
+            });
 
             $order_with_items = $order->fresh('items');
 

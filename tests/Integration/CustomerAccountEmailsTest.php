@@ -186,6 +186,28 @@ class CustomerAccountEmailsTest extends RestTestCase
     }
 
     /**
+     * An admin-created customer linked to an existing WordPress user gets no new-account email.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_customer_linked_to_existing_user_queues_nothing(): void
+    {
+        $user = $this->create_user('subscriber');
+        $this->queue->clear();
+
+        $payload = $this->assert_api_success($this->request('POST', 'customers', [
+            'first_name' => 'Jane',
+            'last_name' => 'Smith',
+            'email' => $user->user_email,
+            'create_wordpress_user' => true,
+        ]), 201);
+
+        $this->assertSame($user->ID, (int) $payload['data']['user_id']);
+        $this->assertSame([], $this->pushed_user_mail(CustomerNewAccountMail::class));
+    }
+
+    /**
      * An administrator account gets no store new-account email.
      *
      * @return void

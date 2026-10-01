@@ -7,28 +7,19 @@ use Kirki\Ecommerce\App\Mails\Mailer;
 use Kirki\Ecommerce\App\Models\Variant;
 use Kirki\Ecommerce\Framework\Contracts\ShouldQueue;
 use Kirki\Ecommerce\Framework\Queue\Concerns\Queueable;
-use Kirki\Ecommerce\Framework\Queue\Concerns\SerializesModels;
 use RuntimeException;
 
 /**
- * Sends one inventory email about a variant to one recipient in the background.
+ * Sends one inventory email about a group of variants to one recipient in the background.
  *
  * @since 1.0.0
  */
-class SendVariantMailJob implements ShouldQueue
+class SendInventoryMailJob implements ShouldQueue
 {
     use Queueable;
-    use SerializesModels;
     use SendsMail;
 
     const QUEUE = 'emails';
-
-    /**
-     * Delete the job if the variant no longer exists.
-     *
-     * @var bool
-     */
-    protected $delete_when_missing_models = true;
 
     /**
      * The number of times the job may be attempted.
@@ -45,11 +36,11 @@ class SendVariantMailJob implements ShouldQueue
     protected $backoff = 60;
 
     /**
-     * The variant the email is about.
+     * IDs of the variants the email is about.
      *
-     * @var Variant
+     * @var int[]
      */
-    public $variant;
+    public $variant_ids;
 
     /**
      * The Mailer subclass that builds the email content.
@@ -68,18 +59,18 @@ class SendVariantMailJob implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * The variant is stored as an identifier and re-fetched when the job runs,
-     * so the email shows the stock at the time it is sent.
+     * Only the variant IDs are stored. The variants are re-fetched when the job
+     * runs, so the email shows the stock at the time it is sent.
      *
      * @since 1.0.0
      *
-     * @param Variant $variant      The variant the email is about.
-     * @param string  $mailer_class The Mailer subclass that builds the email.
-     * @param string  $email        The recipient email address.
+     * @param int[]  $variant_ids  IDs of the variants the email is about.
+     * @param string $mailer_class The Mailer subclass that builds the email.
+     * @param string $email        The recipient email address.
      */
-    public function __construct(Variant $variant, string $mailer_class, string $email)
+    public function __construct(array $variant_ids, string $mailer_class, string $email)
     {
-        $this->variant = $variant;
+        $this->variant_ids = array_values(array_map('intval', $variant_ids));
         $this->mailer_class = $mailer_class;
         $this->email = $email;
 
@@ -87,7 +78,7 @@ class SendVariantMailJob implements ShouldQueue
     }
 
     /**
-     * Send the email unless it is disabled or has no recipient.
+     * Send the email unless it is disabled, has no recipient, or none of its variants still exist.
      *
      * @since 1.0.0
      *
@@ -100,8 +91,14 @@ class SendVariantMailJob implements ShouldQueue
             return;
         }
 
+        $variants = Variant::with(['product', 'attribute_values'])->where_in('id', $this->variant_ids)->get()->all();
+
+        if (empty($variants)) {
+            return;
+        }
+
         /** @var Mailer $mailer */
-        $mailer = new $this->mailer_class($this->variant);
+        $mailer = new $this->mailer_class(...$variants);
 
         $this->deliver($mailer, $this->email);
     }

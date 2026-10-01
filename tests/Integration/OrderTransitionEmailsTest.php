@@ -7,14 +7,14 @@ use Kirki\Ecommerce\App\Constants\Order\OrderStatus;
 use Kirki\Ecommerce\App\Facades\Order as OrderManager;
 use Kirki\Ecommerce\App\Jobs\SendOrderMailJob;
 use Kirki\Ecommerce\App\Mails\Admins\AdminOrderCancelledMail;
-use Kirki\Ecommerce\App\Mails\Admins\AdminOrderFailedMail;
+use Kirki\Ecommerce\App\Mails\Admins\AdminPaymentFailedMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerNewOrderMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderCancelMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderCompletedMail;
-use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderFailedMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderOnHoldMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderProcessingMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderShippedMail;
+use Kirki\Ecommerce\App\Mails\Customers\CustomerPaymentFailedMail;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Framework\Queue\QueueFake;
 use Kirki\Ecommerce\Framework\Queue\QueueManager;
@@ -162,7 +162,7 @@ class OrderTransitionEmailsTest extends RestTestCase
      * @return void
      * @since 1.0.0
      */
-    public function test_delivering_a_paid_order_queues_completed_email(): void
+    public function test_delivering_a_paid_order_queues_delivered_email(): void
     {
         $order = $this->place_order();
         $this->perform($order, OrderAction::MARK_AS_PAID, ['payment_provider' => 'paypal']);
@@ -177,12 +177,12 @@ class OrderTransitionEmailsTest extends RestTestCase
     }
 
     /**
-     * Delivering an unpaid order sends no completed email until it is paid.
+     * Delivering an unpaid order emails the customer straight away.
      *
      * @return void
      * @since 1.0.0
      */
-    public function test_delivered_order_is_completed_when_paid(): void
+    public function test_delivering_an_unpaid_order_queues_delivered_email(): void
     {
         $order = $this->place_order();
         $this->perform($order, OrderAction::MARK_AS_PROCESSING);
@@ -191,11 +191,48 @@ class OrderTransitionEmailsTest extends RestTestCase
 
         $this->perform($order, OrderAction::MARK_AS_DELIVERED);
 
-        $this->assertSame([], $this->queued_mailers());
+        $this->assertSame(OrderStatus::DELIVERED_UNPAID, $order->fresh()->order_status);
+        $this->assertSame([CustomerOrderCompletedMail::class], $this->queued_mailers());
+    }
+
+    /**
+     * Delivering an order whose payment failed still emails the customer.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_delivering_an_order_with_failed_payment_queues_delivered_email(): void
+    {
+        $order = $this->place_order();
+        $this->perform($order, OrderAction::MARK_AS_PROCESSING);
+        $this->perform($order, OrderAction::MARK_AS_SHIPPED);
+        OrderManager::mark_payment_as_failed($order->id);
+        $this->queue->clear();
+
+        $this->perform($order, OrderAction::MARK_AS_DELIVERED);
+
+        $this->assertSame(OrderStatus::FAILED_DELIVERED, $order->fresh()->order_status);
+        $this->assertSame([CustomerOrderCompletedMail::class], $this->queued_mailers());
+    }
+
+    /**
+     * Paying for an order that was already delivered sends no second delivered email.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_paying_a_delivered_order_sends_no_email(): void
+    {
+        $order = $this->place_order();
+        $this->perform($order, OrderAction::MARK_AS_PROCESSING);
+        $this->perform($order, OrderAction::MARK_AS_SHIPPED);
+        $this->perform($order, OrderAction::MARK_AS_DELIVERED);
+        $this->queue->clear();
 
         $this->perform($order, OrderAction::MARK_AS_PAID, ['payment_provider' => 'paypal']);
 
-        $this->assertSame([CustomerOrderCompletedMail::class], $this->queued_mailers());
+        $this->assertSame(OrderStatus::COMPLETED, $order->fresh()->order_status);
+        $this->assertSame([], $this->queued_mailers());
     }
 
     /**
@@ -231,7 +268,7 @@ class OrderTransitionEmailsTest extends RestTestCase
         OrderManager::mark_payment_as_failed($order->id);
         OrderManager::mark_payment_as_failed($order->id);
 
-        $this->assertSame([CustomerOrderFailedMail::class, AdminOrderFailedMail::class], $this->queued_mailers());
+        $this->assertSame([CustomerPaymentFailedMail::class, AdminPaymentFailedMail::class], $this->queued_mailers());
     }
 
     /**

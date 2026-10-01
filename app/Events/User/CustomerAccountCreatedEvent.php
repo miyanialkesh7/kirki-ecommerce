@@ -7,7 +7,7 @@ use Kirki\Ecommerce\Framework\Concerns\Dispatchable;
 /**
  * Event for a WordPress user account created for a customer.
  *
- * Dispatched for registration, checkout and admin-created customers alike,
+ * Dispatched for self-registered and admin-created customers alike,
  * only when the store's new-account email replaces the WordPress default one.
  *
  * @since 1.0.0

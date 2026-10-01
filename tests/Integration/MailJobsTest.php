@@ -3,7 +3,7 @@
 namespace Kirki\Ecommerce\Tests\Integration;
 
 use Kirki\Ecommerce\App\Jobs\SendUserMailJob;
-use Kirki\Ecommerce\App\Jobs\SendVariantMailJob;
+use Kirki\Ecommerce\App\Jobs\SendInventoryMailJob;
 use Kirki\Ecommerce\App\Mails\Mailer;
 use Kirki\Ecommerce\App\Models\Variant;
 use Kirki\Ecommerce\App\Wordpress\User;
@@ -112,46 +112,59 @@ class MailJobsTest extends RestTestCase
     }
 
     /**
-     * The variant mail job sends to its recipient.
+     * The inventory mail job sends to its recipient.
      *
      * @return void
      * @since 1.0.0
      */
-    public function test_variant_mail_job_sends_mail(): void
+    public function test_inventory_mail_job_sends_mail(): void
     {
-        (new SendVariantMailJob($this->variant(), FakeVariantMail::class, 'admin@example.com'))->handle();
+        (new SendInventoryMailJob([$this->variant()->id], FakeVariantMail::class, 'admin@example.com'))->handle();
 
         $this->assertSame(['admin@example.com'], FakeVariantMail::$recipients);
     }
 
     /**
-     * A disabled variant mail is skipped.
+     * A disabled inventory mail is skipped.
      *
      * @return void
      * @since 1.0.0
      */
-    public function test_variant_mail_job_skips_disabled_mail(): void
+    public function test_inventory_mail_job_skips_disabled_mail(): void
     {
         FakeVariantMail::$enabled = false;
 
-        (new SendVariantMailJob($this->variant(), FakeVariantMail::class, 'admin@example.com'))->handle();
+        (new SendInventoryMailJob([$this->variant()->id], FakeVariantMail::class, 'admin@example.com'))->handle();
 
         $this->assertSame([], FakeVariantMail::$recipients);
     }
 
     /**
-     * A failed variant mail send throws so the queue retries the job.
+     * A failed inventory mail send throws so the queue retries the job.
      *
      * @return void
      * @since 1.0.0
      */
-    public function test_variant_mail_job_throws_when_sending_fails(): void
+    public function test_inventory_mail_job_throws_when_sending_fails(): void
     {
         FakeVariantMail::$sent = false;
 
         $this->expectException(RuntimeException::class);
 
-        (new SendVariantMailJob($this->variant(), FakeVariantMail::class, 'admin@example.com'))->handle();
+        (new SendInventoryMailJob([$this->variant()->id], FakeVariantMail::class, 'admin@example.com'))->handle();
+    }
+
+    /**
+     * An inventory mail job whose variants are all gone sends nothing.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_inventory_mail_job_skips_missing_variants(): void
+    {
+        (new SendInventoryMailJob([PHP_INT_MAX], FakeVariantMail::class, 'admin@example.com'))->handle();
+
+        $this->assertSame([], FakeVariantMail::$recipients);
     }
 
     /**
@@ -266,11 +279,11 @@ class FakeVariantMail extends Mailer
     public static $recipients = [];
 
     /**
-     * Accept the variant like a real inventory mail does.
+     * Accept the variants like a real inventory mail does.
      *
-     * @param Variant $variant The variant.
+     * @param Variant ...$variants The variants.
      */
-    public function __construct(Variant $variant) {}
+    public function __construct(Variant ...$variants) {}
 
     /**
      * Restore the default state.

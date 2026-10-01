@@ -191,7 +191,7 @@ class PayPal extends PaymentProvider
                     'custom_id' => (string) $order->id,
                     'invoice_id' => (string) $order->order_number,
                     /* translators: %s: order number */
-                    'description' => sprintf(__('Order #%s', 'kirki-ecommerce'), $order->order_number),
+                    'description' => sprintf(__('Order %s', 'kirki-ecommerce'), $order->order_number),
                     'items' => $items,
                 ]
             ];

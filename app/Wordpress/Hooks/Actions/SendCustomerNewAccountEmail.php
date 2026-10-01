@@ -55,7 +55,7 @@ class SendCustomerNewAccountEmail extends BaseHook
      * Dispatch the new-account event when the store takes over the new user's email.
      *
      * Runs on the `user_register` action, which fires after the user's role is
-     * set, for registration, checkout and admin-created users alike.
+     * set, for self-registered and admin-created users alike.
      *
      * @since 1.0.0
      *

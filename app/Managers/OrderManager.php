@@ -13,7 +13,7 @@ use Kirki\Ecommerce\App\Constants\Order\OrderActivityType;
 use Kirki\Ecommerce\App\DTO\Refund\CreateRefundPayloadDTO;
 use Kirki\Ecommerce\App\DTO\Refund\UpdateRefundPayloadDTO;
 use Kirki\Ecommerce\App\Events\Order\OrderCancelledEvent;
-use Kirki\Ecommerce\App\Events\Order\OrderCompletedEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderDeliveredEvent;
 use Kirki\Ecommerce\App\Events\Order\OrderOnHoldEvent;
 use Kirki\Ecommerce\App\Events\Order\OrderPaymentFailedEvent;
 use Kirki\Ecommerce\App\Events\Order\OrderProcessingEvent;
@@ -277,7 +277,10 @@ class OrderManager
             $status_before = $order->order_status;
             $order = $this->order_service->find_order_or_fail($id);
             OrderActivity::log($order, OrderActivityType::DELIVERED);
-            $this->dispatch_completed_event($order, $status_before);
+
+            if ($order->order_status !== $status_before) {
+                OrderDeliveredEvent::dispatch($order);
+            }
         }
 
         return $is_delivered;
@@ -356,10 +359,7 @@ class OrderManager
                 $this->inventory_service->confirm_all_reserved_stock($order);
             }
 
-            $status_before = $order->order_status;
-            $order = $this->order_service->find_order_or_fail($id);
-            OrderActivity::log($order, OrderActivityType::PAYMENT_COMPLETED);
-            $this->dispatch_completed_event($order, $status_before);
+            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::PAYMENT_COMPLETED);
         }
 
         return $is_paid;
@@ -686,21 +686,5 @@ class OrderManager
         SendOrderMailJob::dispatch($order, CustomerNewOrderMail::class, (string) $order->customer_email);
 
         return true;
-    }
-
-    /**
-     * Dispatch the order-completed event when this transition is the one that completed the order.
-     *
-     * @since 1.0.0
-     *
-     * @param Order  $order         The order after the transition.
-     * @param string $status_before The order status before the transition.
-     * @return void
-     */
-    protected function dispatch_completed_event(Order $order, string $status_before)
-    {
-        if ($status_before !== OrderStatus::COMPLETED && $order->order_status === OrderStatus::COMPLETED) {
-            OrderCompletedEvent::dispatch($order);
-        }
     }
 }
