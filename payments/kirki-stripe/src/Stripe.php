@@ -102,7 +102,7 @@ class Stripe extends PaymentProvider
                     'price_data' => [
                         'currency' => $currency,
                         'product_data' => [
-                            'name' => __('Order #' . $order->order_number, 'kirki-ecommerce-stripe'),
+                            'name' => __('Order ' . $order->order_number, 'kirki-ecommerce-stripe'),
                         ],
                         'unit_amount' => (int) $order->invoiced_total,
                     ],

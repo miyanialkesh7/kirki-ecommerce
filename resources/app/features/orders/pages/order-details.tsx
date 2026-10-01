@@ -68,7 +68,7 @@ const OrderDetails = () => {
   if (isError || !order || !paymentBadge || !fulfillmentBadge) {
     return (
       <Page containerSize="xl">
-        <PageHeading sticky text={__('Orders', 'kirki-ecommerce')} hasBack onBack={handleBack} />
+        <PageHeading sticky text={__('Order', 'kirki-ecommerce')} hasBack onBack={handleBack} />
         <PageContent>
           <Card cssOverride={{ marginTop: theme.spacing[12] }}>
             <CardContent>
@@ -89,7 +89,7 @@ const OrderDetails = () => {
       <Form {...form}>
         <PageHeading
           sticky
-          text={`${__('Order', 'kirki-ecommerce')} #${order.order_number}`}
+          text={`${__('Order', 'kirki-ecommerce')} ${order.order_number}`}
           actions={
             <>
               {/* @todo: Edit is not workable now, implement it later */}

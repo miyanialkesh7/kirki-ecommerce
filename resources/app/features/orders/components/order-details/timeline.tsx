@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { useState } from 'react';
 
 import ConfirmationDialog from '@/components/modal/confirmation-dialog';
+import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Flex from '@/components/ui/flex';
@@ -46,7 +47,7 @@ const Timeline = ({ orderId }: TimelineProps) => {
     }
 
     createActivityMutation.mutate(
-      { orderId, data: { message: trimmed } },
+      { orderId, data: { message: trimmed, notify_customer: true } },
       { onSuccess: () => setMessage('') },
     );
   };
@@ -101,6 +102,9 @@ const Timeline = ({ orderId }: TimelineProps) => {
                         <Text variant="small" color="secondary">
                           {entry.description}
                         </Text>
+                        {entry.notify_customer && (
+                          <Badge variant="info">{__('Customer notified', 'kirki-ecommerce')}</Badge>
+                        )}
                       </Flex>
                       <Flex gap={2} align="center">
                         <Text variant="tiny" color="subdued" data-comment-time="true">
@@ -197,7 +201,7 @@ const styles = defineStyles({
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.background.solidSurfaceSecondary,
     color: theme.colors.text.secondary,
-    ...theme.typography.micro('medium'),
+    ...theme.typography.micro('semibold'),
     position: 'relative',
     zIndex: 1,
   },

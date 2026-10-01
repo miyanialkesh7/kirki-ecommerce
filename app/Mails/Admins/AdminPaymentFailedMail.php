@@ -12,11 +12,11 @@ use Kirki\Ecommerce\App\Supports\Url;
 use function Kirki\Ecommerce\Framework\collection;
 
 /**
- * Email sent to the store admin when an order fails.
+ * Email sent to the store admin when an order's payment fails.
  *
  * @since 1.0.0
  */
-class AdminOrderFailedMail extends Mailer
+class AdminPaymentFailedMail extends Mailer
 {
     /** @var Order */
     protected $order;
@@ -40,7 +40,7 @@ class AdminOrderFailedMail extends Mailer
      */
     public function option_key()
     {
-        return 'admin_emails.order_notifications.failed_order';
+        return 'admin_emails.order_notifications.payment_failed';
     }
 
     /**

@@ -17,7 +17,7 @@ class CustomerOrderNotification
 
     const NEW_ORDER = 'new_order';
     const CANCELLED_ORDER = 'cancelled_order';
-    const FAILED_ORDER = 'failed_order';
+    const PAYMENT_FAILED = 'payment_failed';
     const ORDER_ON_HOLD = 'order_on_hold';
     const ORDER_PROCESSING = 'order_processing';
     const ORDER_COMPLETED = 'order_completed';

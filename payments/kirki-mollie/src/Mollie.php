@@ -82,7 +82,7 @@ class Mollie extends PaymentProvider
 
         try {
             $response = $this->client->post([
-                'description' => 'Order #' . $order->id,
+                'description' => 'Order ' . $order->id,
                 'amount' => [
                     'currency' => strtoupper($order->currency_code),
                     'value' => $this->format_amount($order->invoiced_total, $order->currency_code),

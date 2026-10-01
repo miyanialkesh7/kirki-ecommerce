@@ -95,31 +95,46 @@ When an order is marked as shipped, the system SHALL send the customer "order sh
 - **WHEN** an admin adds tracking details to an order that has already been marked as shipped
 - **THEN** no additional order-shipped email is sent
 
-### Requirement: Completing an order notifies the customer
-When an order becomes completed, meaning it is both delivered and paid, the system SHALL send the customer "order completed" notification exactly once. This SHALL happen whichever way the order is completed: a paid order marked as delivered, or a delivered order marked as paid. A delivered order that is not yet paid SHALL NOT trigger the notification.
+### Requirement: Delivering an order notifies the customer
+When an order is marked as delivered, the system SHALL send the customer "order delivered" notification, whatever the order's payment status (paid, unpaid or failed). It SHALL be sent once per order: marking a delivered order as paid afterwards SHALL NOT send it again, and a delivery request that is not applied SHALL NOT send it.
 
 #### Scenario: Paid order delivered
 - **WHEN** an admin marks an already-paid order as delivered
-- **THEN** the customer receives the order-completed email
-
-#### Scenario: Delivered order paid
-- **WHEN** a delivered but unpaid order's payment is marked as paid, by an admin or a payment gateway
-- **THEN** the customer receives the order-completed email
+- **THEN** the customer receives the order-delivered email
 
 #### Scenario: Unpaid order delivered
 - **WHEN** an admin marks an unpaid order as delivered
-- **THEN** no order-completed email is sent
+- **THEN** the customer receives the order-delivered email
+
+#### Scenario: Delivered order paid later
+- **WHEN** a delivered but unpaid order's payment is marked as paid, by an admin or a payment gateway
+- **THEN** no additional order-delivered email is sent
+
+#### Scenario: Delivery not applied
+- **WHEN** a mark-as-delivered request is rejected or does not change the order's status
+- **THEN** no order-delivered email is sent
 
 ### Requirement: A failed payment notifies the customer and the admin once
-When an order's payment changes to failed, from an admin action or a payment gateway notification, the system SHALL send the customer "failed order" notification and the admin "failed order" notification. If the payment is already marked failed, a repeated failure report SHALL NOT send them again.
+When an order's payment changes to failed, from an admin action or a payment gateway notification, the system SHALL send the customer "payment failed" notification and the admin "payment failed" notification. If the payment is already marked failed, a repeated failure report SHALL NOT send them again.
 
 #### Scenario: Payment fails
 - **WHEN** a payment gateway reports that an order's payment failed and the order's payment was not already failed
-- **THEN** the customer receives the order-failed email and the store admin receives the order-failed email
+- **THEN** the customer receives the payment-failed email and the store admin receives the payment-failed email
 
 #### Scenario: Duplicate failure report
 - **WHEN** a payment gateway reports a failure for an order whose payment is already marked failed
-- **THEN** no additional order-failed email is sent
+- **THEN** no additional payment-failed email is sent
+
+### Requirement: Saved failed-order settings carry over to payment failed
+The "failed order" notification SHALL be renamed "payment failed", for both the customer and the admin. A store's saved settings for the old notification SHALL carry over: its enabled state and any copy the merchant edited SHALL be kept. A subject or heading still equal to the old default SHALL be replaced by the new "Payment failed" default.
+
+#### Scenario: Untouched default copy
+- **WHEN** a store that saved its email settings with the old default failed-order subject and heading is upgraded
+- **THEN** the payment-failed notification shows the new "Payment failed" subject and heading
+
+#### Scenario: Customised copy
+- **WHEN** a store that disabled the failed-order notification or edited its subject, heading or message is upgraded
+- **THEN** the payment-failed notification keeps that enabled state and the merchant's edited copy
 
 ### Requirement: A customer-visible order note notifies the customer
 When an admin adds a comment to an order and chooses to notify the customer, the system SHALL send the customer "order note" notification containing that comment's text. Comments added without that choice SHALL NOT email the customer.
@@ -152,11 +167,11 @@ On WordPress 6.0 or newer, when a user who is not a store administrator requests
 - **THEN** the customer receives only the WordPress default reset email and the store's reset-password email is not sent
 
 ### Requirement: New customer accounts receive a welcome email
-On WordPress 6.1 or newer, when a WordPress user account is created for someone who is not a store administrator, whether by self-registration, at checkout, or by an admin creating a customer, the system SHALL send the customer "new account" notification. It SHALL include a link that lets the customer set their password. While that template is enabled, WordPress's own new-user email to that user SHALL NOT be sent. If the template is disabled, WordPress's default behaviour SHALL be unchanged.
+On WordPress 6.1 or newer, when a WordPress user account is created for someone who is not a store administrator, whether by self-registration or by an admin creating a customer with a WordPress account, the system SHALL send the customer "new account" notification. It SHALL include a link that lets the customer set their password. While that template is enabled, WordPress's own new-user email to that user SHALL NOT be sent. If the template is disabled, WordPress's default behaviour SHALL be unchanged.
 
-#### Scenario: Account created at checkout
-- **WHEN** a customer checks out and an account is created for them
-- **THEN** they receive the new-account email with a set-password link
+#### Scenario: Account created by an admin
+- **WHEN** an admin creates a customer and chooses to create a WordPress user for them
+- **THEN** the customer receives the new-account email with a set-password link
 
 #### Scenario: Self-registration
 - **WHEN** a visitor registers an account through the site's registration form and the new-account template is enabled
@@ -165,6 +180,10 @@ On WordPress 6.1 or newer, when a WordPress user account is created for someone 
 #### Scenario: Set-password link works
 - **WHEN** a new customer follows the set-password link from their new-account email
 - **THEN** they can choose a password and sign in with it
+
+#### Scenario: Customer linked to an existing account
+- **WHEN** an admin creates a customer whose email address already belongs to a WordPress user
+- **THEN** the customer is linked to that existing account and no new-account email is sent
 
 #### Scenario: Administrator account created
 - **WHEN** a user with store administrator capabilities is created
@@ -175,11 +194,11 @@ On WordPress 6.1 or newer, when a WordPress user account is created for someone 
 - **THEN** the store's new-account email is not sent, and WordPress's default new-user behaviour is unchanged
 
 ### Requirement: Stock crossing a low or zero level alerts the admin once
-For variants that track inventory, the system SHALL send the admin "low stock" notification when a stock reduction takes the variant's available quantity from above its low-stock threshold to at or below it while still above zero. It SHALL send the admin "out of stock" notification when a stock reduction takes the available quantity from above zero to zero or below. The low-stock threshold SHALL be the variant's own threshold if set, otherwise the store default. With no threshold (zero or unset), no low-stock alert SHALL be sent. Reductions that do not cross a level SHALL NOT alert again. Restocking above a level and then crossing it again SHALL alert again.
+For variants that track inventory, the system SHALL send the admin "low stock" notification when a stock reduction takes the variant's available quantity from above its low-stock threshold to at or below it while still above zero. It SHALL send the admin "out of stock" notification when a stock reduction takes the available quantity from above zero to zero or below. The low-stock threshold SHALL be the variant's own threshold if set, otherwise the store default. With no threshold (zero or unset), no low-stock alert SHALL be sent. Reductions that do not cross a level SHALL NOT alert again. Restocking above a level and then crossing it again SHALL alert again. The crossings caused by one order operation (placing an order, or editing an order's items) SHALL be grouped: at most one low-stock email listing every variant that crossed its threshold, and at most one out-of-stock email listing every variant that ran out.
 
 #### Scenario: Stock drops to the threshold
 - **WHEN** an order reduces a tracked variant's available quantity from 6 to 5 and its low-stock threshold is 5
-- **THEN** the store admin receives one low-stock email for that variant
+- **THEN** the store admin receives one low-stock email listing that variant
 
 #### Scenario: Stock keeps dropping below the threshold
 - **WHEN** a later order reduces the same variant's available quantity from 5 to 3
@@ -187,11 +206,15 @@ For variants that track inventory, the system SHALL send the admin "low stock" n
 
 #### Scenario: Stock runs out
 - **WHEN** an order reduces a tracked variant's available quantity from 2 to 0
-- **THEN** the store admin receives one out-of-stock email for that variant
+- **THEN** the store admin receives one out-of-stock email listing that variant
 
 #### Scenario: A single reduction crosses both levels
 - **WHEN** an order reduces a tracked variant's available quantity from 10 to 0 and its low-stock threshold is 5
 - **THEN** the store admin receives the out-of-stock email and no low-stock email
+
+#### Scenario: One order crosses several variants
+- **WHEN** one order reduces variant A from 6 to 5 and variant B from 6 to 4 (both with threshold 5), and variant C from 2 to 0
+- **THEN** the store admin receives one low-stock email listing A and B, and one out-of-stock email listing C
 
 #### Scenario: Untracked variant
 - **WHEN** an order reduces stock on a variant that does not track inventory

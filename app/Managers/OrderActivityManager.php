@@ -3,12 +3,15 @@
 namespace Kirki\Ecommerce\App\Managers;
 
 use Kirki\Ecommerce\App\Constants\Order\OrderActivityType;
+use Kirki\Ecommerce\App\Events\Order\OrderNoteAddedEvent;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Models\OrderActivity;
 use Kirki\Ecommerce\App\Models\Refund;
 use Kirki\Ecommerce\App\Services\OrderActivityService;
+use Kirki\Ecommerce\App\Services\OrderService;
 
+use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\throw_anyway;
 use function Kirki\Ecommerce\Framework\user;
 
@@ -317,22 +320,36 @@ class OrderActivityManager
     /**
      * Add a comment activity to an order.
      *
+     * When the customer is to be notified, the flag is kept in the activity's
+     * metadata and the order-note email is queued with the comment's text.
+     *
      * @since 1.0.0
      *
      * @param int      $order_id
-     * @param string   $message    Comment text, stored verbatim as the description.
-     * @param int|null $created_by Author user ID; defaults to the current user.
+     * @param string   $message         Comment text, stored verbatim as the description.
+     * @param int|null $created_by      Author user ID; defaults to the current user.
+     * @param bool     $notify_customer Whether to email the comment to the order's customer.
      * @return OrderActivity
      */
-    public function comment(int $order_id, string $message, ?int $created_by = null)
+    public function comment(int $order_id, string $message, ?int $created_by = null, bool $notify_customer = false)
     {
-        return $this->order_activity_service->create(
+        $activity = $this->order_activity_service->create(
             $order_id,
             OrderActivityType::COMMENT_ADDED,
             $message,
-            null,
+            $notify_customer ? ['notify_customer' => true] : null,
             $this->resolve_author($created_by)
         );
+
+        if ($notify_customer) {
+            $order = app(OrderService::class)->find_order($order_id);
+
+            if (!empty($order)) {
+                OrderNoteAddedEvent::dispatch($order, $message);
+            }
+        }
+
+        return $activity;
     }
 
     /**

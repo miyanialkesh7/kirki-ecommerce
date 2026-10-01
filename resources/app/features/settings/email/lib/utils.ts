@@ -103,7 +103,7 @@ type NotificationTemplateDictionaryEntry = NotificationTemplateRef & { label: st
 const ADMIN_ORDER_NOTIFICATION_LABELS: Record<string, string> = {
   new_order: __('New Order', 'kirki-ecommerce'),
   cancelled_order: __('Cancelled Order', 'kirki-ecommerce'),
-  failed_order: __('Failed Order', 'kirki-ecommerce'),
+  payment_failed: __('Payment Failed', 'kirki-ecommerce'),
 };
 
 const ADMIN_USER_NOTIFICATION_LABELS: Record<string, string> = {
@@ -118,7 +118,7 @@ const ADMIN_INVENTORY_NOTIFICATION_LABELS: Record<string, string> = {
 const CUSTOMER_ORDER_NOTIFICATION_LABELS: Record<string, string> = {
   new_order: __('New Order', 'kirki-ecommerce'),
   cancelled_order: __('Cancelled Order', 'kirki-ecommerce'),
-  failed_order: __('Failed Order', 'kirki-ecommerce'),
+  payment_failed: __('Payment Failed', 'kirki-ecommerce'),
   order_on_hold: __('Order on Hold', 'kirki-ecommerce'),
   order_processing: __('Order Processing', 'kirki-ecommerce'),
   order_completed: __('Order Completed', 'kirki-ecommerce'),
