@@ -10,10 +10,9 @@ import DiscountPopover from '@/features/orders/components/order-create/payment/d
 import ShippingPopover from '@/features/orders/components/order-create/payment/shipping-popover';
 import type { OrderCalculation } from '@/features/orders/schemas/catalog/order';
 import { theme } from '@/theme';
-import { cardStyles } from '@/theme/card-styles';
 import { defineStyles } from '@/theme/mixins';
 import { isDefined } from '@/utils/object';
-import { __, sprintf } from '@/wpi18n';
+import { __, _n, sprintf } from '@/wpi18n';
 
 const EMPTY_AMOUNT = '—';
 
@@ -95,7 +94,7 @@ const PaymentSummaryCard = ({
   }, [itemsCount]);
 
   return (
-    <Card cssOverride={cardStyles.formCard}>
+    <Card cssOverride={{ gap: theme.spacing[3] }}>
       <CardHeader cssOverride={styles.headerRow}>
         <CardTitle>
           <Text variant="heading6">{__('Payment', 'kirki-ecommerce')}</Text>
@@ -109,13 +108,16 @@ const PaymentSummaryCard = ({
         <Flex direction="column" gap={2} cssOverride={styles.dashedCard}>
           <Flex justify="space-between">
             <Text variant="small" color="secondary" cssOverride={styles.info}>
-              {__('Subtotal', 'kirki-ecommerce')}
+              {__('Subtotal (Excl. tax)', 'kirki-ecommerce')}
             </Text>
             {isProductSelected ? (
               <Flex justify="space-between" grow={1}>
                 {/* translators: %s: number of items */}
                 <Text variant="small" color="secondary">
-                  {sprintf(__('%s items', 'kirki-ecommerce'), itemsCount ?? 0)}
+                  {sprintf(
+                    _n('%s item', '%s items', itemsCount ?? 0, 'kirki-ecommerce'),
+                    itemsCount ?? 0,
+                  )}
                 </Text>
                 <Text>{subtotalDisplay}</Text>
               </Flex>
@@ -179,7 +181,7 @@ const PaymentSummaryCard = ({
             ))
           )}
 
-          <Separator />
+          <Separator color={theme.colors.border.secondary} />
 
           <Flex justify="space-between">
             <Text variant="small" weight="semibold">
@@ -240,7 +242,7 @@ const PaymentSummaryCard = ({
             </Flex>
           )}
 
-          <Separator />
+          <Separator color={theme.colors.border.secondary} />
 
           <Flex justify="space-between">
             <Text variant="small" weight="semibold">

@@ -229,7 +229,6 @@ const OrderCalculationRequestSchema = z
     customer_email: values.customer_email ?? null,
     customer_phone: values.customer_phone ?? null,
 
-    admin_notes: values.admin_notes ?? null,
     is_manual: values.is_manual,
   }));
 

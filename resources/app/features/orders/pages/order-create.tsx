@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router';
 import Button from '@/components/ui/button';
 import Flex from '@/components/ui/flex';
 import { Form } from '@/components/ui/form';
-import { Page, PageContent, PageHeading } from '@/components/ui/page';
+import { Page, PAGE_HEADING_HEIGHT, PageContent, PageHeading } from '@/components/ui/page';
 import CustomerCard from '@/features/orders/components/order-create/customer-card';
 import NotesCard from '@/features/orders/components/order-create/notes-card';
 import PaymentSummaryCard from '@/features/orders/components/order-create/payment-summary-card';
@@ -12,6 +12,7 @@ import ProductSelectionCard from '@/features/orders/components/order-create/prod
 import { OrderCreateProvider } from '@/features/orders/contexts/order-create-context';
 import { useOrderCreate } from '@/features/orders/hooks/use-order-create';
 import { SelectProductsDialog } from '@/features/products';
+import { theme } from '@/theme';
 import { __ } from '@/wpi18n';
 
 const OrderCreateContent = () => {
@@ -44,7 +45,7 @@ const OrderCreateContent = () => {
     <Page containerSize="xl">
       <Form {...form}>
         <PageHeading
-          text={__('Create order', 'kirki-ecommerce')}
+          text={__('New order', 'kirki-ecommerce')}
           sticky
           actions={
             <>
@@ -52,7 +53,7 @@ const OrderCreateContent = () => {
                 {__('Cancel', 'kirki-ecommerce')}
               </Button>
               <Button variant="primary" onClick={handleSubmit} loading={isCreating}>
-                {__('Save', 'kirki-ecommerce')}
+                {__('Create Order', 'kirki-ecommerce')}
               </Button>
             </>
           }
@@ -80,7 +81,16 @@ const OrderCreateContent = () => {
               />
             </Flex>
 
-            <Flex direction="column" gap={4} cssOverride={{ width: '30%' }}>
+            <Flex
+              direction="column"
+              gap={4}
+              cssOverride={{
+                width: '30%',
+                position: 'sticky',
+                top: `calc(${PAGE_HEADING_HEIGHT} + ${theme.spacing[8]})`,
+                alignSelf: 'flex-start',
+              }}
+            >
               <CustomerCard />
               <NotesCard />
             </Flex>

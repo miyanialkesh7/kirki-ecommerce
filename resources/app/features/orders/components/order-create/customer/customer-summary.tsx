@@ -49,7 +49,7 @@ const CustomerSummary = ({
         ) : (
           <div css={scoped(styles.initialsAvatar)}>{getInitials(name)}</div>
         )}
-        <Flex direction="column" gap={2}>
+        <Flex direction="column" gap={1}>
           <Text weight="medium">{name}</Text>
           {email && (
             <Text variant="small" color="secondary">

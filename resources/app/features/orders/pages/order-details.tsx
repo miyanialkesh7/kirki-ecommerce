@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Flex from '@/components/ui/flex';
 import { Form } from '@/components/ui/form';
-import { Page, PageContent, PageHeading } from '@/components/ui/page';
+import { Page, PAGE_HEADING_HEIGHT, PageContent, PageHeading } from '@/components/ui/page';
 import Text from '@/components/ui/text';
 import CustomerCard from '@/features/orders/components/order-create/customer-card';
 import NotesCard from '@/features/orders/components/order-create/notes-card';
@@ -129,7 +129,7 @@ const OrderDetails = () => {
         <PageContent>
           <Flex gap={4}>
             <Flex direction="column" gap={4} cssOverride={{ width: '70%' }}>
-              <Card cssOverride={cardStyles.formCard}>
+              <Card cssOverride={{ gap: theme.spacing[2] }}>
                 <CardHeader>
                   <CardTitle>
                     <Text variant="heading6" weight="semibold">
@@ -175,7 +175,16 @@ const OrderDetails = () => {
               <Timeline orderId={order.id} />
             </Flex>
 
-            <Flex direction="column" gap={4} cssOverride={{ width: '30%' }}>
+            <Flex
+              direction="column"
+              gap={4}
+              cssOverride={{
+                width: '30%',
+                position: 'sticky',
+                top: `calc(${PAGE_HEADING_HEIGHT} + ${theme.spacing[8]})`,
+                alignSelf: 'flex-start',
+              }}
+            >
               <TakeActionCard
                 order={order}
                 onAction={handleAction}
@@ -186,7 +195,7 @@ const OrderDetails = () => {
 
               <FlagCard onSave={handleSaveOrder} />
 
-              <NotesCard onSave={handleSaveOrder} isSaving={isSaving} />
+              <NotesCard isEditable={false} />
             </Flex>
           </Flex>
         </PageContent>

@@ -30,7 +30,7 @@ const ProductSelectionCard = ({
         <CardContent>
           <Flex direction="column" gap={9} align="center" justify="center">
             <ProductIcon />
-            <Button variant="secondary" onClick={onOpenPicker}>
+            <Button size="sm" variant="secondary" onClick={onOpenPicker}>
               <PlusIcon />
               <Text variant="small" weight="medium">
                 {__('Select Product', 'kirki-ecommerce')}
@@ -43,7 +43,7 @@ const ProductSelectionCard = ({
   }
 
   return (
-    <Card cssOverride={cardStyles.formCard}>
+    <Card cssOverride={mergeCss(cardStyles.formCard, { rowGap: theme.spacing[3] })}>
       <CardHeader cssOverride={styles.headerRow}>
         <CardTitle>
           <Text variant="heading6" weight="semibold">
@@ -97,6 +97,9 @@ const styles = defineStyles({
   itemsTable: {
     '& th, & td': {
       padding: '10px',
+    },
+    '& tbody tr:last-child': {
+      borderBottom: 'none',
     },
   },
 });

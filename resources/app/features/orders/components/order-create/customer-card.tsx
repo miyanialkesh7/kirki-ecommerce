@@ -29,8 +29,8 @@ import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form'
 import { ShowMoreIcon } from '@/icons';
 import { useCountriesQuery } from '@/services/country';
 import { theme } from '@/theme';
-import { cardStyles } from '@/theme/card-styles';
 import { defineStyles } from '@/theme/mixins';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 type CustomerCardProps = {
@@ -147,22 +147,24 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
   };
 
   return (
-    <Card cssOverride={cardStyles.formCard}>
+    <Card cssOverride={{ gap: theme.spacing[2] }}>
       <CardHeader cssOverride={styles.headerRow}>
-        <Flex gap={2} align="center">
-          <CardTitle>
+        <CardTitle>
+          <Flex gap={2} align="center">
             <Text variant="small" weight="medium">
               {__('Customer', 'kirki-ecommerce')}
             </Text>
-          </CardTitle>
-          {!customerId && <Badge variant="info">{__('Guest', 'kirki-ecommerce')}</Badge>}
-        </Flex>
+            {isDefined(customer) && !customer.user_id && (
+              <Badge variant="info">{__('Guest', 'kirki-ecommerce')}</Badge>
+            )}
+          </Flex>
+        </CardTitle>
         {customer && !readonly && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="secondary"
-                size="icon"
+                size="icon-sm"
                 aria-label={__('More options', 'kirki-ecommerce')}
               >
                 <ShowMoreIcon />
@@ -283,6 +285,7 @@ const styles = defineStyles({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: '28px',
   },
   changeActions: {
     marginTop: theme.spacing[3],

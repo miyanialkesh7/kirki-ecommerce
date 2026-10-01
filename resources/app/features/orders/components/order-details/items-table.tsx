@@ -95,5 +95,8 @@ const styles = defineStyles({
     '& tbody tr:hover, & tbody tr[data-active="true"]': {
       backgroundColor: theme.colors.background.surface,
     },
+    '& tbody tr:last-child': {
+      borderBottom: 'none',
+    },
   },
 });
