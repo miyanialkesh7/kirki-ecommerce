@@ -280,7 +280,7 @@ class CustomerService
     }
 
     /**
-     * Delete a customer by ID, along with the linked WordPress user.
+     * Delete a customer by ID.
      *
      * @since 1.0.0
      *
@@ -290,25 +290,15 @@ class CustomerService
      */
     public function delete(int $id)
     {
-        $customer = Customer::with('billing_address', 'shipping_address')->find($id);
-
-        throw_if(empty($customer), __('Customer could not be found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
-
         $is_deleted = (bool) Customer::query()->where('id', $id)->delete();
 
         throw_if(!$is_deleted, __('Customer could not be deleted.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
-
-        if (!function_exists('wp_delete_user')) {
-            require_once ABSPATH . 'wp-admin/includes/user.php';
-        }
-
-        wp_delete_user($customer->user_id);
 
         return true;
     }
 
     /**
-     * Delete multiple customers by their IDs, along with their linked WordPress users.
+     * Delete multiple customers by their IDs.
      *
      * @since 1.0.0
      *
@@ -318,24 +308,15 @@ class CustomerService
      */
     public function bulk_delete(array $ids)
     {
-        $user_ids = Customer::where_in('id', $ids)->get()->pluck('user_id')->all();
         $is_deleted = (bool) Customer::where_in('id', $ids)->delete();
 
         throw_if(!$is_deleted, __('Customers could not be deleted.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
-
-        if (!function_exists('wp_delete_user')) {
-            require_once ABSPATH . 'wp-admin/includes/user.php';
-        }
-
-        foreach ($user_ids as $user_id) {
-            wp_delete_user($user_id);
-        }
 
         return true;
     }
 
     /**
-     * Delete every customer matching the filters, along with their linked WordPress users.
+     * Delete every customer matching the filters.
      *
      * Runs in a transaction that is rolled back on failure.
      *
@@ -350,14 +331,6 @@ class CustomerService
         DB::begin_transaction();
 
         try {
-            $this->all($filters)->each(function ($customer) {
-                if (!function_exists('wp_delete_user')) {
-                    require_once ABSPATH . 'wp-admin/includes/user.php';
-                }
-
-                wp_delete_user($customer->user_id);
-            });
-
             $is_deleted = (bool) $this->list_query($filters)->delete();
 
             DB::commit();
@@ -443,7 +416,7 @@ class CustomerService
     public function list_locations($country = null)
     {
         $addresses = Address::query()
-            ->where('is_default_shipping', true)
+            ->where('is_default_billing', true)
             ->get()
             ->all();
 

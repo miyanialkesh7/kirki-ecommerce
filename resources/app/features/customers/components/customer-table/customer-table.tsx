@@ -23,7 +23,7 @@ import { resolveBulkDeletePayload } from '@/libs/bulk-delete';
 import { __ } from '@/wpi18n';
 
 const customerBulkActions: DataTableBulkAction[] = [
-  { value: 'delete', title: __('Trash', 'kirki-ecommerce'), destructive: true },
+  { value: 'delete', title: __('Delete Permanently', 'kirki-ecommerce'), destructive: true },
 ];
 
 const CustomerTable = () => {
@@ -46,7 +46,7 @@ const CustomerTable = () => {
         !(await confirmDeleteAsync({
           title: __('Delete selected customers?', 'kirki-ecommerce'),
           description: __(
-            'The selected customers and their WordPress user accounts will be permanently deleted. This cannot be undone.',
+            'The selected customers will be deleted permanently. This cannot be undone.',
             'kirki-ecommerce',
           ),
         }))
@@ -91,7 +91,7 @@ const CustomerTable = () => {
                       {
                         title: __('Delete customer?', 'kirki-ecommerce'),
                         description: __(
-                          'This customer and their WordPress user account will be permanently deleted. This cannot be undone.',
+                          'This customer will be permanently deleted. This cannot be undone.',
                           'kirki-ecommerce',
                         ),
                       },
