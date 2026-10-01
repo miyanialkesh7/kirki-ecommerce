@@ -2,6 +2,7 @@
 
 namespace Kirki\Ecommerce\App\Http\Requests\Settings;
 
+use Kirki\Ecommerce\App\Constants\ComparisonOperator;
 use Kirki\Ecommerce\App\Constants\ConsentLocations;
 use Kirki\Ecommerce\App\Constants\ConsentMethods;
 use Kirki\Ecommerce\App\Constants\CurrencyFormat;
@@ -427,7 +428,7 @@ class SettingsUpdateRequest extends Request
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.relation' => 'required|string',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions' => 'array',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.type' => 'required|string',
-            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => 'required|string',
+            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => 'required|string|in:' . ComparisonOperator::join(),
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.value' => 'required',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action' => 'array',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action.type' => 'required|string',
@@ -494,7 +495,7 @@ class SettingsUpdateRequest extends Request
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.relation' => Sanitizer::TEXT,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions' => Sanitizer::ARRAY,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.type' => Sanitizer::TEXT,
-            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => Sanitizer::TEXT,
+            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => Sanitizer::ANY, // Validated against ComparisonOperator; sanitize_text_field() would escape "<" to "&lt;".
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.value' => Sanitizer::ANY,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action' => Sanitizer::ARRAY,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action.type' => Sanitizer::TEXT,
@@ -576,7 +577,7 @@ class SettingsUpdateRequest extends Request
             $prefix . '.*.relation' => 'required|string',
             $prefix . '.*.conditions' => 'required|array',
             $prefix . '.*.conditions.*.type' => 'required|string',
-            $prefix . '.*.conditions.*.operator' => 'required|string',
+            $prefix . '.*.conditions.*.operator' => 'required|string|in:' . ComparisonOperator::join(),
             $prefix . '.*.conditions.*.value' => 'required',
             $prefix . '.*.action' => 'required|array',
             $prefix . '.*.action.type' => 'required|string',
@@ -642,7 +643,7 @@ class SettingsUpdateRequest extends Request
             $prefix . '.*.relation' => Sanitizer::TEXT,
             $prefix . '.*.conditions' => Sanitizer::ARRAY,
             $prefix . '.*.conditions.*.type' => Sanitizer::TEXT,
-            $prefix . '.*.conditions.*.operator' => Sanitizer::TEXT,
+            $prefix . '.*.conditions.*.operator' => Sanitizer::ANY, // Validated against ComparisonOperator; sanitize_text_field() would escape "<" to "&lt;".
             $prefix . '.*.conditions.*.value' => Sanitizer::ANY,
             $prefix . '.*.action' => Sanitizer::ARRAY,
             $prefix . '.*.action.type' => Sanitizer::TEXT,
