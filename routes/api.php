@@ -19,7 +19,6 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\CouponController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CurrencyController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CurrencyExchangeController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CustomerController;
-use Kirki\Ecommerce\App\Http\Controllers\Api\TestController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CountryController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\TaxProfileController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\ShippingBoxController;
@@ -38,24 +37,17 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\Site\CheckoutController;
 use Kirki\Ecommerce\App\Http\Controllers\Site\OrderActivityController as SiteOrderActivityController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\Site\SiteController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\Site\WishlistController;
-use Kirki\Ecommerce\App\Models\Post;
 use Kirki\Ecommerce\App\Payment\WebhookController;
-use Kirki\Ecommerce\Framework\Http\Request;
 use Kirki\Ecommerce\Framework\Route;
+use Kirki\Ecommerce\Framework\Middlewares\AdminMiddleware;
 use Kirki\Ecommerce\Framework\Middlewares\AuthMiddleware;
-use Kirki\Ecommerce\Framework\Supports\Facades\DB;
-
-use function Kirki\Ecommerce\Framework\response;
 
 Route::set_namespace('kirki/ecommerce/v1');
 
 Route::post('/payment/webhook/{provider_id}', [WebhookController::class, 'handle']);
 Route::get('/payment/webhook/{provider_id}', [WebhookController::class, 'handle_return']);
 
-Route::group(['middleware' => AuthMiddleware::class], function () {
-    // Test route
-    Route::get('/test', [TestController::class, 'test']);
-
+Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], function () {
     // Onboarding
     Route::post('/onboarding', [OnboardingController::class, 'store']);
 
@@ -109,9 +101,11 @@ Route::group(['middleware' => AuthMiddleware::class], function () {
     Route::put('/attributes/{attribute_id}/values/{id}', [AttributeValueController::class, 'update']);
     Route::delete('/attributes/{attribute_id}/values/{id}', [AttributeValueController::class, 'delete']);
     Route::post('/attributes/{attribute_id}/values/bulk', [AttributeValueController::class, 'bulk_actions']);
+    Route::post('/attributes/{attribute_id}/values/batch', [AttributeValueController::class, 'batch']);
 
     // Customers
     Route::get('/customers/locations', [CustomerController::class, 'locations']);
+    Route::get('/customers/check-email', [CustomerController::class, 'check_email']);
     Route::get('/customers', [CustomerController::class, 'get']);
     Route::get('/customers/{id}', [CustomerController::class, 'show']);
     Route::post('/customers', [CustomerController::class, 'create']);
@@ -243,18 +237,6 @@ Route::group(['middleware' => AuthMiddleware::class], function () {
 
 //@todo remove this later as its just to mock the zip download
 Route::get('/online-payments/download/{id}', [OnlinePaymentController::class, 'download']);
-
-Route::get('/test-public', function (Request $request) {
-    DB::enable_query_log();
-    $posts = Post::with(['categories.term', 'tags.term'])->find(1);
-    $query = DB::get_query_log();
-
-    return response()->json([
-        'message' => 'Hello World',
-        'data' => $posts,
-        'query' => $query,
-    ]);
-});
 
 // Site api endpoints.
 Route::get('/shop/products', [SiteController::class, 'products']);

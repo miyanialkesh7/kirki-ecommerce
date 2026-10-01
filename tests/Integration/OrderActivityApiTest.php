@@ -2,7 +2,6 @@
 
 namespace Kirki\Ecommerce\Tests\Integration;
 
-use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Tests\Support\CreatesTestProducts;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 use Kirki\Ecommerce\Tests\Support\SeedsTestShipping;
@@ -189,8 +188,9 @@ class OrderActivityApiTest extends RestTestCase
     {
         $user_id = static::factory()->user->create(['role' => 'subscriber']);
         wp_set_current_user($user_id);
+        $this->request('POST', 'cart/items', ['variant_id' => $this->variant_id, 'quantity' => 1]);
 
-        $checkout_response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
+        $checkout_response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => false]));
         $order = $this->assert_api_success($checkout_response, 201)['data'];
 
         $this->login_as_admin();
@@ -217,8 +217,9 @@ class OrderActivityApiTest extends RestTestCase
     {
         $owner_id = static::factory()->user->create(['role' => 'subscriber']);
         wp_set_current_user($owner_id);
+        $this->request('POST', 'cart/items', ['variant_id' => $this->variant_id, 'quantity' => 1]);
 
-        $checkout_response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
+        $checkout_response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => false]));
         $order = $this->assert_api_success($checkout_response, 201)['data'];
 
         $other_user_id = static::factory()->user->create(['role' => 'subscriber']);
