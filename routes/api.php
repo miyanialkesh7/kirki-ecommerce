@@ -11,6 +11,7 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\CategoryController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OfflinePaymentController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnboardingController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnlinePaymentController;
+use Kirki\Ecommerce\App\Http\Controllers\Api\PaymentMethodController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\VariantController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\ProductController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\TagController;
@@ -218,6 +219,9 @@ Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], 
     // Pages
     Route::get('/pages', [PageController::class, 'get']);
     Route::post('/pages/fix', [PageController::class, 'run_fix']);
+
+    // Payment Methods
+    Route::get('/payment-methods', [PaymentMethodController::class, 'get']);
 
     // Online Payments
     Route::get('/online-payments/installable', [OnlinePaymentController::class, 'all']);

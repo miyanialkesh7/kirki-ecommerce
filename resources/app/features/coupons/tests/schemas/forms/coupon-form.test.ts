@@ -262,7 +262,7 @@ describe('CouponFormSchema', () => {
   const customer = (id: number) => ({
     id,
     first_name: `Customer ${id}`,
-    last_name: null,
+    last_name: `Lastname ${id}`,
     email: `customer${id}@example.com`,
   });
 

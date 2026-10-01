@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { endpoints } from '@/config/endpoints';
-import { getOnlinePayments } from '@/features/settings/payment/services/payment';
+import { getOnlinePayments, getPaymentMethods } from '@/features/settings/payment/services/payment';
 import { server } from '@/tests/msw/server';
 
 const url = `${window.kirki_ecommerce.rest_url_base}${endpoints.ONLINE_PAYMENTS}`;
@@ -62,5 +62,39 @@ describe('getOnlinePayments against a gateway map keyed by provider id', () => {
     );
 
     expect(await getOnlinePayments()).toEqual([]);
+  });
+});
+
+describe('getPaymentMethods', () => {
+  const methodsUrl = `${window.kirki_ecommerce.rest_url_base}${endpoints.PAYMENT_METHODS}`;
+
+  it('returns offline and online methods in one list', async () => {
+    server.use(
+      http.get(methodsUrl, () =>
+        HttpResponse.json({
+          success: true,
+          message: '',
+          data: [
+            { id: 'cod', name: 'Cash on Delivery', is_enabled: true, is_offline: true, icon_media: null },
+            { id: 'paypal', name: 'PayPal', is_enabled: false, is_offline: false, icon_media: null },
+          ],
+        }),
+      ),
+    );
+
+    const result = await getPaymentMethods();
+
+    expect(result.map((method) => [method.id, method.is_offline])).toEqual([
+      ['cod', true],
+      ['paypal', false],
+    ]);
+  });
+
+  it('resolves an empty list', async () => {
+    server.use(
+      http.get(methodsUrl, () => HttpResponse.json({ success: true, message: '', data: [] })),
+    );
+
+    expect(await getPaymentMethods()).toEqual([]);
   });
 });

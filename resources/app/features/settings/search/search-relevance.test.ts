@@ -24,7 +24,7 @@ const relevant: [query: string, expected: string[]][] = [
   ['calculate tax', ['general.calculate-tax']],
   ['barcode', ['essentials.barcode-generation']],
   ['reviews', ['products.reviews']],
-  ['payment gateways', ['payments.online']],
+  ['payment gateways', ['payments.methods']],
   ['variation', ['essentials.variation-library']],
   ['structured data', ['essentials.schema-profile']],
   ['email template', ['email.default-template']],
@@ -49,7 +49,7 @@ const related: [query: string, expected: string[]][] = [
   ['countries i sell to', ['general.selling-locations']],
   ['box size', ['shipping.boxes']],
   ['tax included in price', ['tax.collection']],
-  ['digital wallet', ['payments.online']],
+  ['digital wallet', ['payments.methods']],
   ['bulky items', ['shipping.profiles']],
 ];
 
@@ -72,10 +72,10 @@ const partial: [query: string, expected: string[]][] = [
 const keyworded: [query: string, expected: string[]][] = [
   ['parcel', ['shipping.boxes']],
   ['gst', ['tax.regions', 'tax.profile', 'tax.collection', 'nav.tax']],
-  ['bank transfer', ['payments.offline']],
+  ['bank transfer', ['payments.methods']],
   ['upc', ['essentials.barcode-generation']],
   ['seo', ['essentials.schema-profile']],
-  ['cash on delivery', ['payments.offline']],
+  ['cash on delivery', ['payments.methods']],
   ['turn off tax', ['general.calculate-tax']],
 ];
 
@@ -136,7 +136,7 @@ describe('settings search relevance', () => {
   });
 
   it('drops a card that matches only part of a multi-word query', () => {
-    expect(topResults('digital wallet')).toEqual(['payments.online']);
+    expect(topResults('digital wallet')).toEqual(['payments.methods']);
   });
 
   it('does not append literal matches to a query that already found something', () => {

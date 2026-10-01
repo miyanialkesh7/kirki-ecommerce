@@ -24,6 +24,7 @@ class OfflinePaymentResource extends Resource
             'id' => $this->id(),
             'name' => $this->title(),
             'icon' => $this->icon(),
+            'icon_media' => $this->icon_media(),
             'is_enabled' => $this->enabled(),
             'is_offline' => $this->is_offline(),
             'description' => $this->description(),

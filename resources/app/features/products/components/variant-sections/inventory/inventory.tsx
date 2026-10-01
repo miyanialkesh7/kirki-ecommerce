@@ -1,3 +1,4 @@
+import { RefreshCcw } from 'lucide-react';
 import { useFormContext } from 'react-hook-form';
 
 import CheckboxField from '@/components/form/checkbox-field';
@@ -18,7 +19,6 @@ import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
-import { RefreshCcw } from 'lucide-react';
 
 type InventoryProps = {
   onGenerateSku: () => void;
@@ -33,7 +33,7 @@ const Inventory = ({ onGenerateSku, isGeneratingSku }: InventoryProps) => {
 
   const trackInventory = Boolean(variant.track_inventory);
   const hasLimitPerOrder = Boolean(variant.has_limit_per_order);
-  const committedQuantity = getValues(field('committed_quantity'));
+  const committedQuantity = getValues(field('committed_quantity')) as number | null | undefined;
 
   const handleTrackInventoryChange = (checked: boolean) => {
     if (!checked) {
