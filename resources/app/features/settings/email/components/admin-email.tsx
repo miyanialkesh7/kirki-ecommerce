@@ -78,7 +78,7 @@ const AdminEmail = (props: AdminEmailProps) => {
   const { control } = useFormContext<EmailSettingsFormInput>();
   const adminEmails = useWatch({ control, name: 'admin_emails' });
 
-  const { orderEmails, inventoryEmails, userEmails } = useMemo(() => {
+  const { orderEmails, inventoryEmails } = useMemo(() => {
     if (!adminEmails) {
       return {
         orderEmails: [],
