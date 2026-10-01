@@ -13,17 +13,17 @@ export { default as VariantShippingSection } from './components/variant-sections
 export { useVariantField, useVariantValues } from './components/variant-sections/use-variant-field';
 export { groupDetails, optionsList, requiredFields } from './lib/seo-settings/utils';
 export type { Attribute, AttributeValue, ProductAttribute } from './schemas/catalog/attribute';
-export { InventoryVariantSchema, VariantSchema } from './schemas/catalog/variant';
 export type { InventoryVariant, ProductVariant } from './schemas/catalog/variant';
+export { InventoryVariantSchema, VariantSchema } from './schemas/catalog/variant';
 export {
-  AddVariationFormSchema,
   type AddVariationFormInput,
   type AddVariationFormPayload,
+  AddVariationFormSchema,
 } from './schemas/forms/add-variation-form';
 export {
-  VariationValueFormSchema,
   type VariationValueFormInput,
   type VariationValueFormPayload,
+  VariationValueFormSchema,
 } from './schemas/forms/variation-value-form';
 export {
   useAttributeQuery,
@@ -36,5 +36,5 @@ export {
   useUpdateAttributeValueMutation,
 } from './services/attribute';
 export { attributeKeys, productKeys } from './services/query-keys';
-export { productListFilterConfig, productListOptions } from './types';
 export type { ProductListFilter, UnitPriceValue, UpdateVariantsPayload } from './types';
+export { productListFilterConfig, productListOptions } from './types';

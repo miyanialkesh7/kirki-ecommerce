@@ -45,7 +45,7 @@ const OfflinePaymentPopup = (props: OfflinePaymentPopupProps) => {
 
     form.reset({
       name: editingMethod?.name ?? '',
-      icon: editingMethod?.icon ?? '',
+      icon: editingMethod?.icon_media ?? null,
       instructions:
         editingMethod?.instructions ||
         ((editingMethod as OfflinePayment & { description?: string })

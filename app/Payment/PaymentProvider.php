@@ -108,6 +108,13 @@ class PaymentProvider
     protected $icon;
 
     /**
+     * Media attachment of the provider's icon.
+     *
+     * @var array|null
+     */
+    protected $icon_media;
+
+    /**
      * Maximum transaction amount, zero does not define a maximum.
      *
      * @var int
@@ -195,6 +202,7 @@ class PaymentProvider
         $provider->title = $data['name'] ?? '';
         $provider->description = $data['instructions'] ?? '';
         $provider->icon = $icon_url;
+        $provider->icon_media = $attachment;
         $provider->is_enabled = $data['is_enabled'] ?? false;
         $provider->is_offline = true;
         $provider->settings_key = $data['settings_key'] ?? $data['id'];
@@ -334,6 +342,18 @@ class PaymentProvider
     public function icon()
     {
         return $this->icon;
+    }
+
+    /**
+     * Get the provider icon media attachment.
+     *
+     * @since 1.0.0
+     *
+     * @return array|null
+     */
+    public function icon_media()
+    {
+        return $this->icon_media;
     }
 
     /**

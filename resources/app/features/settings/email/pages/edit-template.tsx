@@ -1,3 +1,5 @@
+import { Send } from 'lucide-react';
+
 import ColorPickerField from '@/components/form/color-picker-field';
 import MediaField from '@/components/form/media-field';
 import ProgressBarField from '@/components/form/progress-bar-field';
@@ -25,7 +27,6 @@ import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
-import { Send } from 'lucide-react';
 
 const EditTemplateContent = () => {
   const { form, loaded, heightValue } = useEditTemplate();

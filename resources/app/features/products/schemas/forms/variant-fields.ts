@@ -49,4 +49,4 @@ type VariantFieldsInput = z.input<typeof VariantFieldsShape>;
 
 type VariantFieldKey = keyof VariantFieldsInput;
 
-export { VariantFieldsShape, type VariantFieldKey, type VariantFieldsInput };
+export { type VariantFieldKey, type VariantFieldsInput,VariantFieldsShape };
