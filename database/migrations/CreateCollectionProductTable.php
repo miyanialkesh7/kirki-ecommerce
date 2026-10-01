@@ -28,14 +28,14 @@ class CreateCollectionProductTable implements Migration
             $table->integer('ordering')->default(0);
             $table->timestamps();
 
-            $table->primary(['collection_id', 'product_id'], 'pk_collection_product');
-            $table->index('ordering');
+            $table->primary(['collection_id', 'product_id']);
+            $table->index('ordering', 'idx_kecom_collection_product_ordering');
 
-            $table->foreign('product_id', 'fk_collection_product_product_id')
+            $table->foreign('product_id', 'fk_kecom_collection_product_product_id')
                 ->references('id')
                 ->on('kirki_ecommerce_products')
                 ->cascade_on_delete();
-            $table->foreign('collection_id', 'fk_collection_product_collection_id')
+            $table->foreign('collection_id', 'fk_kecom_collection_product_collection_id')
                 ->references('id')
                 ->on('kirki_ecommerce_collections')
                 ->cascade_on_delete();

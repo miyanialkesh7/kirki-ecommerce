@@ -64,13 +64,6 @@ class ProductResource extends Resource
             'ribbon' => $this->ribbon,
             'ribbon_color' => $this->ribbon_color,
 
-            'currency' => !$this->currency_id ? null : [
-                'id' => $this->currency_id,
-                'code' => $this->currency->code,
-                'name' => $this->currency->name,
-                'symbol' => $this->currency->symbol,
-            ],
-
             'brand' => !$this->brand_id ? null : [
                 'id' => $this->brand_id,
                 'name' => $this->brand->name,
@@ -87,7 +80,6 @@ class ProductResource extends Resource
             'og_description' => $this->og_description,
             'og_image' => MediaAttachment::make($this->og_image),
             'schema_id' => $this->schema_id,
-            'llm_instructions' => $this->llm_instructions,
             'has_variants' => $this->has_variants,
             'availability_status' => $availability_status,
             'availability_label' => !is_null($availability_status) ? AvailabilityStatus::get_formatted($availability_status) : null,

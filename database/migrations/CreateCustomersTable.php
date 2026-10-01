@@ -31,20 +31,19 @@ class CreateCustomersTable implements Migration
             $table->string('email', 255);
             $table->string('phone', 50)->nullable();
             $table->boolean('accepts_marketing')->default(0);
-            $table->boolean('is_billing_same_as_shipping')->default(1);
             $table->text('notes')->nullable();
             $table->text('tags')->nullable()->comment('Comma separated tags');
             $table->unsigned_big_integer('created_by')->nullable();
             $table->unsigned_big_integer('updated_by')->nullable();
             $table->timestamps();
 
-            $table->foreign('created_by')->on('users')->references('ID')->null_on_delete();
-            $table->foreign('updated_by')->on('users')->references('ID')->null_on_delete();
+            $table->foreign('created_by', 'fk_kecom_customers_created_by')->on('users')->references('ID')->null_on_delete();
+            $table->foreign('updated_by', 'fk_kecom_customers_updated_by')->on('users')->references('ID')->null_on_delete();
 
-            $table->unique('user_id');
-            $table->index('email');
+            $table->unique('user_id', 'uq_kecom_customers_user_id');
+            $table->index('email', 'idx_kecom_customers_email');
 
-            $table->foreign('user_id')
+            $table->foreign('user_id', 'fk_kecom_customers_user_id')
                 ->on('users')
                 ->references('ID')
                 ->cascade_on_delete();

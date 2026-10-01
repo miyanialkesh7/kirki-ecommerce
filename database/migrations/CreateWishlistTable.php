@@ -31,14 +31,14 @@ class CreateWishlistTable implements Migration
             $table->unsigned_big_integer('variant_id');
             $table->timestamps();
 
-            $table->unique(['user_id', 'variant_id']);
+            $table->unique(['user_id', 'variant_id'], 'uq_kecom_wishlist_user_id_variant_id');
 
-            $table->foreign('user_id', 'fk_kirki_ecommerce_wishlist_user_id')
+            $table->foreign('user_id', 'fk_kecom_wishlist_user_id')
                 ->references('ID')
                 ->on('users')
                 ->cascade_on_delete();
 
-            $table->foreign('variant_id', 'fk_kirki_ecommerce_wishlist_variant_id')
+            $table->foreign('variant_id', 'fk_kecom_wishlist_variant_id')
                 ->references('id')
                 ->on('kirki_ecommerce_variants')
                 ->cascade_on_delete();

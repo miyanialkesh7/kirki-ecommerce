@@ -1,5 +1,5 @@
 import type { CSSObject } from '@emotion/react';
-import { MinusCircle, PlusCircle } from 'lucide-react';
+import { MinusCircle, PlusIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 
 import Button from '@/components/ui/button';
@@ -51,9 +51,9 @@ const CollapsibleField = ({
 
   if (!isOpen) {
     return (
-      <Button variant="ghost" cssOverride={styles.addButton} onClick={() => setIsOpen(true)}>
-        <PlusCircle size={14} aria-hidden="true" />
+      <Button variant="link" cssOverride={styles.addButton} onClick={() => setIsOpen(true)}>
         {addLabel}
+        <PlusIcon size={14} aria-hidden="true" />
       </Button>
     );
   }
@@ -91,7 +91,6 @@ const styles = defineStyles({
     width: '100%',
     alignSelf: 'flex-start',
     justifyContent: 'flex-start',
-    paddingLeft: theme.spacing[1],
   },
   body: {
     display: 'flex',

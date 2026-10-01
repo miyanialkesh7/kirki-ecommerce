@@ -7,9 +7,8 @@ import { z } from 'zod';
  * builds necessarily embeds every section's real schema, so it structurally
  * cannot avoid depending on the settings sub-features. This is the same
  * "genuine wart" design.md records for `services/settings.ts` itself:
- * accepted here rather than duplicating whole schemas (unlike the small
- * `ProductCurrencySchema` case in `app-config.ts`, `ShippingZoneSchema` and
- * `TaxRegionSchema` are large and change with their owning feature — copying
+ * accepted here rather than duplicating whole schemas (`ShippingZoneSchema`
+ * and `TaxRegionSchema` are large and change with their owning feature — copying
  * them would be a maintenance hazard, not a fix). Splitting this file's
  * app-wide pieces from its settings-section pieces is the tidier end state
  * and is deferred with the rest of the `services/settings.ts` split.

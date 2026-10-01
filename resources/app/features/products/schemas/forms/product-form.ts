@@ -7,7 +7,6 @@ import {
   ProductBrandSchema,
   ProductCategoryRefSchema,
   ProductCollectionRefSchema,
-  ProductCurrencySchema,
   ProductStatusSchema,
   ProductTagRefSchema,
 } from '@/features/products/schemas/catalog/product';
@@ -93,7 +92,6 @@ const ProductFormComposedShape = ProductBasicsFormSchema.extend({
         : __('Scheduled date and time must be in the future', 'kirki-ecommerce'),
   ),
   brand: ProductBrandSchema.nullish().default(null),
-  currency: ProductCurrencySchema.nullish().default(null),
   categories: z.array(ProductCategoryRefSchema).default([]),
   tags: z.array(ProductTagRefSchema).default([]),
   collections: z.array(ProductCollectionRefSchema).default([]),
@@ -128,7 +126,6 @@ export const ProductFormSchema = prepareFormSchema(ProductFormComposedShape).tra
     og_description: values.og_description || null,
     og_image: null,
     schema_id: values.schema_id,
-    llm_instructions: values.llm_instructions || null,
     has_variants: values.has_variants,
     attributes: values.attributes.map((item) => ({
       id: item.id,
@@ -140,7 +137,6 @@ export const ProductFormSchema = prepareFormSchema(ProductFormComposedShape).tra
     tags: values.tags.map((item) => item.id),
     collections: values.collections.map((item) => item.id),
     variants: values.variants,
-    currency_id: values.currency?.id ?? null,
   }),
 );
 
