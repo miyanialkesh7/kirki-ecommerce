@@ -14,7 +14,10 @@ import Text from '@/components/ui/text';
 import { AddStatePopup } from '@/features/settings/tax/shared/components/tax-rules/add-state-dialog';
 import { getDestinationDisplayValue } from '@/features/settings/tax/shared/lib/tax-rules/helper';
 import type { TaxConditionRow, TaxRegionState } from '@/features/settings/tax/shared/lib/utils';
-import { taxRuleConditionOptions } from '@/features/settings/tax/shared/lib/utils';
+import {
+  taxRuleConditionOptions,
+  taxRuleOperatorOptions,
+} from '@/features/settings/tax/shared/lib/utils';
 import { PlusIcon, TrashIcon } from '@/icons';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
@@ -111,6 +114,7 @@ const ConditionRow = (props: ConditionRowProps) => {
           onValueChange={(value) => {
             updateCondition(row.id, 'condition', value);
             updateCondition(row.id, 'value', null);
+            updateCondition(row.id, 'operator', '=');
           }}
         >
           <SelectTrigger>
@@ -125,7 +129,21 @@ const ConditionRow = (props: ConditionRowProps) => {
           </SelectContent>
         </Select>
 
-        <Input value={__('is', 'kirki-ecommerce')} readOnly />
+        <Select
+          value={row.operator ?? '='}
+          onValueChange={(value) => updateCondition(row.id, 'operator', value)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {taxRuleOperatorOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {row.condition === 'destination_region' ? (
           <Input
@@ -159,6 +177,8 @@ const ConditionRow = (props: ConditionRowProps) => {
             onClick={handleAddConditionRow}
             cssOverride={styles.conditionActions}
             data-tax-rule-condition-action
+            aria-label={__('Add another condition', 'kirki-ecommerce')}
+            title={__('Add another condition', 'kirki-ecommerce')}
           >
             <PlusIcon />
           </Button>
@@ -209,7 +229,6 @@ const styles = defineStyles({
     opacity: 0,
     visibility: 'hidden',
     transition: 'opacity 0.2s ease',
-    display: 'none',
     gap: theme.spacing[2],
     padding: theme.spacing[2],
   },

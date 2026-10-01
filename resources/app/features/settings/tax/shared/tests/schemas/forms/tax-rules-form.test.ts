@@ -18,6 +18,33 @@ describe('TaxRulesFormSchema', () => {
     });
   });
 
+  it('carries the selected operator into the payload and defaults to =', () => {
+    const result = TaxRulesFormSchema.parse({
+      conditions: [
+        { id: '1', condition: 'tax_profile', operator: '!=', value: 'Books' },
+        { id: '2', condition: 'product_categories', value: 'Food' },
+      ],
+      action_type: 'set_product_tax_exempt',
+      action_value: null,
+      selectedCountries: [],
+    });
+
+    expect(result.conditions.map((c) => c.operator)).toEqual(['!=', '=']);
+  });
+
+  it('carries the != operator for destination conditions', () => {
+    const result = TaxRulesFormSchema.parse({
+      conditions: [
+        { id: '1', condition: 'destination_region', operator: '!=', value: { country: ['US'] } },
+      ],
+      action_type: 'set_product_tax_exempt',
+      action_value: null,
+      selectedCountries: [],
+    });
+
+    expect(result.conditions[0].operator).toBe('!=');
+  });
+
   it('does not include selectedCountries in the payload', () => {
     const result = TaxRulesFormSchema.parse({
       conditions: [{ id: '1', condition: 'destination_region', value: { country: ['US', 'CA'] } }],
