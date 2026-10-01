@@ -1,18 +1,20 @@
 import Container from '@/components/ui/container';
 import Flex from '@/components/ui/flex';
 import SettingsPageHeader from '@/features/settings/pages/settings-page-header';
-import PaymentMethods from '@/features/settings/payment/pages/payment-methods';
+import PaymentMethods from '@/features/settings/payment/components/list/payment-methods';
 import { usePaymentMethodsQuery } from '@/features/settings/payment/services/payment';
 import PaymentSettingsSkeleton from '@/features/settings/payment/skeletons/payment-settings-skeleton';
 import { PaymentIcon } from '@/icons';
 import { __ } from '@/wpi18n';
 
 const PaymentSettings = () => {
-  const { data: paymentMethods = [], isLoading } = usePaymentMethodsQuery();
+  const { data: paymentMethods = [], isFetching: isLoading } = usePaymentMethodsQuery();
 
-  return isLoading ? (
-    <PaymentSettingsSkeleton />
-  ) : (
+  if (isLoading) {
+    return <PaymentSettingsSkeleton />;
+  }
+
+  return (
     <Container size="sm">
       <Flex direction="column" gap={4}>
         <SettingsPageHeader icon={<PaymentIcon />} title={__('Payments', 'kirki-ecommerce')} />

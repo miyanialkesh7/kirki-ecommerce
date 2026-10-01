@@ -15,9 +15,9 @@ import Flex from '@/components/ui/flex';
 import Image from '@/components/ui/image';
 import Switch from '@/components/ui/switch';
 import Text from '@/components/ui/text';
-import OfflinePaymentPopup from '@/features/settings/payment/pages/offline-payment-dialog';
-import OnlinePaymentPopup from '@/features/settings/payment/pages/online-payment-dialog';
-import OnlinePaymentEditPopup from '@/features/settings/payment/pages/online-payment-edit-dialog';
+import OfflinePaymentPopup from '@/features/settings/payment/components/dialogs/offline-payment-dialog';
+import OnlinePaymentPopup from '@/features/settings/payment/components/dialogs/online-payment-dialog';
+import OnlinePaymentEditPopup from '@/features/settings/payment/components/dialogs/online-payment-edit-dialog';
 import type {
   OfflinePayment,
   OnlinePayment,
