@@ -33,7 +33,6 @@ class CreateProductsTable implements Migration
                 ->nullable()
                 ->comment('Hex colour. Default swatches: #6d3fe0, #1f6fe5, #1e8e4a, #d9650b, #1d1d1f; a custom hex is also accepted.');
 
-            $table->unsigned_big_integer('currency_id');
             $table->unsigned_big_integer('brand_id')->nullable();
 
             $table->text('short_description')->nullable();
@@ -49,7 +48,6 @@ class CreateProductsTable implements Migration
             $table->unsigned_big_integer('og_image')->nullable();
 
             $table->unsigned_big_integer('schema_id')->nullable();
-            $table->text('llm_instructions')->nullable();
 
             $table->boolean('has_variants')->default(0);
             $table->timestamp('published_at')->nullable();
@@ -63,7 +61,6 @@ class CreateProductsTable implements Migration
 
             $table->unique('slug', 'uq_kecom_products_slug');
             $table->index('brand_id', 'idx_kecom_products_brand_id');
-            $table->index('currency_id', 'idx_kecom_products_currency_id');
             $table->index('status', 'idx_kecom_products_status');
             $table->index(['status', 'created_at'], 'idx_kecom_products_status_created_at');
             $table->index(['brand_id', 'status'], 'idx_kecom_products_brand_id_status');
@@ -75,9 +72,6 @@ class CreateProductsTable implements Migration
                 ->references('id')
                 ->on('kirki_ecommerce_brands')
                 ->null_on_delete();
-            $table->foreign('currency_id', 'fk_kecom_products_currency_id')
-                ->references('id')
-                ->on('kirki_ecommerce_currencies');
             $table->foreign('schema_id', 'fk_kecom_products_schema_id')
                 ->references('id')
                 ->on('kirki_ecommerce_product_schemas')

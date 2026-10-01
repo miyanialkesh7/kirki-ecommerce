@@ -2,7 +2,7 @@
 
 ### Requirement: Create page default seeding
 
-The create page SHALL fetch default settings (weight unit, dimension unit) and shipping boxes, then merge seeded values into form default values before rendering `ProductForm`. Seeded fields include `variants.0` shipping/weight defaults. A product SHALL NOT carry a currency of its own; every monetary field on the form is denominated in the store's base currency, which the form reads from application configuration rather than from form state.
+The create page SHALL fetch product settings (weight unit, dimension unit) and shipping boxes, then merge seeded values into form default values before rendering `ProductForm`. Seeded fields include `variants.0` shipping/weight defaults. A product SHALL NOT carry a currency of its own; every monetary field on the form is denominated in the store's base currency, which the form reads from application configuration rather than from form state.
 
 #### Scenario: Create form seeded from settings
 

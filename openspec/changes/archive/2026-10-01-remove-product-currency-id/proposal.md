@@ -34,9 +34,11 @@ None. This change removes a field; it introduces no new behavior.
 
 **API (breaking)** — `ProductResource` no longer emits `currency`. The plugin is at `1.0.0-alpha.4`, so this is judged acceptable pre-1.0, but it is a public response-shape change and should be called out in release notes rather than shipped silently.
 
-**PHP** — `app/Models/Product.php` (casts, fillable), `app/DTO/Product/CreateProductDTO.php`, `app/DTO/Product/UpdateProductDTO.php`, `app/Http/Requests/Product/ProductCreateRequest.php` (validation rule + `Sanitizer` key), `app/Http/Requests/Product/ProductUpdateRequest.php` (same), `app/Resources/Product/ProductResource.php`, `app/Actions/Product/DuplicateProductAction.php`, `database/seeders/ProductSeeder.php`, `database/seeders/OnBoarding/ProductSeeder.php`.
+**PHP** — `app/Models/Product.php` (casts, fillable, `currency()` relation), `app/Services/ProductService.php` (two `currency` eager loads), `app/Services/WishlistService.php` (`variant.product.currency` eager load), `app/DTO/Product/CreateProductDTO.php`, `app/DTO/Product/UpdateProductDTO.php`, `app/Http/Requests/Product/ProductCreateRequest.php` (validation rule + `Sanitizer` key), `app/Http/Requests/Product/ProductUpdateRequest.php` (same), `app/Resources/Product/ProductResource.php`, `app/Actions/Product/DuplicateProductAction.php`, `database/seeders/ProductSeeder.php`, `database/seeders/OnBoarding/ProductSeeder.php`, `tests/Support/CreatesTestProducts.php`.
 
 **Frontend** — `resources/app/features/products/schemas/catalog/product.ts` (`ProductCurrencySchema` and the `currency` field), `resources/app/features/products/schemas/forms/product-form.ts` (the `currency` field and the `currency_id` mapping), `resources/app/features/products/pages/create-product.tsx` (drops the currency line from seeded values), and `resources/app/features/products/tests/schemas/forms/product-form.test.ts` (two assertions on `currency_id`).
+
+**Docs** — the API examples in `docs/ecommerce/products/{create-3,edit-3,get-by-id-3,shop-product-html}.yml` and `docs/ecommerce/Site/checkout.yml` drop `currency_id` and the product-level `currency` object.
 
 **Not affected** — money display. The product form, variants table, and SEO preview already read the base currency directly via `useBaseCurrency`/`useBaseCurrencySymbol`, so removing the column changes no rendered amount or symbol.
 

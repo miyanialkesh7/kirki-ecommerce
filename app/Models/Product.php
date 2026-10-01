@@ -23,7 +23,6 @@ class Product extends Model
     /** @inheritDoc */
     protected $casts = [
         'id' => 'integer',
-        'currency_id' => 'integer',
         'brand_id' => 'integer',
         'schema_id' => 'integer',
         'has_variants' => 'boolean',
@@ -44,7 +43,6 @@ class Product extends Model
         'status',
         'ribbon',
         'ribbon_color',
-        'currency_id',
         'brand_id',
         'short_description',
         'description',
@@ -56,7 +54,6 @@ class Product extends Model
         'og_description',
         'og_image',
         'schema_id',
-        'llm_instructions',
         'has_variants',
         'published_at',
         'scheduled_at',
@@ -87,18 +84,6 @@ class Product extends Model
     public function brand()
     {
         return $this->belongs_to(Brand::class);
-    }
-
-    /**
-     * Define the currency of this product.
-     *
-     * @since 1.0.0
-     *
-     * @return \Kirki\Ecommerce\Framework\Database\Query\Relations\BelongsTo
-     */
-    public function currency()
-    {
-        return $this->belongs_to(Currency::class);
     }
 
     /**

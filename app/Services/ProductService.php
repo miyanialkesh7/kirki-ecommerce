@@ -113,7 +113,7 @@ class ProductService
      */
     public function find(int $id)
     {
-        $product = Product::with(['brand', 'currency', 'categories', 'tags', 'collections', 'attributes', 'attribute_values', 'variants.attribute_values', 'media'])->find($id);
+        $product = Product::with(['brand', 'categories', 'tags', 'collections', 'attributes', 'attribute_values', 'variants.attribute_values', 'media'])->find($id);
 
         throw_if(empty($product), __('Product not found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
 
@@ -192,7 +192,7 @@ class ProductService
      */
     public function update(UpdateProductDTO $data)
     {
-        $product = Product::with(['brand', 'currency', 'categories', 'tags', 'collections', 'attributes', 'attribute_values', 'variants.attribute_values', 'media'])->find($data->id);
+        $product = Product::with(['brand', 'categories', 'tags', 'collections', 'attributes', 'attribute_values', 'variants.attribute_values', 'media'])->find($data->id);
 
         throw_if(empty($product), __('Product could not be found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
 

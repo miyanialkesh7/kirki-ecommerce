@@ -35,7 +35,6 @@ const baseProductInput = {
   description: '',
   status: 'draft',
   brand: null,
-  currency: null,
   categories: [],
   tags: [],
   collections: [],
@@ -47,7 +46,6 @@ const baseProductInput = {
   variants: [baseVariantInput],
   seo_title: '',
   seo_description: '',
-  llm_instructions: '',
   og_title: '',
   og_description: '',
   og_image: null,
@@ -201,10 +199,10 @@ describe('ProductFormSchema', () => {
     expect(result.status).toBe('draft');
     expect(result.og_image).toBeNull();
     expect(result.brand_id).toBeNull();
-    expect(result.currency_id).toBeNull();
     expect(result.media).toEqual([]);
     expect(result.categories).toEqual([]);
     expect(result.variants).toHaveLength(1);
+    expect(result).not.toHaveProperty('llm_instructions');
   });
 
   it('always sends og_image as null even when the field holds a value', () => {
@@ -215,11 +213,10 @@ describe('ProductFormSchema', () => {
     expect(result.og_image).toBeNull();
   });
 
-  it('flattens brand, currency, categories, tags, and collections to ids', () => {
+  it('flattens brand, categories, tags, and collections to ids', () => {
     const result = ProductFormSchema.parse({
       ...baseProductInput,
       brand: { id: 12, name: 'Acme', logo: null },
-      currency: { id: 3, code: 'USD', name: 'US Dollar', symbol: '$' },
       categories: [
         { id: 1, name: 'Shoes' },
         { id: 2, name: 'Boots' },
@@ -229,7 +226,6 @@ describe('ProductFormSchema', () => {
     });
 
     expect(result.brand_id).toBe(12);
-    expect(result.currency_id).toBe(3);
     expect(result.categories).toEqual([1, 2]);
     expect(result.tags).toEqual([5]);
     expect(result.collections).toEqual([9]);
@@ -358,7 +354,6 @@ describe('mapProductToFormValues', () => {
     slug: 'empty-product',
     status: 'draft',
     ribbon: null,
-    currency: null,
     brand: null,
     description: null,
     short_description: null,
@@ -367,7 +362,6 @@ describe('mapProductToFormValues', () => {
     seo_description: null,
     seo_keywords: null,
     schema_id: null,
-    llm_instructions: null,
     og_title: null,
     og_description: null,
     og_image: null,

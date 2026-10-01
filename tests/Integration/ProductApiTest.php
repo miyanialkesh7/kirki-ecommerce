@@ -94,6 +94,7 @@ class ProductApiTest extends RestTestCase
 
         $this->assertEquals($this->product_id, $payload['data']['id']);
         $this->assertEquals('Show Product', $payload['data']['title']);
+        $this->assertArrayNotHasKey('llm_instructions', $payload['data']);
     }
 
     /**
