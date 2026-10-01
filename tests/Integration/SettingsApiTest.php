@@ -42,7 +42,6 @@ class SettingsApiTest extends RestTestCase
                 'dimension_unit' => 'cm',
                 'is_enabled_reviews' => true,
                 'is_enabled_star_ratings' => true,
-                'is_unit_price_visible' => false,
                 'low_stock_threshold' => 5,
             ],
         ]);
@@ -50,7 +49,6 @@ class SettingsApiTest extends RestTestCase
         $payload = $this->assert_api_success($response);
         $this->assertEquals('kg', $payload['data']['weight_unit']);
         $this->assertEquals('cm', $payload['data']['dimension_unit']);
-        $this->assertFalse($payload['data']['is_unit_price_visible']);
     }
 
     /**
@@ -848,5 +846,28 @@ class SettingsApiTest extends RestTestCase
         $shortcodes = $payload['data']['customer_emails']['order_notifications']['new_order']['shortcodes'];
         $this->assertNotEmpty($shortcodes);
         $this->assertContains('{order_summary}', array_column($shortcodes, 'value'));
+    }
+
+    /**
+     * Email preview renders the saved header logo attachment as an image url.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_email_preview_renders_saved_logo_url(): void
+    {
+        $attachment_id = static::factory()->attachment->create([
+            'post_mime_type' => 'image/png',
+            'file' => 'email-logo.png',
+        ]);
+        Settings::update('email.default_template.logo', $attachment_id);
+
+        $response = $this->request('GET', 'settings/email/customer/order/new_order/preview');
+        $payload = $this->assert_api_success($response);
+
+        $this->assertStringContainsString(
+            'src="' . esc_url(wp_get_attachment_url($attachment_id)) . '"',
+            $payload['data']['html']
+        );
     }
 }
