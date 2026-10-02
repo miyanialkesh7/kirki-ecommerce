@@ -1,24 +1,28 @@
 import type { OnboardingFormInput } from '@/features/onboarding/schemas/forms/onboarding-form';
 import { __ } from '@/wpi18n';
 
-type OnboardingStep = 0 | 1 | 2 | 3;
+type OnboardingStep = 0 | 1 | 2 | 3 | 4;
 
-const FORM_STEP_COUNT = 3;
+const TAX_STEP = 3 as const;
 
-const COMPLETION_STEP = 3 as const;
+const COMPLETION_STEP = 4 as const;
 
-const STEP_FIELDS: Record<Exclude<OnboardingStep, 3>, (keyof OnboardingFormInput)[]> = {
+const STEP_FIELDS: Record<Exclude<OnboardingStep, 4>, (keyof OnboardingFormInput)[]> = {
   0: ['store_name', 'industry'],
   1: ['country', 'store_address'],
-  2: ['currency', 'is_tax_collected', 'is_tax_inclusive_price', 'store_tax_id'],
+  2: ['currency', 'is_tax_collected'],
+  3: ['is_tax_inclusive_price', 'store_tax_id'],
 };
+
+const getFormStepCount = (isTaxCollected: boolean) => (isTaxCollected ? 4 : 3);
 
 const getStepTitle = (step: OnboardingStep): string => {
   const titles: Record<OnboardingStep, string> = {
     0: __('Store Basics', 'kirki-ecommerce'),
     1: __('Business Info', 'kirki-ecommerce'),
     2: __('Essentials', 'kirki-ecommerce'),
-    3: __('Setup complete', 'kirki-ecommerce'),
+    3: __('Store Tax', 'kirki-ecommerce'),
+    4: __('Setup Complete', 'kirki-ecommerce'),
   };
 
   return titles[step];
@@ -38,9 +42,10 @@ const getIndustryOptions = () => [
 
 export {
   COMPLETION_STEP,
-  FORM_STEP_COUNT,
+  getFormStepCount,
   getIndustryOptions,
   getStepTitle,
   type OnboardingStep,
   STEP_FIELDS,
+  TAX_STEP,
 };

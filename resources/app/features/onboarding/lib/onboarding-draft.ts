@@ -2,7 +2,7 @@ import type { OnboardingStep } from '@/features/onboarding/lib/steps';
 import type { OnboardingFormInput } from '@/features/onboarding/schemas/forms/onboarding-form';
 
 type OnboardingDraft = {
-  step: Exclude<OnboardingStep, 3>;
+  step: Exclude<OnboardingStep, 4>;
   values: Partial<OnboardingFormInput>;
 };
 
@@ -17,7 +17,7 @@ const getStorage = (): Storage | undefined => {
 };
 
 const isDraftStep = (step: unknown): step is OnboardingDraft['step'] =>
-  step === 0 || step === 1 || step === 2;
+  step === 0 || step === 1 || step === 2 || step === 3;
 
 const readDraft = (): OnboardingDraft | null => {
   try {

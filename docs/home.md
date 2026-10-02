@@ -21,7 +21,7 @@ storefront templates.
 
 ## 1. Quick start
 
-Finish onboarding and press **Go to dashboard**, or open **eCommerce → Home**. The
+Finish onboarding and press **Go to Dashboard**, or open **eCommerce → Home**. The
 first incomplete step is open. Each step's button opens the admin page where the
 task is done. When you come back to Home, the checklist checks the store again and
 marks the steps that are now done.
@@ -32,11 +32,12 @@ marks the steps that are now done.
 |---|---|
 | Heading | "Let's get you started", and a **View Live Site** link that opens the site URL in a new tab. |
 | Setup checklist | "X out of N complete", a percentage, a progress bar and the steps (section 3). |
-| Template gallery | Three template cards and an **Explore more** link. They open in a new tab. |
+| Template gallery | Three square template cards (194 × 194 px, with a 150 px cover image) and an **Explore more** link. They open in a new tab. |
 
 The template gallery is a placeholder. The names, images and links come from
-`resources/app/features/home/lib/templates.ts`. The images fall back to the shared
-placeholder image, and the links are `#`.
+`resources/app/features/home/lib/templates.ts`. The images are in the plugin, in
+`assets/images/templates/`. If an image does not load, the shared placeholder image
+shows. The links are `#`.
 
 ## 3. The checklist steps
 

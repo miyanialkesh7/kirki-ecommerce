@@ -1,7 +1,7 @@
 # Store Onboarding
 
-A three-step setup wizard that a merchant goes through once, right after
-activating the plugin. It asks for the few things the store can't guess (name,
+A short setup wizard that a merchant goes through once, right after activating the
+plugin. It has three steps, or four when the merchant collects sales tax. It asks for the few things the store can't guess (name,
 industry, country, currency and tax stance) and then configures the store from
 those answers. Sample data is opt-in and loaded from the final screen.
 
@@ -23,13 +23,17 @@ WordPress admin pages are never redirected.
 ## 1. Quick start
 
 Activate the plugin from **Plugins**. The next admin page load opens the wizard at
-`admin.php?page=kirki-ecommerce#/onboarding`. Fill in the three steps and press
-**Create Store**. The final screen shows what was set up and offers two ways out:
+`admin.php?page=kirki-ecommerce#/onboarding`. Fill in the steps and press
+**Create Store**. The final screen shows what was set up and offers three ways out:
 
-| Button | What it does |
+| Action | What it does |
 |---|---|
-| **Go to dashboard** | Opens the plugin's home route (`/`). |
-| **Load sample data** | Adds demo products, then opens the home route. |
+| **Add your first product** | Opens the create-product page (`/products/create`). |
+| **Go to Dashboard** | Opens the plugin's home route (`/`). |
+| **Click here to load sample data!** (link below the card) | Adds demo products, then opens the products list (`/products`). |
+
+All three are disabled until every summary row shows as complete. Each one replaces
+the wizard in the browser history, so Back does not return to it.
 
 ## 2. The steps
 
@@ -37,7 +41,16 @@ Activate the plugin from **Plugins**. The next admin page load opens the wizard 
 |---|---|---|
 | **1. Store Basics** | Store name, industry (searchable) | Store name. Industry defaults to *Other*. |
 | **2. Business Info** | Country, plus an optional address (line 1, line 2, city, postcode, state) | Country. Every address field is optional. |
-| **3. Essentials** | Currency (searchable, with flags); "Collect sales tax?"; when *Yes*: pricing mode and Tax ID | Currency. |
+| **3. Essentials** | Currency (searchable, with flags); "Collect sales tax?" | Currency. |
+| **4. Store Tax** (only when tax is *Yes*) | "Prices on your products" (*Including tax* / *Excluding Tax*, default *Excluding Tax*); Tax ID | Nothing. |
+
+- **Header.** The header shows "Step N" and the step name, with no total. The
+  progress bar counts the steps already done, against 4 steps when tax is *Yes* and
+  3 when it is *No, not yet*. It is empty on step 1 and full only on the final
+  screen, after **Create Store**. The final screen shows "Setup Complete" with no step number.
+- **Primary action.** Essentials shows **Continue** when tax is *Yes* and
+  **Create Store** when it is *No, not yet*. The note "Shop, Cart, Checkout and
+  Account pages will be created" shows only above **Create Store**.
 
 - **Country detection.** The country is preselected from the browser's time zone,
   falling back to the region of its preferred language. No location permission is
@@ -48,7 +61,8 @@ Activate the plugin from **Plugins**. The next admin page load opens the wizard 
   Changing the country afterwards never overwrites a currency already chosen.
 - **Draft.** Entered values and the current step survive a refresh within the same
   browser tab (`sessionStorage` key `kirki-ecommerce:onboarding-draft`). The draft
-  is cleared when the store is created.
+  is cleared when the store is created. A draft saved on Store Tax whose tax answer
+  is no longer *Yes* reopens on Essentials.
 
 ## 3. What "Create Store" does
 
@@ -64,7 +78,7 @@ order:
 2. **General settings.** Store name, industry and Tax ID. The store address gets
    the selected country plus any address fields entered. Tax calculation is turned
    on for *Yes* and off for *No, not yet*.
-3. **Tax settings.** Prices are tax-inclusive only for *Tax included in price*.
+3. **Tax settings.** Prices are tax-inclusive only for *Including tax*.
 4. **Base currency.** The selected currency is created from the bundled currency
    list if it isn't stored yet, then made the only base currency (active, exchange
    rate 1).
@@ -75,9 +89,11 @@ order:
    steps already have data (see [`docs/home.md`](home.md#5-preconfigured-steps)),
    and `kirki_ecommerce_store_created` fires.
 
-The completion screen shows its rows in progress for at least 5 seconds, even when
-setup finishes sooner. A slower setup is followed for as long as it takes. A failure is
-shown as soon as it happens.
+The completion screen is titled "Your store is almost ready". The rows complete one at a time,
+about 400 ms apart, in the order Location, Currency, Store pages, Tax. The last row
+also waits for the setup request to succeed, so a slower setup is followed for as long
+as it takes. A failure is shown as soon as it happens: rows not yet complete stop, and
+**Try again** replaces the two buttons. A retry starts the rows again from the first.
 
 The completion record (`kirki_ecommerce_onboarding_completed_at`, a Unix timestamp)
 is written only after every step succeeds. Every step is safe to repeat, so a
@@ -89,7 +105,14 @@ Details**.
 
 ## 4. Loading sample data
 
-**Load sample data** calls `POST /wp-json/kirki/ecommerce/v1/onboarding/sample-data`,
+The link **Click here to load sample data!** sits below the completion card. It runs
+the same import as the Home checklist (see [`docs/home.md`](home.md)), but shows a
+spinner and text instead of a progress bar: first "Downloading product sample...",
+then "Creating products..." while the request runs. When the import succeeds, the
+products list opens. When it fails, an error toast shows and the link comes back.
+**Add your first product** and **Go to Dashboard** stay usable during the import.
+
+The import calls `POST /wp-json/kirki/ecommerce/v1/onboarding/sample-data`,
 which is only available after onboarding. It currently adds the demo products
 bundled with the plugin, with their images imported into the media library. It
 does nothing if the store already has products.
@@ -151,4 +174,5 @@ from step one.
   afterwards. The setup checklist on the Home page leads the merchant to them.
 - **No remote calls.** Country detection is local, and sample data comes from the
   plugin itself. Nothing is fetched from or sent to a third-party service.
-- **Shorter.** Three steps, with only store name, country and currency required.
+- **Shorter.** Three steps (four when collecting tax), with only store name, country
+  and currency required.

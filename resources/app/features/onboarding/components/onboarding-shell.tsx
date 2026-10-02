@@ -6,7 +6,6 @@ import Flex from '@/components/ui/flex';
 import Text from '@/components/ui/text';
 import {
   COMPLETION_STEP,
-  FORM_STEP_COUNT,
   getStepTitle,
   type OnboardingStep,
 } from '@/features/onboarding/lib/steps';
@@ -16,12 +15,14 @@ import { __, sprintf } from '@/wpi18n';
 
 type OnboardingShellProps = {
   step: OnboardingStep;
+  stepCount: number;
   children: ReactNode;
+  afterCard?: ReactNode;
 };
 
-const OnboardingShell = ({ step, children }: OnboardingShellProps) => {
-  const stepNumber = Math.min(step + 1, FORM_STEP_COUNT);
-  const progress = step === COMPLETION_STEP ? 100 : (stepNumber / FORM_STEP_COUNT) * 100;
+const OnboardingShell = ({ step, stepCount, children, afterCard }: OnboardingShellProps) => {
+  const isCompletion = step === COMPLETION_STEP;
+  const progress = isCompletion ? 100 : (step / stepCount) * 100;
 
   return (
     <div css={scoped(styles.overlay)}>
@@ -45,7 +46,7 @@ const OnboardingShell = ({ step, children }: OnboardingShellProps) => {
             </div>
             <Flex justify="space-between">
               <Text variant="small" color="secondary">
-                {sprintf(__('Step %1$d of %2$d', 'kirki-ecommerce'), stepNumber, FORM_STEP_COUNT)}
+                {!isCompletion && sprintf(__('Step %d', 'kirki-ecommerce'), step + 1)}
               </Text>
               <Text variant="small" color="secondary">
                 {getStepTitle(step)}
@@ -53,6 +54,7 @@ const OnboardingShell = ({ step, children }: OnboardingShellProps) => {
             </Flex>
           </Flex>
           <Card cssOverride={styles.card}>{children}</Card>
+          {afterCard}
         </Flex>
       </div>
     </div>

@@ -39,6 +39,17 @@ describe('onboarding draft', () => {
     expect(readDraft()).toEqual({ step: 2, values: { store_name: 'Acme', country: 'BD' } });
   });
 
+  it('keeps a draft on the Store Tax step', () => {
+    vi.stubGlobal('sessionStorage', createMemoryStorage());
+
+    writeDraft({ step: 3, values: { is_tax_collected: true, store_tax_id: 'VAT-1' } });
+
+    expect(readDraft()).toEqual({
+      step: 3,
+      values: { is_tax_collected: true, store_tax_id: 'VAT-1' },
+    });
+  });
+
   it('returns null after the draft is cleared', () => {
     vi.stubGlobal('sessionStorage', createMemoryStorage());
 

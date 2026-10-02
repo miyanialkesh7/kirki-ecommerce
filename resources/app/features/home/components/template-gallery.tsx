@@ -25,14 +25,15 @@ const TemplateGallery = () => {
                 src={template.image}
                 alt={template.name}
                 width="100%"
-                height="220px"
+                height={TEMPLATE_IMAGE_HEIGHT}
                 fit="cover"
+                cssOverride={styles.image}
               />
               <Flex direction="column" cssOverride={styles.meta}>
-                <Text variant="small" weight="medium">
+                <Text variant="small" weight="medium" truncate>
                   {template.name}
                 </Text>
-                <Text variant="small" color="subdued">
+                <Text color="subdued" truncate cssOverride={{ fontSize: '10px' }}>
                   {template.author}
                 </Text>
               </Flex>
@@ -40,7 +41,7 @@ const TemplateGallery = () => {
           </a>
         ))}
       </div>
-      <Button variant="link" asChild>
+      <Button variant="link" asChild cssOverride={{ color: theme.colors.text.emphasis }}>
         <a href={STORE_TEMPLATES_EXPLORE_URL} target="_blank" rel="noopener noreferrer">
           {__('Explore more', 'kirki-ecommerce')}
         </a>
@@ -53,22 +54,39 @@ TemplateGallery.displayName = 'TemplateGallery';
 
 export default TemplateGallery;
 
+const TEMPLATE_CARD_SIZE = '196px';
+const TEMPLATE_IMAGE_HEIGHT = '140px';
+
 const styles = defineStyles({
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: theme.spacing[4],
+    gap: theme.spacing[2],
     width: '100%',
   },
   link: {
     color: 'inherit',
     textDecoration: 'none',
+    pointerEvents: 'none',
   },
   card: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: TEMPLATE_CARD_SIZE,
+    height: TEMPLATE_CARD_SIZE,
     padding: 0,
+    gap: 0,
     overflow: 'hidden',
   },
+  image: {
+    border: 'none',
+    borderRadius: 0,
+  },
   meta: {
-    padding: `${theme.spacing[3]} ${theme.spacing[3]}`,
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+    borderTop: `1px solid ${theme.colors.border.default}`,
+    padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
   },
 });
