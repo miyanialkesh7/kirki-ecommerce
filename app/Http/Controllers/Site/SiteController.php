@@ -187,7 +187,7 @@ class SiteController
 
             if ($uuid = $request->get('uuid')) {
                 $order = $order_service->find_order_by_uuid($uuid);
-                $order_resource = $order ? OrderResource::make($order) : null;
+                $order_resource = $order ? SiteOrderResource::make($order) : null;
             }
 
             if (! $order_resource) {
