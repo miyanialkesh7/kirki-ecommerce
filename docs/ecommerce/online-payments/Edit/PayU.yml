@@ -15,8 +15,8 @@ http:
         "data": {
           "pos_id": "484557",
           "client_id": "484557",
-          "second_key": "2c393b157dc7154b20cf4f77766f0075",
-          "client_secret": "56b237c1ce649ab2ea0d107e46023e46",
+          "second_key": "<second_key>",
+          "client_secret": "<client_secret>",
           "sandbox": true
         }
       }
@@ -47,8 +47,8 @@ examples:
             "data": {
               "pos_id": "484557",
               "client_id": "484557",
-              "second_key": "2c393b157dc7154b20cf4f77766f0075",
-              "client_secret": "56b237c1ce649ab2ea0d107e46023e46",
+              "second_key": "<second_key>",
+              "client_secret": "<client_secret>",
               "sandbox": true
             }
           }
@@ -72,8 +72,8 @@ examples:
               "settings": {
                 "pos_id": "484557",
                 "client_id": "484557",
-                "second_key": "2c393b157dc7154b20cf4f77766f0075",
-                "client_secret": "56b237c1ce649ab2ea0d107e46023e46",
+                "second_key": "<second_key>",
+                "client_secret": "<client_secret>",
                 "sandbox": true
               },
               "fields": [
@@ -128,8 +128,8 @@ examples:
            "data": {
               "pos_id": "484557",
               "client_id": "484557",
-              "second_key": "2c393b157dc7154b20cf4f77766f0075",
-              "client_secret": "56b237c1ce649ab2ea0d107e46023e46",
+              "second_key": "<second_key>",
+              "client_secret": "<client_secret>",
               "sandbox": true
             }
           }

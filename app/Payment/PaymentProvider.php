@@ -409,7 +409,7 @@ class PaymentProvider
     }
 
     /**
-     * Validate and persist the provider settings.
+     * Sanitize, validate and persist the provider settings.
      *
      * @since 1.0.0
      *
@@ -419,6 +419,8 @@ class PaymentProvider
      */
     public function save_settings(array $settings)
     {
+        $settings = $this->sanitize_settings($settings);
+
         $this->validate_settings($settings);
 
         $this->is_enabled = (bool) $this->is_enabled;

@@ -13,11 +13,13 @@ use Kirki\Ecommerce\App\Models\Refund;
 use Kirki\Ecommerce\App\Payment\PaymentProvider;
 use Kirki\Ecommerce\Framework\Http\Superglobals;
 use Kirki\Ecommerce\Framework\Sanitizer;
+use Kirki\Ecommerce\Framework\Supports\Facades\DB;
 use Kirki\Ecommerce\Framework\Supports\Facades\Http;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\Framework\Validation\Validator;
 use Exception;
 use Kirki\Ecommerce\App\Supports\Url;
+use Throwable;
 
 use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\throw_anyway;
@@ -198,6 +200,7 @@ class PayPal extends PaymentProvider
 
             $response = Http::with_token($token)
                 ->as_json()
+                ->with_headers(['PayPal-Request-Id' => 'kirki-paypal-' . $order->uuid])
                 ->post($this->get_base_url() . '/v2/checkout/orders', [
                     'intent' => 'CAPTURE',
                     'purchase_units' => $purchase_units,
@@ -276,6 +279,9 @@ class PayPal extends PaymentProvider
     /**
      * Capture an approved PayPal order.
      *
+     * An order PayPal reports as already captured counts as captured, so a repeated
+     * approval event does not fail.
+     *
      * @since 1.0.0
      *
      * @param string $order_id PayPal order ID.
@@ -290,10 +296,33 @@ class PayPal extends PaymentProvider
             ->as_json()
             ->post($this->get_base_url() . "/v2/checkout/orders/{$order_id}/capture");
 
+        if ($response->failed() && $this->is_already_captured($response)) {
+            return (array) $response->json();
+        }
+
         /* translators: %s: PayPal API error response */
         throw_if($response->failed(), sprintf(__('Failed to capture PayPal order: %s', 'kirki-ecommerce'), $response->body()));
 
         return $response->json();
+    }
+
+    /**
+     * Check whether a failed PayPal response says the order was already captured.
+     *
+     * @since 1.0.0
+     *
+     * @param mixed $response PayPal HTTP response.
+     * @return bool
+     */
+    protected function is_already_captured($response)
+    {
+        foreach ((array) $response->json('details') as $detail) {
+            if (($detail['issue'] ?? '') === 'ORDER_ALREADY_CAPTURED') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -397,17 +426,59 @@ class PayPal extends PaymentProvider
                     $this->handle_checkout_order_approved($event);
                     break;
                 case 'PAYMENT.CAPTURE.COMPLETED':
-                    $this->handle_payment_capture_completed($event);
+                    $this->in_transaction(fn() => $this->handle_payment_capture_completed($event));
                     break;
                 case 'PAYMENT.CAPTURE.REFUNDED':
+                    // UpdateRefundAction runs its own transaction, and the database layer does not nest them.
                     $this->handle_payment_capture_refunded($event);
                     break;
             }
         } catch (Exception $e) {
+            $this->log_error(sprintf('webhook %s (event %s) failed: %s', $event_type, $event['id'] ?? 'unknown', $e->getMessage()));
+
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Run a callback in a database transaction, rolling back when it throws.
+     *
+     * @since 1.0.0
+     *
+     * @param callable $callback
+     * @return void
+     * @throws Throwable Whatever the callback threw, after the rollback.
+     */
+    protected function in_transaction(callable $callback)
+    {
+        DB::begin_transaction();
+
+        try {
+            $callback();
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollback();
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Write a PayPal problem to the server's PHP error log.
+     *
+     * Pass only identifiers and error messages, never settings or the webhook payload.
+     *
+     * @since 1.0.0
+     *
+     * @param string $message
+     * @return void
+     */
+    protected function log_error($message)
+    {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Genuine payment error, not debug output; writes to the server's PHP error log rather than this plugin's own framework.log, which is not protected from direct web access.
+        error_log('[kirki-ecommerce] PayPal ' . $message);
     }
 
     /**
@@ -424,6 +495,12 @@ class PayPal extends PaymentProvider
         $order_id = $resource['id'] ?? null;
 
         if (!$order_id) {
+            return;
+        }
+
+        $order = OrderManager::find_by_transaction_id($order_id);
+
+        if ($order && $order->payment_status === PaymentStatus::PAID) {
             return;
         }
 
@@ -463,11 +540,74 @@ class PayPal extends PaymentProvider
         OrderManager::set_transaction_id($order->id, $resource['id']);
 
         if ($order->payment_status !== PaymentStatus::PAID) {
+            if (!$this->capture_matches_order($order, $resource)) {
+                $this->hold_order_for_unmatched_capture($order, $resource);
+
+                return;
+            }
+
             OrderManager::mark_payment_as_paid($order->id);
             OrderManager::set_payment_metadata($order->id, wp_json_encode($resource));
         }
 
         $this->capture_payment_provider_fee($order, $resource);
+    }
+
+    /**
+     * Check a captured amount and currency against the order's total and currency.
+     *
+     * A capture without a readable amount cannot be verified, so it does not match.
+     *
+     * @since 1.0.0
+     *
+     * @param Order                $order
+     * @param array<string, mixed> $resource Capture resource from the webhook payload.
+     * @return bool
+     */
+    protected function capture_matches_order(Order $order, array $resource)
+    {
+        $amount = $resource['amount'] ?? null;
+
+        if (!is_array($amount) || !isset($amount['value'], $amount['currency_code'])) {
+            return false;
+        }
+
+        if (strtoupper($amount['currency_code']) !== strtoupper($order->currency_code)) {
+            return false;
+        }
+
+        try {
+            return Money::to_minor($amount['value'], $order->currency_code) === (int) $order->invoiced_total;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Leave an order unpaid after a capture that does not match it, and flag it for review.
+     *
+     * Saves the PayPal capture on the order, puts the order on hold where its status allows it, and logs the mismatch.
+     *
+     * @since 1.0.0
+     *
+     * @param Order                $order
+     * @param array<string, mixed> $resource Capture resource from the webhook payload.
+     * @return void
+     */
+    protected function hold_order_for_unmatched_capture(Order $order, array $resource)
+    {
+        OrderManager::set_payment_metadata($order->id, wp_json_encode($resource));
+        OrderManager::mark_as_on_hold($order->id);
+
+        $this->log_error(sprintf(
+            'capture %s does not match order %d: expected %d %s (minor units), received %s %s.',
+            $resource['id'] ?? 'unknown',
+            $order->id,
+            (int) $order->invoiced_total,
+            strtoupper($order->currency_code),
+            $resource['amount']['value'] ?? 'no amount',
+            $resource['amount']['currency_code'] ?? ''
+        ));
     }
 
     /**
@@ -540,6 +680,10 @@ class PayPal extends PaymentProvider
 
         $paypal_status = $resource['status'] ?? '';
         $resolved_status = $paypal_status === 'COMPLETED' ? RefundStatus::COMPLETED : RefundStatus::PENDING;
+
+        if ($refund->status === $resolved_status && (string) $refund->refund_id === (string) $resource['id']) {
+            return;
+        }
 
         OrderManager::update_refund(UpdateRefundPayloadDTO::from_array(array_merge($refund->to_array(), [
             'invoiced_amount' => $refund->invoiced_amount,

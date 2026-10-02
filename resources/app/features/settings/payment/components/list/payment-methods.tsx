@@ -26,8 +26,8 @@ import type {
 import {
   getOnlinePayment,
   useDeleteOfflinePaymentMutation,
+  useSetEnabledOfflinePaymentMutation,
   useSetEnabledOnlinePaymentMutation,
-  useUpdateOfflinePaymentMutation,
 } from '@/features/settings/payment/services/payment';
 import { useConfirmDelete } from '@/hooks';
 import { theme } from '@/theme';
@@ -57,7 +57,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
   const [isOnlineEditDialogOpen, setIsOnlineEditDialogOpen] = useState(false);
   const [editingOnlineMethod, setEditingOnlineMethod] = useState<OnlinePayment | null>(null);
 
-  const { mutate: updateOfflinePayment } = useUpdateOfflinePaymentMutation();
+  const { mutate: setEnabledOfflinePayment } = useSetEnabledOfflinePaymentMutation();
   const { mutate: deleteOfflinePayment } = useDeleteOfflinePaymentMutation();
   const { mutate: setEnabledOnlinePayment } = useSetEnabledOnlinePaymentMutation();
   const { confirmDelete, deleteConfirmation } = useConfirmDelete();
@@ -66,7 +66,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
     const isEnabled = Boolean(method.is_enabled);
 
     if (method.is_offline) {
-      updateOfflinePayment({ id: method.id, data: { ...method, is_enabled: !isEnabled } });
+      setEnabledOfflinePayment({ id: method.id, data: { is_enabled: !isEnabled } });
       return;
     }
 

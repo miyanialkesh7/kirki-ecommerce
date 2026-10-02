@@ -3,12 +3,14 @@
 namespace Kirki\Ecommerce\Tests\Integration;
 
 use Kirki\Ecommerce\Tests\Support\CreatesTestProducts;
+use Kirki\Ecommerce\Tests\Support\EnablesPaymentProviders;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 use Kirki\Ecommerce\Tests\Support\SeedsTestShipping;
 
 class OrderActivityApiTest extends RestTestCase
 {
     use CreatesTestProducts;
+    use EnablesPaymentProviders;
     use SeedsTestShipping;
 
     protected $variant_id;
@@ -16,6 +18,7 @@ class OrderActivityApiTest extends RestTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->enable_payment_provider();
         $this->seed_base_currency();
         $this->seed_shipping_settings();
 

@@ -146,7 +146,8 @@ class CreateOrderAction
      * For storefront checkouts the items and coupons come from the shopper's cart, which is
      * emptied after the order is placed. Totals are recalculated server-side, stock is
      * reserved per item, and everything is written in one transaction. Fails when the
-     * shipping method is invalid, the cart is empty, or stock is short.
+     * payment provider is not allowed, the shipping method is invalid, the cart is empty,
+     * or stock is short.
      *
      * @since 1.0.0
      *
@@ -156,6 +157,8 @@ class CreateOrderAction
      */
     public function execute(CreateOrderPayloadDTO $dto)
     {
+        $this->validate_payment_provider($dto);
+
         $this->resolve_billing_and_shipping_addresses($dto);
 
         if (!$dto->is_manual && (!empty($dto->cart_token) || !empty($dto->user_id))) {
@@ -288,6 +291,31 @@ class CreateOrderAction
         if (empty($dto->billing_id) && $dto->is_billing_same_as_shipping) {
             $dto->billing_id = $dto->shipping_id;
         }
+    }
+
+    /**
+     * Check the payload's payment provider is one the order may use.
+     *
+     * A provider must be registered. For a shopper's order it must also be enabled, so checkout
+     * accepts exactly the providers the storefront offers. A manual (admin-created) order may
+     * omit the provider and may use a provider that has since been disabled.
+     *
+     * @since 1.0.0
+     *
+     * @param CreateOrderPayloadDTO $dto Order payload.
+     * @return void
+     * @throws ValidationException When the provider is unknown, or disabled for a shopper's order.
+     */
+    protected function validate_payment_provider(CreateOrderPayloadDTO $dto): void
+    {
+        if ($dto->is_manual && empty($dto->payment_provider)) {
+            return;
+        }
+
+        $provider = Payment::get_provider((string) $dto->payment_provider);
+
+        throw_if(!$provider, __('Invalid payment method.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
+        throw_if(!$dto->is_manual && !$provider->enabled(), __('This payment method is not available.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
     }
 
     /**
