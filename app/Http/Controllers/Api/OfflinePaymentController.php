@@ -11,6 +11,7 @@ use Kirki\Ecommerce\Framework\Contracts\Request;
 use Kirki\Ecommerce\Framework\Http\Response;
 use Kirki\Ecommerce\App\DTO\OfflinePayment\CreateOfflinePaymentDTO;
 use Kirki\Ecommerce\App\DTO\OfflinePayment\UpdateOfflinePaymentDTO;
+use Kirki\Ecommerce\Framework\Http\Request as HttpRequest;
 
 use function Kirki\Ecommerce\Framework\response;
 
@@ -41,7 +42,7 @@ class OfflinePaymentController
      *
      * @since 1.0.0
      *
-     * @param Request $request
+     * @param HttpRequest $request
      * @return \Kirki\Ecommerce\Framework\Http\JsonResponse Payment method collection with a success message.
      */
     public function get(Request $request)
@@ -79,7 +80,7 @@ class OfflinePaymentController
      *
      * @since 1.0.0
      *
-     * @param Request $request
+     * @param HttpRequest $request
      * @return \Kirki\Ecommerce\Framework\Http\JsonResponse The payment method resource.
      */
     public function show(Request $request)
@@ -113,11 +114,29 @@ class OfflinePaymentController
     }
 
     /**
+     * Enable or disable an offline payment method per the `is_enabled` parameter.
+     *
+     * @since 1.0.0
+     *
+     * @param HttpRequest $request
+     * @return \Kirki\Ecommerce\Framework\Http\JsonResponse The service result in `data`.
+     */
+    public function set_enabled(HttpRequest $request)
+    {
+        $is_updated = $this->service->set_enabled($request->string('id'), $request->bool('is_enabled', false));
+
+        return response()->json([
+            'data' => $is_updated,
+            'message' => __('Payment method updated', 'kirki-ecommerce'),
+        ]);
+    }
+
+    /**
      * Delete a single offline payment method by the route ID.
      *
      * @since 1.0.0
      *
-     * @param Request $request
+     * @param HttpRequest $request
      * @return \Kirki\Ecommerce\Framework\Http\JsonResponse Success response carrying the deletion result.
      */
     public function delete(Request $request)

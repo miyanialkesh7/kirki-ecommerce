@@ -44,6 +44,7 @@ use Kirki\Ecommerce\App\Services\CartService;
 use Kirki\Ecommerce\App\Services\VariantService;
 use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\Tests\Support\CreatesTestProducts;
+use Kirki\Ecommerce\Tests\Support\EnablesPaymentProviders;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 use Kirki\Ecommerce\Tests\Support\SeedsTestShipping;
 use Exception;
@@ -54,6 +55,7 @@ use function Kirki\Ecommerce\Framework\app;
 class OrderApiTest extends RestTestCase
 {
     use CreatesTestProducts;
+    use EnablesPaymentProviders;
     use SeedsTestShipping;
 
     /**
@@ -87,6 +89,8 @@ class OrderApiTest extends RestTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->enable_payment_provider();
 
         // A test that enables tax (`enable_us_inclusive_tax()`) is observed
         // to leak that setting into a later test in the same run despite
@@ -1097,6 +1101,10 @@ class OrderApiTest extends RestTestCase
         $order = $this->create_order();
         $this->order_id = $order['id'];
 
+        // The order had to be placed with PayPal enabled; turn it off again so
+        // PayPal's own "not enabled" error proves the provider was resolved.
+        $this->assert_api_success($this->request('PATCH', 'online-payments/paypal', ['is_enabled' => false]));
+
         $order_model = OrderManager::find($this->order_id);
 
         $this->expectException(Exception::class);
@@ -1312,7 +1320,7 @@ class OrderApiTest extends RestTestCase
 
         $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
-            'payment_provider' => 'unregistered-test-provider',
+            'payment_provider' => 'paypal',
             'customer_email' => $customer_email,
             'billing_email' => $billing_email,
         ]));
@@ -1338,7 +1346,7 @@ class OrderApiTest extends RestTestCase
 
         $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
-            'payment_provider' => 'unregistered-test-provider',
+            'payment_provider' => 'paypal',
             'billing_email' => 'billing-' . wp_generate_password(8, false) . '@example.com',
         ]));
 
@@ -2164,7 +2172,7 @@ class OrderApiTest extends RestTestCase
 
         $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
-            'payment_provider' => 'unregistered-test-provider',
+            'payment_provider' => 'paypal',
         ]));
         $payload = $this->assert_api_success($response, 201);
         $this->order_id = $payload['data']['id'];
@@ -2195,7 +2203,7 @@ class OrderApiTest extends RestTestCase
 
         $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
-            'payment_provider' => 'unregistered-test-provider',
+            'payment_provider' => 'paypal',
         ]));
         $payload = $this->assert_api_success($response, 201);
         $this->order_id = $payload['data']['id'];

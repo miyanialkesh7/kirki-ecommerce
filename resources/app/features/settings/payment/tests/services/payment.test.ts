@@ -2,7 +2,11 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { endpoints } from '@/config/endpoints';
-import { getOnlinePayments, getPaymentMethods } from '@/features/settings/payment/services/payment';
+import {
+  getOnlinePayments,
+  getPaymentMethods,
+  setEnabledOfflinePayment,
+} from '@/features/settings/payment/services/payment';
 import { server } from '@/tests/msw/server';
 
 const url = `${window.kirki_ecommerce.rest_url_base}${endpoints.ONLINE_PAYMENTS}`;
@@ -96,5 +100,27 @@ describe('getPaymentMethods', () => {
     );
 
     expect(await getPaymentMethods()).toEqual([]);
+  });
+});
+
+describe('setEnabledOfflinePayment', () => {
+  const offlineUrl = (id: string) =>
+    `${window.kirki_ecommerce.rest_url_base}${endpoints.OFFLINE_PAYMENT(id)}`;
+
+  it('patches only is_enabled to the offline payment endpoint', async () => {
+    let received: unknown = null;
+
+    server.use(
+      http.patch(offlineUrl('cod'), async ({ request }) => {
+        received = await request.json();
+
+        return HttpResponse.json({ success: true, message: 'Payment method updated', data: true });
+      }),
+    );
+
+    const result = await setEnabledOfflinePayment({ id: 'cod', data: { is_enabled: false } });
+
+    expect(received).toEqual({ is_enabled: false });
+    expect(result.data).toBe(true);
   });
 });
