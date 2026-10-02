@@ -84,6 +84,9 @@ const OnboardingWizard = () => {
 
   const form = useForm<OnboardingFormInput, unknown, OnboardingFormPayload>({
     resolver: zodResolver(OnboardingFormSchema),
+    // Steps are checked with `trigger()`, which doesn't count as a submit, so the default
+    // re-validation never kicks in. Validating on change clears an error as it's fixed.
+    mode: 'onChange',
     defaultValues: { ...getDefaults(OnboardingFormSchema), ...initialDraft?.values },
   });
 

@@ -65,7 +65,9 @@ const EssentialsStep = ({ onBack, onCreateStore }: EssentialsStepProps) => {
             <Button variant="outline" size="lg" onClick={onBack}>
               {__('Back', 'kirki-ecommerce')}
             </Button>
-            <Button size="lg" onClick={onCreateStore}>{__('Create Store', 'kirki-ecommerce')}</Button>
+            <Button size="lg" onClick={onCreateStore}>
+              {__('Create Store', 'kirki-ecommerce')}
+            </Button>
           </Grid>
         </>
       }
@@ -93,7 +95,7 @@ const EssentialsStep = ({ onBack, onCreateStore }: EssentialsStepProps) => {
             name="store_tax_id"
             label={__('Tax ID (optional)', 'kirki-ecommerce')}
             placeholder={__('Permit or VAT number', 'kirki-ecommerce')}
-            description={__('The Tax ID prints on your invoices.', 'kirki-ecommerce')}
+            infoText={__('The Tax ID prints on your invoices.', 'kirki-ecommerce')}
           />
         </>
       )}

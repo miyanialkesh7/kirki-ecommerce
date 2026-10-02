@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { MinusCircle, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -13,7 +13,7 @@ import { detectCountry } from '@/features/onboarding/lib/detect-country';
 import type { OnboardingFormInput } from '@/features/onboarding/schemas/forms/onboarding-form';
 import { useCountriesQuery } from '@/services/country';
 import { theme } from '@/theme';
-import { defineStyles } from '@/theme/mixins';
+import { defineStyles, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
 type BusinessInfoStepProps = {
@@ -59,7 +59,9 @@ const BusinessInfoStep = ({ onBack, onContinue }: BusinessInfoStepProps) => {
           <Button variant="outline" size="lg" onClick={onBack}>
             {__('Back', 'kirki-ecommerce')}
           </Button>
-          <Button size="lg" onClick={onContinue}>{__('Continue', 'kirki-ecommerce')}</Button>
+          <Button size="lg" onClick={onContinue}>
+            {__('Continue', 'kirki-ecommerce')}
+          </Button>
         </Grid>
       }
     >
@@ -67,33 +69,47 @@ const BusinessInfoStep = ({ onBack, onContinue }: BusinessInfoStepProps) => {
 
       {isAddressOpen ? (
         <Flex direction="column" gap={4}>
-          <TextField
-            name="store_address.address_line_1"
-            label={__('Address Line 1', 'kirki-ecommerce')}
-            placeholder={__('Enter Address Line 1', 'kirki-ecommerce')}
-          />
+          <div css={scoped({ position: 'relative' })}>
+            <TextField
+              name="store_address.address_line_1"
+              label={__('Address Line 1', 'kirki-ecommerce')}
+              placeholder={__('Enter Address Line 1', 'kirki-ecommerce')}
+            />
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              cssOverride={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+              }}
+              onClick={() => setIsAddressOpen(false)}
+            >
+              <MinusCircle />
+            </Button>
+          </div>
           <TextField
             name="store_address.address_line_2"
             label={__('Address Line 2', 'kirki-ecommerce')}
             placeholder={__('Enter Address Line 2', 'kirki-ecommerce')}
           />
-          <Grid columns={2} gap={4}>
+          <Grid columns={3} gap={3}>
             <TextField
               name="store_address.city"
               label={__('City', 'kirki-ecommerce')}
               placeholder={__('Enter City', 'kirki-ecommerce')}
             />
+            <StateField
+              name="store_address.state"
+              country={country}
+              label={__('State / Province', 'kirki-ecommerce')}
+            />
             <TextField
               name="store_address.postal_code"
               label={__('Postcode / Zip', 'kirki-ecommerce')}
-              placeholder={__('Enter Postcode / Zip', 'kirki-ecommerce')}
+              placeholder={__('Postcode / Zip', 'kirki-ecommerce')}
             />
           </Grid>
-          <StateField
-            name="store_address.state"
-            country={country}
-            label={__('State / Province', 'kirki-ecommerce')}
-          />
         </Flex>
       ) : (
         <Button
