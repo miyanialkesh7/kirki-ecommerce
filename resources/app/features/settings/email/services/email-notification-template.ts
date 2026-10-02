@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { endpoints } from '@/config/endpoints';
 import type { EmailNotificationTemplateFormPayload } from '@/features/settings/email/schemas/forms/email-notification-template-form';
 import { apiClient } from '@/libs/api';
-import { defaultSettingsKeys, emailNotificationPreviewKeys, settingsKeys } from '@/libs/query-keys';
+import { emailNotificationPreviewKeys, settingsKeys } from '@/libs/query-keys';
 import {
   parseData,
   parseMessage,
@@ -78,7 +78,6 @@ const useRestoreNotificationTemplateMutation = () => {
     onSuccess(response, { type, group, key }) {
       toastMutationSuccess(response.message);
       void queryClient.invalidateQueries({ queryKey: settingsKeys.section('email') });
-      void queryClient.invalidateQueries({ queryKey: defaultSettingsKeys.all });
       void queryClient.invalidateQueries({
         queryKey: emailNotificationPreviewKeys.detail(type, group, key),
       });
