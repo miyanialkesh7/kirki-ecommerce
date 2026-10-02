@@ -51,6 +51,7 @@ class CartUpdateRequest extends Request
             'billing_address.company' => 'string|nullable',
 
             'shipping_method' => 'string|nullable',
+            'customer_email' => 'email|nullable',
             'customer_notes' => 'string|nullable',
             'admin_notes' => 'string|nullable',
         ];
@@ -95,6 +96,7 @@ class CartUpdateRequest extends Request
             'billing_address.company' => Sanitizer::TEXT,
 
             'shipping_method' => Sanitizer::TEXT,
+            'customer_email' => Sanitizer::EMAIL,
             'customer_notes' => Sanitizer::TEXT,
             'admin_notes' => Sanitizer::TEXT,
         ];

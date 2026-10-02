@@ -23,7 +23,6 @@ use Kirki\Ecommerce\App\Facades\Money;
 use function Kirki\Ecommerce\Framework\collection;
 use function Kirki\Ecommerce\Framework\throw_anyway;
 use function Kirki\Ecommerce\Framework\throw_if;
-use function Kirki\Ecommerce\Framework\user;
 
 /**
  * Validates coupons against a cart context and calculates their discounts.
@@ -32,6 +31,21 @@ use function Kirki\Ecommerce\Framework\user;
  */
 class DiscountService
 {
+    /** @var OrderService */
+    protected $order_service;
+
+    /**
+     * Set up the service.
+     *
+     * @since 1.0.0
+     *
+     * @param OrderService $order_service Buyer order and coupon-usage counts.
+     */
+    public function __construct(OrderService $order_service)
+    {
+        $this->order_service = $order_service;
+    }
+
     /**
      * Validate that a coupon can be applied to the given cart context.
      *
@@ -141,12 +155,9 @@ class DiscountService
 
         // Has customer limit
         if ($coupon->has_customer_limit && $coupon->customer_limit > 0) {
-            throw_if(empty($context->customer_id) && empty(user()->get_id()), __('Please login to use this coupon.', 'kirki-ecommerce'), ValidationException::class);
+            $this->ensure_buyer_identity($context);
 
-            $current_customer_usage = $coupon->order_coupons()
-                ->where('customer_id', $context->customer_id)
-                ->where_null('usage_reversed_at')
-                ->count();
+            $current_customer_usage = $this->order_service->count_coupon_usages($coupon->id, $context->customer_id, $context->customer_email, $context->order_id);
 
             throw_if($current_customer_usage >= $coupon->customer_limit, __('You have reached the usage limit for this coupon.', 'kirki-ecommerce'), ValidationException::class);
         }
@@ -193,10 +204,29 @@ class DiscountService
 
         // First time buyer
         if ($coupon->first_time_buyer_only) {
-            throw_if(empty($context->customer_id) && empty(user()->get_id()), __('Please login to use this coupon.', 'kirki-ecommerce'), ValidationException::class);
+            $this->ensure_buyer_identity($context);
 
-            throw_if($context->customer_order_count > 0, __('This coupon is only available for first time buyers.', 'kirki-ecommerce'), ValidationException::class);
+            $prior_orders = $this->order_service->count_prior_orders($context->customer_id, $context->customer_email, $context->order_id);
+
+            throw_if($prior_orders > 0, __('This coupon is only available for first time buyers.', 'kirki-ecommerce'), ValidationException::class);
         }
+    }
+
+    /**
+     * Ensure the buyer can be identified by a customer record or an email.
+     *
+     * The context's email is already resolved from the customer record or account when there
+     * is one, so it is empty only for a guest who has not entered an email yet.
+     *
+     * @since 1.0.0
+     *
+     * @param CalculationContextDTO $context Cart context.
+     * @return void
+     * @throws ValidationException When the buyer has neither.
+     */
+    protected function ensure_buyer_identity(CalculationContextDTO $context)
+    {
+        throw_if(empty($context->customer_id) && empty($context->customer_email), __('Please enter your email address to use this coupon.', 'kirki-ecommerce'), ValidationException::class);
     }
 
     /**

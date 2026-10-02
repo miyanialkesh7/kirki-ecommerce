@@ -1598,6 +1598,134 @@ class OrderApiTest extends RestTestCase
     }
 
     /**
+     * An admin-created guest order with a new email gets a first-time-buyer coupon: the
+     * signed-in admin is not treated as the buyer, and the entered email identifies them.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_admin_guest_order_with_new_email_applies_first_time_buyer_coupon(): void
+    {
+        $coupon = $this->create_buyer_scoped_coupon(['first_time_buyer_only' => true]);
+
+        $order = $this->create_order([
+            'customer_email' => 'new-guest-' . wp_generate_password(6, false) . '@example.com',
+            'coupon_codes' => [$coupon->code],
+        ]);
+        $this->order_id = $order['id'];
+
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor(Order::find($order['id'])->base_shipping_total));
+    }
+
+    /**
+     * An admin-created order for a customer who has ordered before drops a first-time-buyer coupon.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_admin_order_for_customer_with_prior_order_drops_first_time_buyer_coupon(): void
+    {
+        $coupon = $this->create_buyer_scoped_coupon(['first_time_buyer_only' => true]);
+        $customer_id = $this->create_customer()['id'];
+
+        $this->create_order(['customer_id' => $customer_id]);
+        $order = $this->create_order([
+            'customer_id' => $customer_id,
+            'coupon_codes' => [$coupon->code],
+        ]);
+        $this->order_id = $order['id'];
+
+        $this->assertEquals(10.0, Money::prepare_amount_from_minor(Order::find($order['id'])->base_shipping_total));
+        $this->assertCount(0, OrderCoupon::where('order_id', $order['id'])->get());
+    }
+
+    /**
+     * A guest checkout whose email already has an order drops a first-time-buyer coupon,
+     * while a guest with a new email keeps it.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_guest_checkout_first_time_buyer_coupon_is_judged_by_email(): void
+    {
+        $coupon = $this->create_buyer_scoped_coupon(['first_time_buyer_only' => true]);
+        $email = 'repeat-' . wp_generate_password(6, false) . '@example.com';
+
+        $first = $this->place_guest_order($email, ['coupon_codes' => [$coupon->code]]);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($first->base_shipping_total));
+
+        $second = $this->place_guest_order(strtoupper($email), ['coupon_codes' => [$coupon->code]]);
+
+        $this->assertEquals(10.0, Money::prepare_amount_from_minor($second->base_shipping_total));
+        $this->assertCount(0, OrderCoupon::where('order_id', $second->id)->get());
+    }
+
+    /**
+     * A guest checkout whose email already used a once-per-customer coupon drops it.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_guest_checkout_customer_usage_limit_is_judged_by_email(): void
+    {
+        $coupon = $this->create_buyer_scoped_coupon(['has_customer_limit' => true, 'customer_limit' => 1]);
+        $email = 'limited-' . wp_generate_password(6, false) . '@example.com';
+
+        $first = $this->place_guest_order($email, ['coupon_codes' => [$coupon->code]]);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($first->base_shipping_total));
+
+        $second = $this->place_guest_order($email, ['coupon_codes' => [$coupon->code]]);
+
+        $this->assertEquals(10.0, Money::prepare_amount_from_minor($second->base_shipping_total));
+        $this->assertCount(0, OrderCoupon::where('order_id', $second->id)->get());
+    }
+
+    /**
+     * Editing the buyer's only order keeps its first-time-buyer and once-per-customer
+     * coupons: the edited order does not count against itself.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_editing_buyers_only_order_keeps_buyer_scoped_coupons(): void
+    {
+        $first_time = $this->create_buyer_scoped_coupon(['first_time_buyer_only' => true]);
+        $once = $this->create_buyer_scoped_coupon([
+            'discount_type' => DiscountType::AMOUNT_OFF,
+            'discount_target' => DiscountTarget::ORDER,
+            'discount_value_type' => DiscountValueType::PERCENTAGE,
+            'discount_amount_percentage' => 10,
+            'has_customer_limit' => true,
+            'customer_limit' => 1,
+        ]);
+        $customer_id = $this->create_customer()['id'];
+
+        $order = $this->create_order([
+            'customer_id' => $customer_id,
+            'coupon_codes' => [$first_time->code, $once->code],
+        ]);
+        $this->order_id = $order['id'];
+        $this->assertCount(2, OrderCoupon::where('order_id', $order['id'])->get());
+
+        $this->assert_api_success($this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'customer_id' => $customer_id,
+            'coupon_codes' => [$first_time->code, $once->code],
+            'admin_notes' => 'Unrelated edit',
+            'items' => [
+                [
+                    'id' => $order['items'][0]['id'] ?? null,
+                    'variant_id' => $this->variant_id,
+                    'quantity' => 1,
+                ],
+            ],
+        ])));
+
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor(Order::find($order['id'])->base_shipping_total));
+        $this->assertCount(2, OrderCoupon::where('order_id', $order['id'])->where_null('usage_reversed_at')->get());
+    }
+
+    /**
      * Checking out with several coupons applied to the cart (one item-scoped,
      * one order-scoped) persists one `order_coupons` row per coupon and
      * `order_item_coupons` attribution rows that reconcile back to the
@@ -2242,6 +2370,48 @@ class OrderApiTest extends RestTestCase
         $dto->currency_code = 'USD';
 
         return app()->make(CreateOrderAction::class)->execute($dto);
+    }
+
+    /**
+     * Place a storefront checkout order as a guest with the given contact email.
+     *
+     * @param string $email     Guest contact email.
+     * @param array  $overrides Order payload overrides.
+     *
+     * @return Order
+     * @since 1.0.0
+     */
+    protected function place_guest_order(string $email, array $overrides = []): Order
+    {
+        wp_set_current_user(0);
+
+        $dto = CreateOrderPayloadDTO::from_array($this->order_payload(array_merge([
+            'is_manual' => false,
+            'customer_email' => $email,
+        ], $overrides)));
+        $dto->created_by = null;
+        $dto->currency_code = 'USD';
+
+        return app()->make(CreateOrderAction::class)->execute($dto);
+    }
+
+    /**
+     * Create an active free-shipping coupon with buyer-scoped rules.
+     *
+     * @param array $attributes Coupon attributes, such as `first_time_buyer_only` or `customer_limit`.
+     *
+     * @return Coupon
+     * @since 1.0.0
+     */
+    protected function create_buyer_scoped_coupon(array $attributes): Coupon
+    {
+        return Coupon::create(array_merge([
+            'title' => 'Buyer Scoped',
+            'code' => 'BUYER' . wp_generate_password(6, false),
+            'discount_type' => DiscountType::FREE_SHIPPING,
+            'eligible_item_type' => EligibleItemType::ALL_PRODUCTS,
+            'is_active' => true,
+        ], $attributes));
     }
 
     /**

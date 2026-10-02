@@ -495,7 +495,7 @@ class CreateOrderAction
     /**
      * Build the price calculation context from the payload.
      *
-     * Includes the customer's active order count, addresses, coupon codes,
+     * Includes the customer, contact email, addresses, coupon codes,
      * shipping method and the priced item list.
      *
      * @since 1.0.0
@@ -507,12 +507,7 @@ class CreateOrderAction
     {
         $context = new CalculationContextDTO();
         $context->customer_id = $dto->customer_id ?? 0;
-
-        if ($context->customer_id) {
-            $context->customer_order_count = $this->customer_service->find($context->customer_id)->orders()
-                ->where_not_in('fulfillment_status', [FulfillmentStatus::CANCELLED, FulfillmentStatus::RETURNED])
-                ->count();
-        }
+        $context->customer_email = $this->customer_service->resolve_buyer_email($context->customer_id, null, $dto->customer_email);
 
         $context->shipping_address = [
             'first_name' => $dto->shipping_first_name,

@@ -17,6 +17,7 @@ class Cart extends Model
     /** @inheritDoc */
     protected $fillable = [
         'user_id',
+        'customer_email',
         'cart_token',
         'currency_code',
         'base_currency_code',

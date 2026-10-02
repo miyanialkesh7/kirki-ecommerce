@@ -2,12 +2,13 @@
 
 namespace Kirki\Ecommerce\App\DTO\Calculation;
 
-use Kirki\Ecommerce\App\Constants\Order\OrderStatus;
 use Kirki\Ecommerce\App\Models\Cart;
+use Kirki\Ecommerce\App\Services\CustomerService;
 use Kirki\Ecommerce\Framework\Collections\Collection;
 use Kirki\Ecommerce\Framework\DTO;
 
 use function Kirki\Ecommerce\App\customer;
+use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\collection;
 
 /**
@@ -35,6 +36,12 @@ class CalculationContextDTO extends DTO
     /** @var int|null WordPress user ID of the signed-in shopper who owns the cart, when there is one */
     public $user_id;
 
+    /** @var string|null Email identifying the buyer (customer record, then account, then entered), lowercased; null for a guest who has not entered one */
+    public $customer_email;
+
+    /** @var int|null Order being edited, left out of the buyer's own order and coupon-usage counts */
+    public $order_id;
+
     /** @var string[] */
     public $coupon_codes = [];
 
@@ -43,9 +50,6 @@ class CalculationContextDTO extends DTO
 
     /** @var int Base shipping cost in minor units */
     public $shipping_subtotal = 0;
-
-    /** @var int */
-    public $customer_order_count = 0;
 
     /** @var bool */
     public $should_calculate_tax = true;
@@ -85,9 +89,8 @@ class CalculationContextDTO extends DTO
     /**
      * Build a calculation context from a cart.
      *
-     * Copies the cart's owner, addresses, shipping method, coupon codes and items. When the cart
-     * belongs to a user with a customer record, also sets the customer ID and the count of
-     * that customer's orders that are neither failed/cancelled nor refunded.
+     * Copies the cart's owner, addresses, shipping method, coupon codes and items, and resolves
+     * the buyer's email. When the cart belongs to a user with a customer record, also sets the customer ID.
      *
      * @since 1.0.0
      *
@@ -100,12 +103,12 @@ class CalculationContextDTO extends DTO
         $dto->cart_id = $cart->id;
         $dto->user_id = !empty($cart->user_id) ? (int) $cart->user_id : null;
         $dto->customer_id = null;
-        $customer = null;
-
         if (!empty($cart->user_id)) {
             $customer = customer($cart->user_id)->get_customer();
             $dto->customer_id = $customer ? $customer->id : null;
         }
+
+        $dto->customer_email = app()->make(CustomerService::class)->resolve_buyer_email($dto->customer_id, $dto->user_id, $cart->customer_email);
 
         $dto->shipping_address = $cart->shipping_address ? $cart->shipping_address : [];
         $dto->billing_address = $cart->billing_address ? $cart->billing_address : [];
@@ -131,10 +134,6 @@ class CalculationContextDTO extends DTO
 
             return $item_dto;
         }) ?? collection();
-
-        if ($dto->customer_id && $customer) {
-            $dto->customer_order_count = $customer->orders()->where_not_in('order_status', [OrderStatus::FAILED_CANCELLED, OrderStatus::REFUNDED])->count();
-        }
 
         return $dto;
     }

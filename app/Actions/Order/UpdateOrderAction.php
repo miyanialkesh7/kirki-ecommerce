@@ -8,6 +8,7 @@ use Kirki\Ecommerce\App\Concerns\PersistsOrderTaxes;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Models\OrderItem;
 use Kirki\Ecommerce\App\Services\CouponService;
+use Kirki\Ecommerce\App\Services\CustomerService;
 use Kirki\Ecommerce\App\Services\InventoryService;
 use Kirki\Ecommerce\App\Services\OrderService;
 use Kirki\Ecommerce\App\Services\ShippingService;
@@ -59,6 +60,9 @@ class UpdateOrderAction
     /** @var CouponService */
     protected $coupon_service;
 
+    /** @var CustomerService */
+    protected $customer_service;
+
     /** @var array<int, \Kirki\Ecommerce\App\Models\Variant> Variants loaded while building the calculation items, keyed by variant ID. */
     protected $variants_map = [];
 
@@ -76,6 +80,7 @@ class UpdateOrderAction
      * @param InventoryService      $inventory_service       Stock checks and reservation.
      * @param ShippingService       $shippingService         Shipping method validation.
      * @param CouponService         $coupon_service          Coupon service.
+     * @param CustomerService       $customer_service        Buyer email lookup.
      */
     public function __construct(
         RecalculateCartAction $recalculate_cart_action,
@@ -83,7 +88,8 @@ class UpdateOrderAction
         OrderService $order_service,
         InventoryService $inventory_service,
         ShippingService $shippingService,
-        CouponService $coupon_service
+        CouponService $coupon_service,
+        CustomerService $customer_service
     ) {
         $this->recalculate_cart_action = $recalculate_cart_action;
         $this->variant_service = $variant_service;
@@ -91,6 +97,7 @@ class UpdateOrderAction
         $this->inventory_service = $inventory_service;
         $this->shipping_service = $shippingService;
         $this->coupon_service = $coupon_service;
+        $this->customer_service = $customer_service;
         $this->base_currency_code = base_currency()->code;
     }
 
@@ -303,7 +310,9 @@ class UpdateOrderAction
     protected function prepare_calculation_context_dto(UpdateOrderPayloadDTO $dto)
     {
         $context = new CalculationContextDTO();
+        $context->order_id = $dto->id;
         $context->customer_id = $dto->customer_id;
+        $context->customer_email = $this->customer_service->resolve_buyer_email($context->customer_id, null, $dto->customer_email);
         $context->shipping_address = [
             'first_name' => $dto->shipping_first_name,
             'last_name' => $dto->shipping_last_name,

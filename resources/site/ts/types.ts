@@ -46,6 +46,7 @@ export type KirkiEcommerceConfig = {
     items: CartItem[];
     pricing: CartPricing;
     shipping_method: ShippingMethod | null;
+    customer_email?: string | null;
     is_billing_same_as_shipping?: boolean;
     shipping_address?: Record<string, any> | null;
     billing_address?: Record<string, any> | null;
@@ -172,6 +173,7 @@ export type CartPricing = {
 export type Cart = {
   id: number;
   customer_id: number | null;
+  customer_email?: string | null;
   cart_token: string;
   currency: {
     code: string;

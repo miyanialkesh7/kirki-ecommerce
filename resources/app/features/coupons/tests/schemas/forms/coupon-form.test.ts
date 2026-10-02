@@ -302,6 +302,16 @@ describe('CouponFormSchema', () => {
     expect(result.exclude_customer_ids).toEqual([]);
   });
 
+  it('carries first_time_buyer_only for a guests-only coupon', () => {
+    const result = CouponFormSchema.parse({
+      ...base,
+      customer_include_eligibility: 'guests',
+      first_time_buyer_only: true,
+    });
+    expect(result.customer_include_eligibility).toBe('guests');
+    expect(result.first_time_buyer_only).toBe(true);
+  });
+
   it('rejects an eligibility value that belongs to the other side', () => {
     expect(
       CouponFormSchema.safeParse({ ...base, customer_include_eligibility: 'none' }).success,
