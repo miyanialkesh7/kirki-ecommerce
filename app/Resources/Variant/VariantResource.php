@@ -60,7 +60,6 @@ class VariantResource extends Resource
             $store_default_threshold
         );
 
-
         return [
             'id' => $this->id,
             'product_id' => $this->product_id,
