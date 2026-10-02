@@ -2,9 +2,11 @@
 
 namespace Kirki\Ecommerce\App\Http\Controllers\Api;
 
+use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\Http\Requests\Settings\SendTestEmailRequest;
 use Kirki\Ecommerce\App\Services\EmailPreviewService;
 use Kirki\Ecommerce\App\Services\MailerService;
+use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\Framework\Http\Request;
 use Kirki\Ecommerce\Framework\Http\Response;
 
@@ -66,6 +68,37 @@ class EmailTemplateController
             ],
             'message' => __('Template preview rendered successfully.', 'kirki-ecommerce'),
         ]);
+    }
+
+    /**
+     * Restore a notification template to its default values.
+     *
+     * @since 1.0.0
+     *
+     * @param Request $_request
+     * @param string  $type     Notification type.
+     * @param string  $group    Template group within the type.
+     * @param string  $key      Template key within the group.
+     * @return \Kirki\Ecommerce\Framework\Http\JsonResponse The restored template, or a 404 response for an unknown template.
+     */
+    public function restore(Request $_request, string $type, string $group, string $key)
+    {
+        if ($this->email_preview_service->resolve_mailer($type, $group, $key)) {
+            $restored = Settings::get(OptionKeys::EMAIL_SETTINGS)->restore_default_notification(
+                sprintf('%s_emails', $type),
+                sprintf('%s_notifications', $group),
+                $key
+            );
+
+            return response()->json([
+                'data' => $restored,
+                'message' => __('Template restored to default.', 'kirki-ecommerce'),
+            ]);
+        }
+
+        return response()->json([
+            'message' => __('Unknown notification template.', 'kirki-ecommerce'),
+        ], Response::NOT_FOUND);
     }
 
     /**

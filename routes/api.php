@@ -181,6 +181,7 @@ Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], 
     // Settings
     Route::get('/settings/email/{type}/{group}/{key}/preview', [EmailTemplateController::class, 'preview']);
     Route::post('/settings/email/{type}/{group}/{key}/preview/test-mail', [EmailTemplateController::class, 'send_test_mail']);
+    Route::post('/settings/email/{type}/{group}/{key}/restore', [EmailTemplateController::class, 'restore']);
     Route::get('/settings/{key}', [SettingsController::class, 'get']);
     Route::put('/settings', [SettingsController::class, 'update']);
 

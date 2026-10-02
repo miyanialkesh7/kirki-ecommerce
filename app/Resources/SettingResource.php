@@ -2,17 +2,11 @@
 
 namespace Kirki\Ecommerce\App\Resources;
 
-use Kirki\Ecommerce\App\Constants\Email\AdminInventoryNotification;
-use Kirki\Ecommerce\App\Constants\Email\AdminOrderNotification;
-use Kirki\Ecommerce\App\Constants\Email\AdminUserNotification;
-use Kirki\Ecommerce\App\Constants\Email\CustomerOrderNotification;
-use Kirki\Ecommerce\App\Constants\Email\CustomerUserNotification;
 use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\Constants\PageKeys;
 use Kirki\Ecommerce\Framework\Resource;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Models\Page;
-use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\App\Supports\Utils;
 use Kirki\Ecommerce\Framework\Supports\MediaAttachment;
 
@@ -200,7 +194,7 @@ class SettingResource extends Resource
     /**
      * Get the email settings.
      *
-     * Resolves the header logo media and adds the default order confirmation shortcodes.
+     * Resolves the header logo media attachment.
      *
      * @since 1.0.0
      *
@@ -216,32 +210,6 @@ class SettingResource extends Resource
                 'logo' => $header_logo
             ])
         ]);
-
-        $notification_classes = [
-            AdminOrderNotification::class,
-            AdminInventoryNotification::class,
-            AdminUserNotification::class,
-            CustomerOrderNotification::class,
-            CustomerUserNotification::class,
-        ];
-
-        foreach ($notification_classes as $notification_class) {
-            $type = $notification_class::get_type();
-            $group = $notification_class::get_group();
-            $options = $notification_class::get_constant_values();
-
-            foreach ($options as $option) {
-                $short_codes = Settings::get(OptionKeys::EMAIL_SETTINGS)->get_default(sprintf('%s.%s.%s.shortcodes', $type, $group, $option)) ?? [];
-
-                $data[$type][$group][$option] = [
-                    'is_enabled' => $data[$type][$group][$option]['is_enabled'] ?? false,
-                    'subject' => $data[$type][$group][$option]['subject'] ?? '',
-                    'heading' => $data[$type][$group][$option]['heading'] ?? '',
-                    'message' => $data[$type][$group][$option]['message'] ?? '',
-                    'shortcodes' => $short_codes,
-                ];
-            }
-        }
 
         return $data;
     }
