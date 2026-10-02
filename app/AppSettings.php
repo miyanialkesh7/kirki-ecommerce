@@ -40,6 +40,19 @@ abstract class AppSettings
     abstract public function get_option_key();
 
     /**
+     * Get all settings values.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed>
+     */
+    public function to_array()
+    {
+        return $this->settings ?? [];
+    }
+
+
+    /**
      * Get a setting value by its dot-notation key.
      *
      * @since 1.0.0
@@ -50,19 +63,7 @@ abstract class AppSettings
      */
     public function get($key = null, $default = null) // phpcs:ignore
     {
-        return $this->deep_get($this->settings ?? [], $key, $default);
-    }
-
-    /**
-     * Get all settings values.
-     *
-     * @since 1.0.0
-     *
-     * @return array<string, mixed>
-     */
-    public function to_array()
-    {
-        return $this->settings ?? [];
+        return $this->deep_get($this->to_array(), $key, $default);
     }
 
     /**

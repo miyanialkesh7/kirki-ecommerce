@@ -47,8 +47,9 @@ const Text = forwardRef<HTMLElement, TextProps>((props, ref) => {
     cssOverride,
   );
 
-  if (!!truncate) {
-    rest.title = children?.toString() ?? '';
+  if (truncate) {
+    rest.title =
+      typeof children === 'string' || typeof children === 'number' ? String(children) : '';
   }
 
   if (variant === 'heading1') {

@@ -70,6 +70,8 @@ export const endpoints = {
     `/settings/email/${type}/${group}/${key}/preview`,
   EMAIL_NOTIFICATION_SEND_TEST_MAIL: (type: string, group: string, key: string) =>
     `/settings/email/${type}/${group}/${key}/preview/test-mail`,
+  EMAIL_NOTIFICATION_RESTORE: (type: string, group: string, key: string) =>
+    `/settings/email/${type}/${group}/${key}/restore`,
   APP_CONFIG: '/app-config',
 
   SHIPPING_PROFILES: '/shipping-profiles',

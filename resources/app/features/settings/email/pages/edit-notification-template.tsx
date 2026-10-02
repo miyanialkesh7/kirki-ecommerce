@@ -1,4 +1,4 @@
-import { Send } from 'lucide-react';
+import { RotateCw, Send } from 'lucide-react';
 
 import RichTextField from '@/components/form/rich-text-field';
 import TextField from '@/components/form/text-field';
@@ -11,7 +11,10 @@ import EmailNotificationTemplateLayout from '@/features/settings/email/component
 import { EditNotificationTemplateProvider } from '@/features/settings/email/contexts/edit-notification-template-context';
 import { useEditNotificationTemplate } from '@/features/settings/email/hooks/use-edit-notification-template';
 import { emailTemplateStyles } from '@/features/settings/email/lib/template';
-import { useSendNotificationTestEmailMutation } from '@/features/settings/email/services/email-notification-template';
+import {
+  useRestoreNotificationTemplateMutation,
+  useSendNotificationTestEmailMutation,
+} from '@/features/settings/email/services/email-notification-template';
 import EditNotificationTemplateSkeleton from '@/features/settings/email/skeletons/edit-notification-template-skeleton';
 import { cardStyles } from '@/theme/card-styles';
 import { mergeCss } from '@/theme/mixins';
@@ -20,6 +23,7 @@ import { __ } from '@/wpi18n';
 const EditNotificationTemplateContent = () => {
   const { form, ref, loaded, shortcodes } = useEditNotificationTemplate();
   const sendTestEmailMutation = useSendNotificationTestEmailMutation();
+  const restoreMutation = useRestoreNotificationTemplateMutation();
 
   if (!loaded) {
     return <EditNotificationTemplateSkeleton />;
@@ -32,13 +36,14 @@ const EditNotificationTemplateContent = () => {
   return (
     <EmailNotificationTemplateLayout>
       <Flex gap={4} cssOverride={{ width: '100%' }}>
-        <Flex direction="column" gap={5} cssOverride={{ width: '40%' }}>
+        <Flex
+          direction="column"
+          gap={3}
+          cssOverride={{ width: '40%', position: 'sticky', top: 112, alignSelf: 'flex-start' }}
+        >
           <Card
             data-search-skip="true"
-            cssOverride={mergeCss(cardStyles.formCard, emailTemplateStyles.roundedCard, {
-              position: 'sticky',
-              top: 112,
-            })}
+            cssOverride={mergeCss(cardStyles.formCard, emailTemplateStyles.roundedCard)}
           >
             <CardContent>
               <Flex direction="column" gap={4}>
@@ -53,6 +58,18 @@ const EditNotificationTemplateContent = () => {
               </Flex>
             </CardContent>
           </Card>
+          <Flex align="center" justify="end">
+            <Button
+              variant="ghost"
+              onClick={() => restoreMutation.mutate(ref)}
+              loading={restoreMutation.isPending}
+            >
+              <RotateCw size={14} />
+              <Text variant="tiny" weight="medium">
+                {__('Restore to Default', 'kirki-ecommerce')}
+              </Text>
+            </Button>
+          </Flex>
         </Flex>
 
         <Flex direction="column" gap={2} cssOverride={{ width: '60%' }}>

@@ -4,6 +4,9 @@ namespace Kirki\Ecommerce\App\Services;
 
 defined('ABSPATH') || exit;
 
+use Kirki\Ecommerce\App\Constants\Coupon\DiscountTarget;
+use Kirki\Ecommerce\App\Constants\Coupon\DiscountType;
+use Kirki\Ecommerce\App\Constants\Coupon\DiscountValueType;
 use Kirki\Ecommerce\App\Constants\Email\AdminInventoryNotification;
 use Kirki\Ecommerce\App\Constants\Email\AdminOrderNotification;
 use Kirki\Ecommerce\App\Constants\Email\AdminUserNotification;
@@ -30,10 +33,13 @@ use Kirki\Ecommerce\App\Mails\Mailer;
 use Kirki\Ecommerce\App\Models\AttributeValue;
 use Kirki\Ecommerce\App\Models\Customer;
 use Kirki\Ecommerce\App\Models\Order;
+use Kirki\Ecommerce\App\Models\OrderCoupon;
 use Kirki\Ecommerce\App\Models\OrderItem;
+use Kirki\Ecommerce\App\Models\OrderItemCoupon;
+use Kirki\Ecommerce\App\Models\OrderTax;
 use Kirki\Ecommerce\App\Models\Product;
 use Kirki\Ecommerce\App\Models\Variant;
-use WP_CLI\Context\Admin;
+use Kirki\Ecommerce\App\Supports\Tax;
 
 use function Kirki\Ecommerce\Framework\collection;
 use function Kirki\Ecommerce\Framework\json_decoded_data;
@@ -135,12 +141,46 @@ class EmailPreviewService
 
         $order = new Order($order_data);
         $order->created_at = $order_data['created_at'] ?? gmdate('Y-m-d H:i:s');
+        $order->is_tax_inclusive = Tax::is_tax_inclusive();
 
         $items = collection($items_data)->map(function ($item) {
-            return new OrderItem($item);
+            $order_item = new OrderItem($item);
+            $order_item->set_relation('taxes', collection($item['taxes'] ?? [])->map(function ($tax) {
+                return new OrderTax($tax);
+            }));
+
+            return $order_item;
         });
 
+        $item_coupons = $items->map(function ($order_item) {
+            return new OrderItemCoupon([
+                'order_item_id' => $order_item->id,
+                'invoiced_discount_amount' => (int) round($order_item->invoiced_subtotal * 0.1),
+                'base_discount_amount' => (int) round($order_item->base_subtotal * 0.1),
+            ]);
+        });
+
+        $order_coupon = new OrderCoupon([
+            'code' => 'SAVE10',
+            'title' => '10% off',
+            'discount_type' => DiscountType::AMOUNT_OFF,
+            'discount_target' => DiscountTarget::ORDER,
+            'coupon_snapshot' => [
+                'discount_value_type' => DiscountValueType::PERCENTAGE,
+                'discount_amount_percentage' => 10,
+            ],
+            'invoiced_discount_amount' => $item_coupons->sum(function ($item_coupon) {
+                return $item_coupon->invoiced_discount_amount;
+            }),
+            'base_discount_amount' => $item_coupons->sum(function ($item_coupon) {
+                return $item_coupon->base_discount_amount;
+            }),
+        ]);
+        $order_coupon->set_relation('order_item_coupons', $item_coupons);
+
         $order->set_relation('items', $items);
+        $order->set_relation('order_coupons', collection([$order_coupon]));
+        $order->set_relation('shipping_taxes', collection());
         $order->set_relation('refunds', collection());
 
         return $order;

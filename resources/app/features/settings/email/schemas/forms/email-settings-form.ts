@@ -35,10 +35,29 @@ const EmailSettingsFormShape = z.object({
   default_template: EmailTemplateFormShape.nullish(),
 });
 
+type NotificationGroups = Record<
+  string,
+  Record<string, Record<string, unknown>> | null | undefined
+>;
+
+const omitShortcodes = <Groups extends NotificationGroups>(groups: Groups): Groups =>
+  Object.fromEntries(
+    Object.entries(groups).map(([group, notifications]) => [
+      group,
+      notifications &&
+        Object.fromEntries(
+          Object.entries(notifications).map(([key, { shortcodes, ...notification }]) => [
+            key,
+            notification,
+          ]),
+        ),
+    ]),
+  ) as Groups;
+
 export const EmailSettingsFormSchema = prepareFormSchema(EmailSettingsFormShape).transform(
   (values) => ({
-    admin_emails: values.admin_emails,
-    customer_emails: values.customer_emails,
+    admin_emails: omitShortcodes(values.admin_emails),
+    customer_emails: omitShortcodes(values.customer_emails),
     mail_configuration: values.mail_configuration ?? null,
     default_template: values.default_template ?? null,
   }),
