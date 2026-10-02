@@ -102,6 +102,67 @@ class CurrencyService
     }
 
     /**
+     * Make the currency with the given code the store's only base currency, creating it when it is not stored yet.
+     *
+     * A missing currency is created from its bundled definition. Either way the currency ends up active with an
+     * exchange rate of 1, and every other base currency is demoted in the same transaction.
+     *
+     * @since 1.0.0
+     *
+     * @param string $code ISO 4217 currency code.
+     * @return Currency The base currency.
+     * @throws NotFoundException When the code is not in the bundled currency list.
+     * @throws Exception When the transaction fails; it is rolled back first.
+     */
+    public function ensure_base(string $code)
+    {
+        $code = strtoupper($code);
+        $definition = $this->find_definition($code);
+
+        throw_if(empty($definition), __('Currency not found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
+
+        $this->with_demoted_bases(function () use ($code, $definition) {
+            $attributes = [
+                'exchange_rate' => 1,
+                'is_base' => 1,
+                'is_active' => 1,
+            ];
+
+            $currency = Currency::where('code', $code)->first();
+
+            if (!empty($currency)) {
+                $currency->update($attributes);
+                return;
+            }
+
+            Currency::create(array_merge($attributes, [
+                'code' => $code,
+                'name' => $definition['name'],
+                'symbol' => $definition['symbol'],
+            ]));
+        });
+
+        return Currency::where('code', $code)->first();
+    }
+
+    /**
+     * Find a currency's definition in the bundled currency list.
+     *
+     * @since 1.0.0
+     *
+     * @param string $code ISO 4217 currency code, in any case.
+     * @return array<string, mixed>|null Null when the code is not in the list.
+     */
+    public function find_definition(string $code)
+    {
+        $code = strtoupper($code);
+
+        return $this->list()->first(function ($currency) use ($code) {
+            return strtoupper($currency['code'] ?? '') === $code;
+        });
+    }
+
+    /**
      * Get the bundled list of all known currencies from the currencies data file.
      *
      * @since 1.0.0

@@ -26,4 +26,7 @@ class OptionKeys
 
     const LAST_INVOICE_NUMBER = 'last_invoice_number';
     const LAST_INVOICE_NUMBER_RESET_YEAR = 'last_invoice_number_reset_year';
+
+    const ONBOARDING_COMPLETED_AT = 'onboarding_completed_at';
+    const SETUP_CHECKLIST = 'setup_checklist';
 }

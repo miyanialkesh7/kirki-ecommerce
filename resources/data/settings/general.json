@@ -12,6 +12,7 @@
     "postal_code": null,
     "country": null
   },
+  "store_tax_id": null,
   "selling_location_type": "all-countries",
   "selling_countries": [],
   "order_number": {

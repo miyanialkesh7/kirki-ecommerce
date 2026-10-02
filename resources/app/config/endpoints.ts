@@ -43,6 +43,12 @@ export const endpoints = {
   VARIANT_GENERATE_SKU: '/variants/generate-sku',
   VARIANTS_GENERATE_SKUS: '/variants/generate-skus',
 
+  ONBOARDING: '/onboarding',
+  ONBOARDING_SAMPLE_DATA: '/onboarding/sample-data',
+
+  SETUP_CHECKLIST: '/setup-checklist',
+  SETUP_CHECKLIST_COMPLETE_STEP: (step: string) => `/setup-checklist/${step}/complete`,
+
   COUNTRIES: '/countries',
 
   CURRENCIES: '/currencies',

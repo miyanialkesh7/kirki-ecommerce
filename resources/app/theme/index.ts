@@ -410,6 +410,7 @@ const theme = {
     sticky: 100, // in-app sticky headers, e.g. page-heading, filter-popup panels
     dialogOverlay: 1000,
     dialogContent: 1001,
+    fullscreen: 10000, // full-screen takeovers such as onboarding — clears #adminmenuback (9990)
     dropdown: 100000, // select / popover / dropdown-menu content — clears #wpadminbar (99999)
     tooltip: 100100, // must float above dialogs and dropdowns
     toast: 100200, // persistent app notifications — always on top
