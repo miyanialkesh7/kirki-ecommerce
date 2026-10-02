@@ -64,7 +64,7 @@ const EditNotificationTemplateContent = () => {
               onClick={() => restoreMutation.mutate(ref)}
               loading={restoreMutation.isPending}
             >
-              <RotateCw size="12" />
+              <RotateCw size={14} />
               <Text variant="tiny" weight="medium">
                 {__('Restore to Default', 'kirki-ecommerce')}
               </Text>
