@@ -26,7 +26,7 @@ const StoreContactDetails = () => {
           <TextField
             name="store_name"
             label={__('Store Name', 'kirki-ecommerce')}
-            placeholder={__('Enter your store name', 'kirki-ecommerce')}
+            placeholder={__('e.g., Acme Store', 'kirki-ecommerce')}
           />
 
           <MediaField

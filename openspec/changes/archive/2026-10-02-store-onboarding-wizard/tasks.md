@@ -66,3 +66,11 @@
 - [x] 8.1 Write `docs/onboarding.md` following `docs/cache.md`'s structure _(`docs/cache.md` does not exist in this repo; followed the sibling `docs/legal-consents.md` / `docs/emails.md` structure, with a "Where this differs from WooCommerce's setup wizard" section)_: TOC, quick start (activation → wizard → Create Store), what Create Store writes, the completion option, the gate, extension points (`kirki_ecommerce_store_created`, `apply_presets`, `SampleDataImporter`), resetting onboarding in development, and known limitations (demo prices are USD figures in the base currency; Tax ID not yet printed on invoices)
 - [x] 8.2 Run `openspec validate store-onboarding-wizard --strict` and fix any reported issues
 - [x] 8.3 Verify: `npm run typecheck && npm test` in `resources/app/`; flag to the user that the wizard's visual layout needs their manual check in wp-admin (browser verification is not used in this project)
+
+## 9. Back button beside the step title
+
+- [x] 9.1 In `components/step-layout.tsx`, add an optional `onBack` prop. When it is set, render a `secondary` `icon-sm` `Button` with `ChevronLeft` and `aria-label` "Back" to the left of the title, vertically centred with it
+- [x] 9.2 In `business-info-step.tsx` and `essentials-step.tsx`, pass `onBack` to `StepLayout`, remove the footer Back button and its `Grid`, and keep only the full-width primary button. Remove imports that become unused
+- [x] 9.3 Add a test in `tests/components/onboarding-wizard.test.tsx`: on step two the Back icon button returns to step one, and step one has no Back button
+- [x] 9.4 Update `docs/onboarding.md` if it describes the Back button placement _(no change: the doc does not describe the button placement)_
+- [x] 9.5 Run `npm run typecheck`, lint and `npm test` in `resources/app/`. Ask the user to check the layout visually _(typecheck and lint on `features/onboarding` are clean. 2 tests fail because of earlier user edits outside this group: the new store-name placeholder (`onboarding-wizard.test.tsx`) and the removed "Cash on delivery" button (`features/home/tests/lib/steps.test.ts`))_

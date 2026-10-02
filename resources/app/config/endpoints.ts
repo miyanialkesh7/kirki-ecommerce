@@ -46,6 +46,9 @@ export const endpoints = {
   ONBOARDING: '/onboarding',
   ONBOARDING_SAMPLE_DATA: '/onboarding/sample-data',
 
+  SETUP_CHECKLIST: '/setup-checklist',
+  SETUP_CHECKLIST_COMPLETE_STEP: (step: string) => `/setup-checklist/${step}/complete`,
+
   COUNTRIES: '/countries',
 
   CURRENCIES: '/currencies',

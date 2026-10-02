@@ -7,21 +7,29 @@ and sensible default settings — so that a merchant activating the plugin for t
 first time lands on a working store rather than an empty one, without ever
 overwriting configuration that already exists.
 ## Requirements
-### Requirement: Onboarding seed runs once on version update
+### Requirement: Baseline seed runs during store setup
 
-The onboarding dataset SHALL be seeded from the `1.0.0-alpha.1` version-update
-callback, and SHALL NOT be reachable from the developer seeding command or the
-demo seeder set.
+The baseline onboarding dataset SHALL be seeded as part of the merchant's store setup
+in the onboarding wizard. That dataset is the category tree, attribute presets,
+product schema profiles and settings defaults. It SHALL NOT be seeded on plugin
+activation, on a version update, by the developer seeding command, or by the demo
+seeder set. Settings defaults SHALL be seeded before the merchant's wizard answers are
+applied, so the answers take precedence.
 
-#### Scenario: Fresh install
+#### Scenario: Fresh install before onboarding
 
-- **WHEN** the plugin is activated on a site that has never installed version `1.0.0-alpha.1`
-- **THEN** the onboarding dataset is seeded during the first admin request
+- **WHEN** the plugin is activated and no store setup has been submitted yet
+- **THEN** no categories, attributes, schema profiles, or settings defaults have been seeded
 
-#### Scenario: Already-installed version
+#### Scenario: Store setup
 
-- **WHEN** an admin request occurs on a site that has already recorded `1.0.0-alpha.1` as installed
-- **THEN** no onboarding seeding is attempted
+- **WHEN** the merchant's store setup succeeds
+- **THEN** the category tree, attribute presets, product schema profiles, and settings defaults are seeded
+
+#### Scenario: Wizard answers win over defaults
+
+- **WHEN** store setup seeds the general settings defaults on a store with no general settings
+- **THEN** the store name, address, and tax switch from the wizard are what the general settings hold afterwards
 
 #### Scenario: Developer seeding command is unaffected
 
@@ -50,21 +58,6 @@ repeated.
 
 - **WHEN** the seed runs on a store that already has categories, products, or a configured setting
 - **THEN** that existing data is left untouched
-
-### Requirement: A base currency is available
-
-The store SHALL have a US Dollar currency marked as the base currency, and the
-currency settings SHALL name USD as the base currency code.
-
-#### Scenario: No currency exists
-
-- **WHEN** the seed runs on a store with no currency rows
-- **THEN** a US Dollar currency is created as the base currency with an exchange rate of 1 and marked active
-
-#### Scenario: A USD currency already exists
-
-- **WHEN** the seed runs on a store that already has a USD currency row
-- **THEN** no additional currency row is created
 
 ### Requirement: A category tree is available
 
@@ -162,14 +155,20 @@ been configured.
 
 ### Requirement: Demo products are available with imagery
 
-The store SHALL be seeded with demo products covering both a product without
-variants and products with one and two variation axes. Each product and each
-variant SHALL carry imagery drawn from the images bundled with the plugin, and
-every purchasable variant SHALL have a price.
+The store SHALL receive demo products only when the merchant loads sample data. The
+demo products SHALL cover a product without variants and products with one and two
+variation axes. Each product and each variant SHALL carry imagery drawn from the
+images bundled with the plugin. Every purchasable variant SHALL have a price in the
+store's base currency.
+
+#### Scenario: Store setup does not add products
+
+- **WHEN** the merchant's store setup succeeds
+- **THEN** no demo products are created
 
 #### Scenario: Demo products are seeded
 
-- **WHEN** the seed runs on a store with no products
+- **WHEN** sample data is loaded on a store with no products
 - **THEN** demo products are created, each assigned to a seeded category, each with a priced default variant
 
 #### Scenario: Variable products carry their variation axes
@@ -194,23 +193,24 @@ every purchasable variant SHALL have a price.
 
 #### Scenario: Products already exist
 
-- **WHEN** the seed runs on a store that already has at least one product
+- **WHEN** sample data is loaded on a store that already has at least one product
 - **THEN** no demo products are created
 
 ### Requirement: Bundled product images are reclaimed after a successful install
 
-Once every bundled product image has been imported successfully, the plugin SHALL
-remove the bundled product image directory from an installed production plugin, and
-SHALL leave it in place otherwise.
+Once sample data loading has imported every bundled product image successfully, the
+plugin SHALL remove the bundled product image directory from an installed production
+plugin. It SHALL leave the directory in place otherwise, including when sample data
+has never been loaded.
 
 #### Scenario: Successful production seed
 
-- **WHEN** every bundled product image has been imported on a production install
+- **WHEN** sample data loading imports every bundled product image on a production install
 - **THEN** the bundled product image directory is removed from the plugin
 
 #### Scenario: Development install
 
-- **WHEN** the seed completes on a development install
+- **WHEN** sample data loading completes on a development install
 - **THEN** the bundled product image directory is left in place
 
 #### Scenario: An image failed to import
@@ -218,3 +218,7 @@ SHALL leave it in place otherwise.
 - **WHEN** at least one bundled product image could not be imported
 - **THEN** the bundled product image directory is left in place so a later run can still read it
 
+#### Scenario: Sample data never loaded
+
+- **WHEN** the merchant completes onboarding without loading sample data
+- **THEN** the bundled product image directory is left in place

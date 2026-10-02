@@ -1,12 +1,12 @@
-import { createHashRouter, Navigate } from 'react-router';
+import { createHashRouter } from 'react-router';
 
-import { RouteConfig } from '@/config/route-config';
 import brandsRoutes from '@/features/brands/routes';
 import bulkEditRoutes from '@/features/bulk-edit/routes';
 import categoriesRoutes from '@/features/categories/routes';
 import collectionsRoutes from '@/features/collections/routes';
 import couponsRoutes from '@/features/coupons/routes';
 import customersRoutes from '@/features/customers/routes';
+import homeRoutes from '@/features/home/routes';
 import inventoryRoutes from '@/features/inventory/routes';
 import { OnboardingGate } from '@/features/onboarding';
 import onboardingRoutes from '@/features/onboarding/routes';
@@ -17,8 +17,6 @@ import systemRoutes from '@/features/system/routes';
 import tagsRoutes from '@/features/tags/routes';
 import UnsavedChangesController from '@/floating-components/unsaved-tracker';
 
-const ProductRoutes = RouteConfig.Products;
-
 export const router = createHashRouter([
   ...onboardingRoutes,
   {
@@ -27,7 +25,7 @@ export const router = createHashRouter([
       {
         element: <OnboardingGate />,
         children: [
-          { path: RouteConfig.Home.template, element: <Navigate to={ProductRoutes.template} replace /> },
+          ...homeRoutes,
           ...productsRoutes,
           ...bulkEditRoutes,
           ...inventoryRoutes,

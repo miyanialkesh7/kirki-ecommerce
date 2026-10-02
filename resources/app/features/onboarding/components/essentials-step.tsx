@@ -5,7 +5,6 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import TextField from '@/components/form/text-field';
 import Button from '@/components/ui/button';
 import Flex from '@/components/ui/flex';
-import Grid from '@/components/ui/grid';
 import Text from '@/components/ui/text';
 import ChoiceButtonsField from '@/features/onboarding/components/fields/choice-buttons-field';
 import CurrencyField from '@/features/onboarding/components/fields/currency-field';
@@ -53,6 +52,7 @@ const EssentialsStep = ({ onBack, onCreateStore }: EssentialsStepProps) => {
   return (
     <StepLayout
       title={__('Setup the essentials', 'kirki-ecommerce')}
+      onBack={onBack}
       footer={
         <>
           <Flex gap={2} align="center" cssOverride={styles.note}>
@@ -61,14 +61,9 @@ const EssentialsStep = ({ onBack, onCreateStore }: EssentialsStepProps) => {
               {__('Shop, Cart, Checkout and Account pages will be created', 'kirki-ecommerce')}
             </Text>
           </Flex>
-          <Grid columns={2} gap={3}>
-            <Button variant="outline" size="lg" onClick={onBack}>
-              {__('Back', 'kirki-ecommerce')}
-            </Button>
-            <Button size="lg" onClick={onCreateStore}>
-              {__('Create Store', 'kirki-ecommerce')}
-            </Button>
-          </Grid>
+          <Button size="lg" onClick={onCreateStore}>
+            {__('Create Store', 'kirki-ecommerce')}
+          </Button>
         </>
       }
     >

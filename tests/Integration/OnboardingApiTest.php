@@ -58,7 +58,9 @@ class OnboardingApiTest extends RestTestCase
             OptionKeys::PRODUCT_SETTINGS,
             OptionKeys::CHECKOUT_SETTINGS,
             OptionKeys::PAYMENT_SETTINGS,
+            OptionKeys::SHIPPING_SETTINGS,
             OptionKeys::ONBOARDING_COMPLETED_AT,
+            OptionKeys::SETUP_CHECKLIST,
         ];
 
         foreach ($option_keys as $option_key) {
@@ -156,6 +158,44 @@ class OnboardingApiTest extends RestTestCase
         $this->assertSame('BD', $payload['data']['country']['code']);
         $this->assertSame('BDT', $payload['data']['currency']['code']);
         $this->assertNull($payload['data']['tax']);
+    }
+
+    /**
+     * Setup offers Cash on Delivery and Direct bank transfer, both disabled.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_setup_seeds_offline_payments_disabled(): void
+    {
+        $this->assert_api_success($this->request('POST', 'onboarding', $this->payload()));
+
+        $offline_payments = Option::get(OptionKeys::PAYMENT_SETTINGS)['offline_payments'];
+
+        $this->assertSame(['cod', 'bank_transfer'], array_column($offline_payments, 'id'));
+
+        foreach ($offline_payments as $offline_payment) {
+            $this->assertFalse($offline_payment['is_enabled']);
+            $this->assertNotEmpty($offline_payment['instructions']);
+        }
+    }
+
+    /**
+     * Setup records the checklist steps whose data is already in place as preconfigured.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_setup_records_preconfigured_checklist_steps(): void
+    {
+        Option::set(OptionKeys::SHIPPING_SETTINGS, ['shipping_zones' => [
+            ['id' => 'zone', 'is_enabled' => true, 'shipping_methods' => [['id' => 'flat', 'is_enabled' => true]]],
+        ]]);
+        $this->reset_option_manager_cache();
+
+        $this->assert_api_success($this->request('POST', 'onboarding', $this->payload()));
+
+        $this->assertSame(['shipping'], Option::get(OptionKeys::SETUP_CHECKLIST)['preconfigured']);
     }
 
     /**

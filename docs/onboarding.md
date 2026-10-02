@@ -57,7 +57,10 @@ order:
 
 1. **Baseline seed.** Default settings, the category tree, colour and material
    attributes, and product schema profiles. Each part is skipped when its target
-   already holds data.
+   already holds data. The default payment settings add two offline payment
+   methods, *Cash on Delivery* and *Direct bank transfer*. Both are **disabled**:
+   the merchant enables one from the Home page's setup checklist (see
+   [`docs/home.md`](home.md)).
 2. **General settings.** Store name, industry and Tax ID. The store address gets
    the selected country plus any address fields entered. Tax calculation is turned
    on for *Yes* and off for *No, not yet*.
@@ -68,7 +71,9 @@ order:
 5. **Storefront pages.** Shop, Cart, Checkout and Account are created and published,
    or reused if already assigned in **Settings → Advanced**.
 6. **Presets.** The industry and location preset step runs (currently empty; see
-   section 6), then `kirki_ecommerce_store_created` fires.
+   section 6). Then the Home checklist records which of its tax and shipping
+   steps already have data (see [`docs/home.md`](home.md#5-preconfigured-steps)),
+   and `kirki_ecommerce_store_created` fires.
 
 The completion screen shows its rows in progress for at least 5 seconds, even when
 setup finishes sooner. A slower setup is followed for as long as it takes. A failure is
@@ -143,7 +148,7 @@ from step one.
 - **No skip.** WooCommerce lets you skip its setup; here the plugin's pages stay
   behind the wizard until it is finished. The rest of wp-admin is unaffected.
 - **No payment, shipping or extension steps.** Those are configured in Settings
-  afterwards.
+  afterwards. The setup checklist on the Home page leads the merchant to them.
 - **No remote calls.** Country detection is local, and sample data comes from the
   plugin itself. Nothing is fetched from or sent to a third-party service.
 - **Shorter.** Three steps, with only store name, country and currency required.

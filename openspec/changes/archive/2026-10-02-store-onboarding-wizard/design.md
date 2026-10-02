@@ -288,3 +288,8 @@ is accepted for demo data; see Risks.
   `is_tax_calculation_enabled = false` into `OrderApiTest`. `OnboardingApiTest::tearDown`
   deletes and commits those options after the rollback. This is pre-existing harness
   behaviour; other tests that create a base currency are exposed to it too.
+- **Step navigation layout.** Steps two and three first had Back and the primary
+  action side by side in the footer. Back is now an icon button (`ChevronLeft`,
+  `aria-label` "Back") beside the step title, rendered by `StepLayout` when it gets
+  an `onBack` prop. The footer holds only the primary action, at full width. Step
+  one passes no `onBack`, so its title has no button.

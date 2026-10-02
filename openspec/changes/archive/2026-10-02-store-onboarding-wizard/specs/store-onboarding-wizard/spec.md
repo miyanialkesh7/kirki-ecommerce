@@ -74,7 +74,19 @@ the site.
 An "Add address" action SHALL reveal optional fields for address line 1, address
 line 2, city, postcode and state/province. The address SHALL NOT have its own country
 field, because it uses the selected country. Every revealed address field SHALL be
-optional. The step SHALL offer Back and Continue actions.
+optional. The step SHALL offer Back and Continue actions. Back SHALL be an icon
+button with a left chevron beside the step title. Continue SHALL fill the full width
+of the card.
+
+#### Scenario: Back beside the title
+
+- **WHEN** the merchant is on step two or step three
+- **THEN** a Back icon button shows beside the step title, and the footer shows only the full-width primary action
+
+#### Scenario: Back from step two
+
+- **WHEN** the merchant clicks the Back icon button on step two
+- **THEN** the wizard returns to step one
 
 #### Scenario: Country detected from time zone
 
@@ -121,7 +133,9 @@ defaulting to "No, not yet". When "Yes" is chosen, the step SHALL also show:
 - an optional "Tax ID" field, with a note that the Tax ID prints on invoices.
 
 The step SHALL state that the Shop, Cart, Checkout and Account pages will be created.
-The step SHALL offer Back and "Create Store" actions.
+The step SHALL offer Back and "Create Store" actions. Back SHALL be an icon button
+with a left chevron beside the step title. "Create Store" SHALL fill the full width
+of the card.
 
 #### Scenario: Currency follows the country
 

@@ -40,4 +40,23 @@ describe('onboarding wizard', () => {
       expect(screen.queryByText('Store name is required')).not.toBeInTheDocument();
     });
   });
+
+  it('goes back from step two with the Back button beside the title', async () => {
+    render(
+      <MemoryRouter>
+        <OnboardingWizard />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Store name'), { target: { value: 'Acme' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('Where do you sell from?')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(await screen.findByText("Let's set up your store")).toBeInTheDocument();
+  });
 });

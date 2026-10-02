@@ -80,8 +80,6 @@ const styles = defineStyles({
     display: 'flex',
     overflowY: 'auto',
     padding: `${theme.spacing[12]} ${theme.spacing[4]}`,
-    // Solid on purpose: the translucent surface tokens would let the admin page
-    // underneath tint the backdrop.
     backgroundColor: theme.colors.background.solidSurfaceSecondary,
   },
   column: {
@@ -90,8 +88,8 @@ const styles = defineStyles({
     alignItems: 'center',
     gap: theme.spacing[12],
     width: '100%',
-    maxWidth: '460px',
-    margin: 'auto',
+    maxWidth: '440px',
+    margin: '64px auto',
   },
   logo: {
     display: 'block',
@@ -118,8 +116,8 @@ const styles = defineStyles({
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    minHeight: '560px',
-    padding: theme.spacing[8],
+    minHeight: '360px',
+    padding: theme.spacing[6],
     borderRadius: theme.radius.xxl,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     boxShadow: '0px -1px 1px 0.5px #0000001A inset, 0px 0.5px 1px 0px #0000001A inset',

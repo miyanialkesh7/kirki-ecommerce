@@ -22,7 +22,7 @@ const StoreBasicsStep = ({ onContinue }: StoreBasicsStepProps) => {
       <TextField
         name="store_name"
         label={__('Store name', 'kirki-ecommerce')}
-        placeholder={__('Your Store Name', 'kirki-ecommerce')}
+        placeholder={__('e.g., Acme Store', 'kirki-ecommerce')}
       />
       <ComboboxField
         name="industry"

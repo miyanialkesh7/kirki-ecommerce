@@ -27,16 +27,21 @@ class StoreSetupService
     /** @var CurrencyService */
     protected $currency_service;
 
+    /** @var SetupChecklistService */
+    protected $setup_checklist_service;
+
     /**
-     * Create the service with the currency service.
+     * Create the service with the currency and setup checklist services.
      *
      * @since 1.0.0
      *
-     * @param CurrencyService $currency_service
+     * @param CurrencyService       $currency_service
+     * @param SetupChecklistService $setup_checklist_service
      */
-    public function __construct(CurrencyService $currency_service)
+    public function __construct(CurrencyService $currency_service, SetupChecklistService $setup_checklist_service)
     {
         $this->currency_service = $currency_service;
+        $this->setup_checklist_service = $setup_checklist_service;
     }
 
     /**
@@ -58,6 +63,7 @@ class StoreSetupService
         Utils::generate_site_pages();
 
         $this->apply_presets($data->industry, $data->country);
+        $this->setup_checklist_service->record_preconfigured();
 
         do_action(DevHookNames::STORE_CREATED, $data->to_array());
     }

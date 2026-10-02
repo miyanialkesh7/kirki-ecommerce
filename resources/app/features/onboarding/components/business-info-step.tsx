@@ -54,15 +54,11 @@ const BusinessInfoStep = ({ onBack, onContinue }: BusinessInfoStepProps) => {
   return (
     <StepLayout
       title={__('Where do you sell from?', 'kirki-ecommerce')}
+      onBack={onBack}
       footer={
-        <Grid columns={2} gap={3}>
-          <Button variant="outline" size="lg" onClick={onBack}>
-            {__('Back', 'kirki-ecommerce')}
-          </Button>
-          <Button size="lg" onClick={onContinue}>
-            {__('Continue', 'kirki-ecommerce')}
-          </Button>
-        </Grid>
+        <Button size="lg" onClick={onContinue}>
+          {__('Continue', 'kirki-ecommerce')}
+        </Button>
       }
     >
       <CountryField name="country" label={__('Country', 'kirki-ecommerce')} />
