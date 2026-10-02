@@ -82,8 +82,6 @@ class OrderController
     /**
      * Create an order from the validated request.
      *
-     * Only administrators can flag the order as manual.
-     *
      * @since 1.0.0
      *
      * @param OrderCreateRequest $request
@@ -95,7 +93,7 @@ class OrderController
         $user_id = user()->get_id();
 
         $dto = CreateOrderPayloadDTO::from_request($request);
-        $dto->is_manual = user()->is_admin() && $request->bool('is_manual') ? true : false;
+        $dto->is_manual = $request->bool('is_manual');
         $dto->created_by = !empty($user_id) ? $user_id : null;
 
         $order = $action->execute($dto);

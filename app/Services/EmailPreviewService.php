@@ -12,19 +12,19 @@ use Kirki\Ecommerce\App\Constants\Email\CustomerUserNotification;
 use Kirki\Ecommerce\App\Mails\Admins\AdminLowStockMail;
 use Kirki\Ecommerce\App\Mails\Admins\AdminNewOrderMail;
 use Kirki\Ecommerce\App\Mails\Admins\AdminOrderCancelledMail;
-use Kirki\Ecommerce\App\Mails\Admins\AdminOrderFailedMail;
 use Kirki\Ecommerce\App\Mails\Admins\AdminOutOfStockMail;
+use Kirki\Ecommerce\App\Mails\Admins\AdminPaymentFailedMail;
 use Kirki\Ecommerce\App\Mails\Admins\AdminResetPasswordMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerEmailConfirmationMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerNewAccountMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerNewOrderMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderCancelMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderCompletedMail;
-use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderFailedMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderNoteMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderOnHoldMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderProcessingMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerOrderShippedMail;
+use Kirki\Ecommerce\App\Mails\Customers\CustomerPaymentFailedMail;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerResetPasswordMail;
 use Kirki\Ecommerce\App\Mails\Mailer;
 use Kirki\Ecommerce\App\Models\AttributeValue;
@@ -57,7 +57,7 @@ class EmailPreviewService
             'order' => [
                 AdminOrderNotification::NEW_ORDER => AdminNewOrderMail::class,
                 AdminOrderNotification::CANCELLED_ORDER => AdminOrderCancelledMail::class,
-                AdminOrderNotification::FAILED_ORDER => AdminOrderFailedMail::class,
+                AdminOrderNotification::PAYMENT_FAILED => AdminPaymentFailedMail::class,
             ],
             'user' => [
                 AdminUserNotification::RESET_PASSWORD => AdminResetPasswordMail::class,
@@ -71,7 +71,7 @@ class EmailPreviewService
             'order' => [
                 CustomerOrderNotification::NEW_ORDER => CustomerNewOrderMail::class,
                 CustomerOrderNotification::CANCELLED_ORDER => CustomerOrderCancelMail::class,
-                CustomerOrderNotification::FAILED_ORDER => CustomerOrderFailedMail::class,
+                CustomerOrderNotification::PAYMENT_FAILED => CustomerPaymentFailedMail::class,
                 CustomerOrderNotification::ORDER_ON_HOLD => CustomerOrderOnHoldMail::class,
                 CustomerOrderNotification::ORDER_PROCESSING => CustomerOrderProcessingMail::class,
                 CustomerOrderNotification::ORDER_COMPLETED => CustomerOrderCompletedMail::class,

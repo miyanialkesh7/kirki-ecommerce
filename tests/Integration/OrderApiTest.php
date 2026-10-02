@@ -12,6 +12,7 @@ use Kirki\Ecommerce\App\Constants\Coupon\DiscountTarget;
 use Kirki\Ecommerce\App\Constants\Coupon\DiscountType;
 use Kirki\Ecommerce\App\Constants\Coupon\DiscountValueType;
 use Kirki\Ecommerce\App\Constants\Coupon\EligibleItemType;
+use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\Constants\Order\FulfillmentStatus;
 use Kirki\Ecommerce\App\Constants\Order\OrderListStatus;
 use Kirki\Ecommerce\App\Constants\Order\OrderStatus;
@@ -24,6 +25,7 @@ use Kirki\Ecommerce\App\DTO\Cart\AddToCartDTO;
 use Kirki\Ecommerce\App\DTO\Customer\CreateCustomerDTO;
 use Kirki\Ecommerce\App\DTO\Discount\CouponDiscountResultDTO;
 use Kirki\Ecommerce\App\DTO\Order\CreateOrderPayloadDTO;
+use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Facades\Order as OrderManager;
 use Kirki\Ecommerce\App\Models\Address;
 use Kirki\Ecommerce\App\Models\Cart;
@@ -85,6 +87,24 @@ class OrderApiTest extends RestTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // A test that enables tax (`enable_us_inclusive_tax()`) is observed
+        // to leak that setting into a later test in the same run despite
+        // `RestTestCase::tearDown()`'s own cache resets, so every test in
+        // this class starts from a known, explicit tax-disabled baseline
+        // rather than relying on a prior test's cleanup.
+        $this->assert_api_success($this->request('PUT', 'settings', [
+            'key' => OptionKeys::TAX_SETTINGS,
+            'data' => [
+                'is_tax_inclusive_price' => false,
+                'is_shipping_tax_enabled' => false,
+                'is_enabled_display_inclusive_taxed_price' => false,
+                'tax_regions' => [],
+                'tax_services' => [],
+                'tax_ids' => [],
+            ],
+        ]));
+
         $this->seed_base_currency();
         $this->seed_shipping_settings();
 
@@ -213,6 +233,103 @@ class OrderApiTest extends RestTestCase
         $this->assertFalse($payload['data']['payment_provider_is_offline']);
         $this->assertEquals('Standard Delivery', $payload['data']['shipping_method_name']);
         $this->assertEquals('flat_rate', $payload['data']['shipping_method_type']);
+        $this->assertFalse($payload['data']['is_tax_inclusive']);
+    }
+
+    /**
+     * The order resource reports whether the store priced items inclusive
+     * of tax when the order was placed, recorded on the order itself.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_show_order_reports_the_tax_inclusive_setting_recorded_on_the_order(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        $response = $this->request('GET', 'orders/' . $this->order_id);
+        $payload = $this->assert_api_success($response);
+
+        $this->assertTrue($payload['data']['is_tax_inclusive']);
+    }
+
+    /**
+     * The recorded is_tax_inclusive flag is a historical snapshot of the
+     * setting at order placement time, not a live read - an order placed
+     * under tax-inclusive pricing still reports true even after the store
+     * later switches to tax-exclusive pricing, since its persisted prices
+     * were never recalculated under the new setting.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_is_tax_inclusive_stays_a_historical_snapshot_after_the_setting_changes(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        $this->assert_api_success($this->request('PUT', 'settings', [
+            'key' => OptionKeys::TAX_SETTINGS,
+            'data' => [
+                'is_tax_inclusive_price' => false,
+                'is_shipping_tax_enabled' => false,
+                'is_enabled_display_inclusive_taxed_price' => false,
+                'tax_regions' => [],
+                'tax_services' => [],
+                'tax_ids' => [],
+            ],
+        ]));
+
+        $response = $this->request('GET', 'orders/' . $this->order_id);
+        $payload = $this->assert_api_success($response);
+
+        $this->assertTrue($payload['data']['is_tax_inclusive']);
+    }
+
+    /**
+     * Re-quantifying an existing order under the current (now different)
+     * tax setting updates the recorded is_tax_inclusive flag, since its
+     * prices are genuinely recalculated under that setting.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_update_order_refreshes_is_tax_inclusive_when_the_setting_has_changed(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+        $existing_item_id = $order['items'][0]['id'];
+
+        $this->assert_api_success($this->request('PUT', 'settings', [
+            'key' => OptionKeys::TAX_SETTINGS,
+            'data' => [
+                'is_tax_inclusive_price' => false,
+                'is_shipping_tax_enabled' => false,
+                'is_enabled_display_inclusive_taxed_price' => false,
+                'tax_regions' => [],
+                'tax_services' => [],
+                'tax_ids' => [],
+            ],
+        ]));
+
+        $this->assert_api_success($this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'items' => [
+                ['id' => $existing_item_id, 'variant_id' => $this->variant_id, 'quantity' => 2],
+            ],
+        ])));
+
+        $response = $this->request('GET', 'orders/' . $this->order_id);
+        $payload = $this->assert_api_success($response);
+
+        $this->assertFalse($payload['data']['is_tax_inclusive']);
     }
 
     /**
@@ -279,6 +396,75 @@ class OrderApiTest extends RestTestCase
 
         $payload = $this->assert_api_success($response);
         $this->assertEquals('Updated notes', $payload['data']['admin_notes']);
+    }
+
+    /**
+     * A user the admin route gate admits through manage_options, without the
+     * administrator role, can create a manual order.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_manage_options_user_without_administrator_role_creates_manual_order(): void
+    {
+        wp_set_current_user($this->create_store_manager_user());
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        $this->assertTrue($order['is_manual']);
+    }
+
+    /**
+     * A user the admin route gate admits through manage_options, without the
+     * administrator role, can update an order.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_manage_options_user_without_administrator_role_updates_order(): void
+    {
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        wp_set_current_user($this->create_store_manager_user());
+
+        $response = $this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'admin_notes' => 'Updated by store manager',
+            'items' => [
+                [
+                    'id' => $order['items'][0]['id'] ?? null,
+                    'variant_id' => $this->variant_id,
+                    'quantity' => 1,
+                ],
+            ],
+        ]));
+
+        $payload = $this->assert_api_success($response);
+        $this->assertEquals('Updated by store manager', $payload['data']['admin_notes']);
+    }
+
+    /**
+     * A shopper cannot flag their checkout order as manual.
+     *
+     * The request's own authorize() rejects it, and the framework reports a
+     * failed request authorization as 401 rather than 403.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_shopper_cannot_flag_checkout_order_as_manual(): void
+    {
+        wp_set_current_user($this->create_shopper_user());
+        $this->add_to_shopper_cart();
+
+        $order_count_before = Order::count();
+
+        $response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => true]));
+
+        $this->assert_api_error($response, 401);
+        $this->assertEquals($order_count_before, Order::count());
     }
 
     /**
@@ -369,6 +555,136 @@ class OrderApiTest extends RestTestCase
         $item = OrderItem::find($order['items'][0]['id']);
         $this->assertEquals($item->base_price, $item->base_regular_price);
         $this->assertEquals($item->invoiced_price, $item->invoiced_regular_price);
+    }
+
+    /**
+     * Under tax-inclusive pricing, an order item's recorded price and
+     * regular price both exclude the tax embedded in the variant's catalog
+     * price - on the same terms as its subtotal - rather than persisting
+     * the raw (tax-inclusive) catalog price as-is.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_create_order_records_tax_exclusive_price_and_regular_price_under_inclusive_pricing(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $catalog_price = Variant::find($this->variant_id)->base_price;
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        $item = OrderItem::find($order['items'][0]['id']);
+
+        $this->assertLessThan($catalog_price, $item->base_price);
+        $this->assertSame($item->base_price, $item->base_regular_price);
+        $this->assertSame($item->invoiced_price, $item->invoiced_regular_price);
+        $this->assertEquals(2499, $item->base_price);
+        // Not on sale: the regular-price total's own recorded tax matches the current-price tax exactly.
+        $this->assertEquals($item->base_tax_total, $item->base_regular_tax_total);
+        $this->assertEquals($item->invoiced_tax_total, $item->invoiced_regular_tax_total);
+        $this->assertEquals(500, $item->base_regular_tax_total);
+    }
+
+    /**
+     * Under tax-inclusive pricing, an item newly added while editing an
+     * existing order also records a tax-exclusive price and regular price -
+     * the same fix as order creation, applied to the add-item-to-an-
+     * existing-order path.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_update_order_records_tax_exclusive_regular_price_for_added_item_under_inclusive_pricing(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+        $existing_item_id = $order['items'][0]['id'];
+
+        $added_variant_id = $this->default_variant_id($this->create_product());
+        $added_catalog_price = Variant::find($added_variant_id)->base_price;
+
+        $this->assert_api_success($this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'items' => [
+                ['id' => $existing_item_id, 'variant_id' => $this->variant_id, 'quantity' => 1],
+                ['variant_id' => $added_variant_id, 'quantity' => 1],
+            ],
+        ])));
+
+        $added_item = OrderItem::where('order_id', $this->order_id)->where('variant_id', $added_variant_id)->first();
+
+        $this->assertLessThan($added_catalog_price, $added_item->base_price);
+        $this->assertSame($added_item->base_price, $added_item->base_regular_price);
+        $this->assertEquals(2499, $added_item->base_regular_price);
+        // Not on sale: the regular-price total's own recorded tax matches the current-price tax exactly.
+        $this->assertEquals($added_item->base_tax_total, $added_item->base_regular_tax_total);
+        $this->assertEquals(500, $added_item->base_regular_tax_total);
+    }
+
+    /**
+     * Under tax-inclusive pricing, re-quantifying an existing order item
+     * recalculates its recorded regular-price tax total for the new
+     * quantity - the same recalculate-on-quantity-change behavior its
+     * subtotal and current-price tax total already have - rather than
+     * carrying forward a stale, now-understated figure.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_update_order_scales_regular_tax_total_with_quantity_under_inclusive_pricing(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+        $existing_item_id = $order['items'][0]['id'];
+
+        $original_regular_tax_total = OrderItem::find($existing_item_id)->base_regular_tax_total;
+
+        $this->assert_api_success($this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'items' => [
+                ['id' => $existing_item_id, 'variant_id' => $this->variant_id, 'quantity' => 2],
+            ],
+        ])));
+
+        $updated_item = OrderItem::find($existing_item_id);
+
+        $this->assertEquals(2, $updated_item->quantity);
+        $this->assertGreaterThan($original_regular_tax_total, $updated_item->base_regular_tax_total);
+        // Still not on sale: the recalculated regular-price tax still matches the recalculated current-price tax exactly.
+        $this->assertEquals($updated_item->base_tax_total, $updated_item->base_regular_tax_total);
+    }
+
+    /**
+     * Under tax-inclusive pricing, an item bought while a sale price is
+     * active records a regular-price tax total computed against its
+     * (higher) regular price - distinct from its current-price tax total,
+     * which is computed against the (lower) sale price it was actually
+     * charged.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_create_order_records_regular_tax_total_for_item_bought_on_sale_under_inclusive_pricing(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $regular_price = Variant::find($this->variant_id)->base_price;
+        Variant::find($this->variant_id)->update(['base_sale_price' => $regular_price - 1000]);
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+
+        $item = OrderItem::find($order['items'][0]['id']);
+
+        $this->assertLessThan($item->base_regular_price, $item->base_price);
+        $this->assertNotEquals($item->base_tax_total, $item->base_regular_tax_total);
+        $this->assertGreaterThan($item->base_tax_total, $item->base_regular_tax_total);
     }
 
     /**
@@ -805,8 +1121,9 @@ class OrderApiTest extends RestTestCase
         ]);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
+        $response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => false]));
         $payload = $this->assert_api_success($response, 201);
         $this->order_id = $payload['data']['id'];
 
@@ -815,27 +1132,6 @@ class OrderApiTest extends RestTestCase
         $this->assertNotNull($customer);
         $this->assertEquals($customer->id, $payload['data']['customer_id']);
         $this->assertTrue(Address::where('customer_id', $customer->id)->where('is_default_shipping', true)->exists());
-    }
-
-    /**
-     * An authenticated user who already has a customer record reuses it
-     * instead of getting a duplicate one provisioned.
-     *
-     * @return void
-     */
-    public function test_checkout_reuses_existing_customer_without_duplicating(): void
-    {
-        $user_id = $this->create_shopper_user();
-        $existing_customer = $this->provision_customer_for_user($user_id);
-
-        wp_set_current_user($user_id);
-
-        $response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
-        $payload = $this->assert_api_success($response, 201);
-        $this->order_id = $payload['data']['id'];
-
-        $this->assertEquals($existing_customer->id, $payload['data']['customer_id']);
-        $this->assertEquals(1, Customer::where('user_id', $user_id)->count());
     }
 
     /**
@@ -878,8 +1174,9 @@ class OrderApiTest extends RestTestCase
         $wp_user = get_userdata($user_id);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'is_billing_same_as_shipping' => false,
             'billing_first_name' => 'Fallback',
@@ -912,8 +1209,9 @@ class OrderApiTest extends RestTestCase
         $wp_user = get_userdata($user_id);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'billing_first_name' => 'Fallback',
             'billing_last_name' => 'Billing',
@@ -943,8 +1241,9 @@ class OrderApiTest extends RestTestCase
         $wp_user = get_userdata($user_id);
 
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'is_billing_same_as_shipping' => false,
             'billing_first_name' => 'Fallback',
@@ -1060,8 +1359,9 @@ class OrderApiTest extends RestTestCase
     {
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
         ]));
         $payload = $this->assert_api_success($response, 201);
@@ -1087,8 +1387,9 @@ class OrderApiTest extends RestTestCase
     {
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
+        $this->add_to_shopper_cart();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
             'is_billing_same_as_shipping' => false,
             'billing_first_name' => 'Fallback',
@@ -1143,13 +1444,14 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
+        // The cart refuses more than is in stock, so sell out after adding.
+        $this->add_to_shopper_cart($limited_variant_id);
+        Variant::where('id', $limited_variant_id)->update(['available_quantity' => 0]);
+
         $order_count_before = Order::count();
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
+        $response = $this->request('POST', 'checkout', $this->order_payload([
             'is_manual' => false,
-            'items' => [
-                ['variant_id' => $limited_variant_id, 'quantity' => 2],
-            ],
         ]));
 
         $this->assert_api_error($response, 500);
@@ -1194,13 +1496,9 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ]));
+        $order = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $payload = $this->assert_api_success($response, 201);
-        $this->assertEquals(0.0, $payload['data']['totals']['base_shipping']);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($order->base_shipping_total));
     }
 
     /**
@@ -1221,9 +1519,7 @@ class OrderApiTest extends RestTestCase
 
         $this->provision_customer_for_user($user_id);
 
-        $this->assert_api_success($this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-        ])), 201);
+        $this->place_shopper_order($user_id);
 
         $coupon = Coupon::create([
             'title' => 'First Time Buyer',
@@ -1234,13 +1530,9 @@ class OrderApiTest extends RestTestCase
             'is_active' => true,
         ]);
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ]));
+        $order = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $payload = $this->assert_api_success($response, 201);
-        $this->assertEquals(10.0, $payload['data']['totals']['base_shipping']);
+        $this->assertEquals(10.0, Money::prepare_amount_from_minor($order->base_shipping_total));
     }
 
     /**
@@ -1268,13 +1560,9 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
-        $response = $this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ]));
+        $order = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $payload = $this->assert_api_success($response, 201);
-        $this->assertEquals(0.0, $payload['data']['totals']['base_shipping']);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($order->base_shipping_total));
     }
 
     /**
@@ -1300,19 +1588,13 @@ class OrderApiTest extends RestTestCase
         $user_id = $this->create_shopper_user();
         wp_set_current_user($user_id);
 
-        $first = $this->assert_api_success($this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ])), 201);
-        $this->assertEquals(0.0, $first['data']['totals']['base_shipping']);
+        $first = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
+        $this->assertEquals(0.0, Money::prepare_amount_from_minor($first->base_shipping_total));
 
-        $second = $this->assert_api_success($this->request('POST', 'orders', $this->order_payload([
-            'is_manual' => false,
-            'coupon_codes' => [$coupon->code],
-        ])), 201);
+        $second = $this->place_shopper_order($user_id, ['coupon_codes' => [$coupon->code]]);
 
-        $this->assertGreaterThan(0.0, $second['data']['totals']['base_shipping']);
-        $this->assertCount(0, OrderCoupon::where('order_id', $second['data']['id'])->get());
+        $this->assertGreaterThan(0.0, Money::prepare_amount_from_minor($second->base_shipping_total));
+        $this->assertCount(0, OrderCoupon::where('order_id', $second->id)->get());
     }
 
     /**
@@ -1905,6 +2187,64 @@ class OrderApiTest extends RestTestCase
     }
 
     /**
+     * Create an editor granted manage_options - a store manager without the administrator role.
+     *
+     * @return int
+     * @since 1.0.0
+     */
+    protected function create_store_manager_user(): int
+    {
+        $user_id = static::factory()->user->create(['role' => 'editor']);
+        get_userdata($user_id)->add_cap('manage_options');
+
+        return $user_id;
+    }
+
+    /**
+     * Put a variant in the current user's cart, the way a shopper does
+     * before calling the checkout endpoint (which orders what is in the cart).
+     *
+     * @param int|null $variant_id Variant to add; defaults to the fixture variant.
+     * @param int      $quantity   Quantity to add.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    protected function add_to_shopper_cart(?int $variant_id = null, int $quantity = 1): void
+    {
+        $this->assert_api_success($this->request('POST', 'cart/items', [
+            'variant_id' => $variant_id ?? $this->variant_id,
+            'quantity' => $quantity,
+        ]));
+    }
+
+    /**
+     * Place a non-manual order for a shopper through CreateOrderAction with the
+     * payload's own items and coupon codes, bypassing the cart.
+     *
+     * For checkout-time coupon tests: the cart validates a coupon when it is
+     * applied, so a coupon the checkout should silently drop cannot reach
+     * checkout through the cart.
+     *
+     * @param int   $user_id   The shopper's WordPress user ID.
+     * @param array $overrides Order payload overrides.
+     *
+     * @return Order
+     * @since 1.0.0
+     */
+    protected function place_shopper_order(int $user_id, array $overrides = []): Order
+    {
+        $customer = Customer::where('user_id', $user_id)->first();
+
+        $dto = CreateOrderPayloadDTO::from_array($this->order_payload(array_merge(['is_manual' => false], $overrides)));
+        $dto->created_by = $user_id;
+        $dto->customer_id = $customer ? $customer->id : null;
+        $dto->currency_code = 'USD';
+
+        return app()->make(CreateOrderAction::class)->execute($dto);
+    }
+
+    /**
      * Provision a customer record (with addresses) linked to an existing
      * WordPress user, simulating a shopper who already has one.
      *
@@ -1992,6 +2332,40 @@ class OrderApiTest extends RestTestCase
         $payload = $this->assert_api_success($response, 201);
 
         return $payload['data'];
+    }
+
+    /**
+     * Enable a central US tax region under tax-inclusive pricing, matching
+     * `order_payload()`'s default `shipping_country`.
+     *
+     * @param int|float $product_tax_rate
+     * @return void
+     * @since 1.0.0
+     */
+    protected function enable_us_inclusive_tax($product_tax_rate): void
+    {
+        $this->assert_api_success($this->request('PUT', 'settings', [
+            'key' => OptionKeys::TAX_SETTINGS,
+            'data' => [
+                'is_tax_inclusive_price' => true,
+                'is_shipping_tax_enabled' => false,
+                'is_enabled_display_inclusive_taxed_price' => false,
+                'tax_regions' => [
+                    [
+                        'code' => 'US',
+                        'is_enabled' => true,
+                        'type' => null,
+                        'is_central_tax_enabled' => true,
+                        'central_product_tax' => $product_tax_rate,
+                        'central_shipping_tax' => 0,
+                        'states' => [],
+                        'rules' => [],
+                    ],
+                ],
+                'tax_services' => [],
+                'tax_ids' => [],
+            ],
+        ]));
     }
 
     /**

@@ -33,7 +33,7 @@ class CreateShippingBoxesTable implements Migration
             $table->boolean('is_default')->default(0);
             $table->timestamps();
 
-            $table->index('is_default');
+            $table->index('is_default', 'idx_kecom_shipping_boxes_is_default');
         });
     }
 

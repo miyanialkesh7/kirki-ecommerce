@@ -7,8 +7,6 @@ use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\Framework\Sanitizer;
 use Kirki\Ecommerce\Framework\Http\Request;
 
-use function Kirki\Ecommerce\App\customer;
-
 /**
  * Validates and sanitizes the payload for updating an order.
  *
@@ -17,18 +15,6 @@ use function Kirki\Ecommerce\App\customer;
 class OrderUpdateRequest extends Request
 {
     use ValidatesAddressFields;
-
-    /**
-     * Restrict order updates to admins.
-     *
-     * @since 1.0.0
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return customer()->is_admin();
-    }
 
     /**
      * Default the customer ID and currency code before validation.

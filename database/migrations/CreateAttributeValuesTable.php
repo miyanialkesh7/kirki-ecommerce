@@ -30,10 +30,10 @@ class CreateAttributeValuesTable implements Migration
             $table->unsigned_big_integer('media')->nullable();
             $table->timestamps();
 
-            $table->unique(['attribute_id', 'value'], 'unique_attribute_value');
-            $table->index('value');
+            $table->unique(['attribute_id', 'value'], 'uq_kecom_attribute_values_attribute_id_value');
+            $table->index('value', 'idx_kecom_attribute_values_value');
 
-            $table->foreign('attribute_id', 'fk_kirki_ecommerce_attribute_values_attribute_id')
+            $table->foreign('attribute_id', 'fk_kecom_attribute_values_attribute_id')
                 ->references('id')
                 ->on('kirki_ecommerce_attributes')
                 ->cascade_on_delete();

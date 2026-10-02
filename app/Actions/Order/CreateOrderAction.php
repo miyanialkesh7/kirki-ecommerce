@@ -34,11 +34,13 @@ use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Framework\Http\Response;
 use Kirki\Ecommerce\Framework\Supports\Arr;
 use Kirki\Ecommerce\App\Supports\Currency;
+use Kirki\Ecommerce\App\Supports\Tax;
 use Kirki\Ecommerce\App\Constants\Order\OrderActivityType;
 use Kirki\Ecommerce\App\Facades\OrderActivity;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Payment\Facades\Payment;
 use Kirki\Ecommerce\App\Constants\Order\FulfillmentStatus;
+use Kirki\Ecommerce\App\Events\Order\OrderPlacedEvent;
 use Kirki\Ecommerce\App\Models\Address;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Framework\Supports\Facades\DB;
@@ -182,15 +184,17 @@ class CreateOrderAction
             $order = $this->order_service->create_order($create_order_dto);
             $this->sync_address($dto, $order);
 
-            foreach ($dto->items as $item_data) {
-                $order_item_dto = $this->prepare_order_item_dto($order->id, $calculated_result->items[$item_data['variant_id']], $dto->currency_code, $order->exchange_rate);
+            $this->inventory_service->collect_stock_alerts(function () use ($dto, $order, $calculated_result) {
+                foreach ($dto->items as $item_data) {
+                    $order_item_dto = $this->prepare_order_item_dto($order->id, $calculated_result->items[$item_data['variant_id']], $dto->currency_code, $order->exchange_rate);
 
-                /* translators: %s: variant ID */
-                throw_if(!$this->inventory_service->has_stock($order_item_dto->variant_id, $order_item_dto->quantity), sprintf(__('Not enough stock for variant: %s', 'kirki-ecommerce'), $order_item_dto->variant_id));
+                    /* translators: %s: variant ID */
+                    throw_if(!$this->inventory_service->has_stock($order_item_dto->variant_id, $order_item_dto->quantity), sprintf(__('Not enough stock for variant: %s', 'kirki-ecommerce'), $order_item_dto->variant_id));
 
-                $this->order_service->create_order_item($order_item_dto);
-                $this->inventory_service->reserve_stock($order_item_dto->variant_id, $order_item_dto->quantity);
-            }
+                    $this->order_service->create_order_item($order_item_dto);
+                    $this->inventory_service->reserve_stock($order_item_dto->variant_id, $order_item_dto->quantity);
+                }
+            });
 
             $order_with_items = $order->fresh('items');
 
@@ -210,12 +214,14 @@ class CreateOrderAction
             OrderActivity::log($order, OrderActivityType::ORDER_PLACED);
 
             DB::commit();
-
-            return $order;
         } catch (Throwable $e) {
             DB::rollback();
             throw $e;
         }
+
+        OrderPlacedEvent::dispatch($order);
+
+        return $order;
     }
 
     /**
@@ -267,7 +273,7 @@ class CreateOrderAction
      */
     protected function sync_address(CreateOrderPayloadDTO $dto, $order)
     {
-        if (empty($order->customer_id)) {
+        if (empty($order->customer_id) || $dto->is_manual) {
             return;
         }
 
@@ -632,6 +638,8 @@ class CreateOrderAction
         $order_dto->invoiced_shipping_tax_amount = $this->convert_amount($calculated_result->base_shipping_tax, $target_currency_code, $order_dto->exchange_rate);
         $order_dto->base_shipping_tax_amount = $calculated_result->base_shipping_tax;
 
+        $order_dto->is_tax_inclusive = Tax::is_tax_inclusive();
+
         $order_dto->invoiced_total = $this->convert_amount($calculated_result->base_total, $target_currency_code, $order_dto->exchange_rate);
         $order_dto->base_total = $calculated_result->base_total;
 
@@ -720,11 +728,14 @@ class CreateOrderAction
         $item_dto->barcode = $variant->barcode;
         $item_dto->product_image = $variant->media ?? ($first_media ? $first_media->id : null);
 
-        $item_dto->invoiced_price = $this->convert_amount($variant->base_sale_price ?: $variant->base_price, $currency_code, $exchange_rate);
-        $item_dto->base_price = $variant->base_sale_price ?: $variant->base_price;
+        $item_dto->invoiced_price = $this->convert_amount($calculated_item->base_unit_price, $currency_code, $exchange_rate);
+        $item_dto->base_price = $calculated_item->base_unit_price;
 
-        $item_dto->invoiced_regular_price = $this->convert_amount($variant->base_price, $currency_code, $exchange_rate);
-        $item_dto->base_regular_price = $variant->base_price;
+        $item_dto->invoiced_regular_price = $this->convert_amount($calculated_item->base_regular_unit_price, $currency_code, $exchange_rate);
+        $item_dto->base_regular_price = $calculated_item->base_regular_unit_price;
+
+        $item_dto->invoiced_regular_tax_total = $this->convert_amount($calculated_item->base_regular_tax_amount, $currency_code, $exchange_rate);
+        $item_dto->base_regular_tax_total = $calculated_item->base_regular_tax_amount;
 
         $item_dto->quantity = $calculated_item->quantity;
 

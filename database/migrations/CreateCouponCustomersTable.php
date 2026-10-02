@@ -28,14 +28,13 @@ class CreateCouponCustomersTable implements Migration
             $table->boolean('is_excluded')->default(0);
             $table->timestamps();
 
-            $table->primary(['coupon_id', 'customer_id'], 'pk_kirki_ecommerce_coupon_customers');
-            $table->index('is_excluded');
+            $table->primary(['coupon_id', 'customer_id', 'is_excluded']);
 
-            $table->foreign('coupon_id')
+            $table->foreign('coupon_id', 'fk_kecom_coupon_customers_coupon_id')
                 ->references('id')
                 ->on('kirki_ecommerce_coupons')
                 ->cascade_on_delete();
-            $table->foreign('customer_id')
+            $table->foreign('customer_id', 'fk_kecom_coupon_customers_customer_id')
                 ->references('id')
                 ->on('kirki_ecommerce_customers')
                 ->cascade_on_delete();

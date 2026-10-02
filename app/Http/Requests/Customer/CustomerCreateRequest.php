@@ -69,7 +69,7 @@ class CustomerCreateRequest extends Request
     {
         return [
             'first_name' => 'required|string',
-            'last_name' => 'string|nullable',
+            'last_name' => 'required|string',
             'photo' => 'integer|nullable',
             'email' => 'required|email|unique:' . Customer::get_table_name() . ',email',
             'phone' => 'string|nullable',

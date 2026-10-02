@@ -34,6 +34,7 @@ import type {
 } from '@/features/products/components/shared/select-products-dialog/types';
 import { useProductsWithVariantsQuery } from '@/features/products/services/product';
 import { BoxIcon, ListFilter } from '@/icons';
+import { theme } from '@/theme';
 import { ELLIPSIS, getPageItems } from '@/utils/pagination';
 import { __, _n, sprintf } from '@/wpi18n';
 
@@ -292,7 +293,13 @@ const SelectProductsDialog = ({
             onToggleVariants={toggleVariants}
           />
         </DialogBody>
-        <DialogFooter cssOverride={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogFooter
+          cssOverride={{
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: `${theme.spacing[0]} ${theme.spacing[6]} ${theme.spacing[4]} ${theme.spacing[6]}`,
+          }}
+        >
           {totalResults > 0 && (
             <Pagination disabled={loading}>
               <Flex align="center" gap={2}>

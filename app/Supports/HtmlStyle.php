@@ -46,7 +46,8 @@ class HtmlStyle
     {
         return [
             '.kirki-ecommerce-rich-text > div' => [
-                'margin' => '1em 0',
+                'font-size' => '14px',
+                'line-height' => '22px',
             ]
         ];
     }

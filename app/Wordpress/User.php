@@ -2,11 +2,12 @@
 
 namespace Kirki\Ecommerce\App\Wordpress;
 
-use Kirki\Ecommerce\App\Constants\Hooks\CustomHookNames;
+use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
 use Kirki\Ecommerce\App\Constants\UserRoles;
 use Kirki\Ecommerce\App\Mails\Customers\CustomerEmailConfirmationMail;
 use Kirki\Ecommerce\App\Services\MailerService;
 use Kirki\Ecommerce\App\Supports\Url;
+use Kirki\Ecommerce\Framework\Wordpress\Constants\Capabilities;
 use Kirki\Ecommerce\Framework\Wordpress\User as FrameworkUser;
 
 use function Kirki\Ecommerce\Framework\app;
@@ -55,7 +56,9 @@ class User extends FrameworkUser
     public const META_EMAIL_VERIFICATION_EXPIRES_AT = 'kecom_email_verification_expires_at';
 
     /**
-     * Check if the user has the plugin admin role.
+     * Check if the user can manage the store.
+     *
+     * Uses the same capability as the admin API route gate, so any user the gate admits is an admin here.
      *
      * @since 1.0.0
      *
@@ -63,7 +66,7 @@ class User extends FrameworkUser
      */
     public function is_admin()
     {
-        return $this->has_role(UserRoles::ADMIN);
+        return user_can($this->get_id(), Capabilities::MANAGE_OPTIONS);
     }
 
     /**
@@ -124,7 +127,7 @@ class User extends FrameworkUser
         $updated = update_user_meta($this->get_id(), static::META_EMAIL_VERIFIED, 1);
 
         if ($updated) {
-            do_action(CustomHookNames::USER_EMAIL_VERIFIED, $this);
+            do_action(DevHookNames::USER_EMAIL_VERIFIED, $this);
         }
 
         return $updated;

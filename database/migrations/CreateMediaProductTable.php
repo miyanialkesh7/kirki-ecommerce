@@ -28,14 +28,14 @@ class CreateMediaProductTable implements Migration
             $table->integer('ordering')->default(0);
             $table->timestamps();
 
-            $table->primary(['media_id', 'product_id'], 'pk_media_product');
+            $table->primary(['media_id', 'product_id']);
 
-            $table->index('ordering');
-            $table->foreign('product_id', 'fk_media_product_product_id')
+            $table->index('ordering', 'idx_kecom_media_product_ordering');
+            $table->foreign('product_id', 'fk_kecom_media_product_product_id')
                 ->references('id')
                 ->on('kirki_ecommerce_products')
                 ->cascade_on_delete();
-            $table->foreign('media_id', 'fk_media_product_media_id')
+            $table->foreign('media_id', 'fk_kecom_media_product_media_id')
                 ->references('id')
                 ->on('posts')
                 ->cascade_on_delete();

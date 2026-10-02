@@ -89,7 +89,7 @@ const ApiConfig = ({ currencySettings }: { currencySettings?: CurrencySettings |
         cssOverride={{
           backgroundColor: theme.colors.background.surfaceAlt,
           '& [data-option-accordion-card="true"]': {
-            backgroundColor: 'transparent',
+            backgroundColor: theme.colors.background.surface,
             border: 'none',
             borderTop: `1px solid ${theme.colors.border.default}`,
           },
@@ -137,7 +137,7 @@ const ApiConfig = ({ currencySettings }: { currencySettings?: CurrencySettings |
                   data-search-id="currency.api-configuration"
                   data-search-keywords="api key, conversion rate, exchange rate provider, automatic rates"
                   data-search-title={__('Exchange Rate API Configuration', 'kirki-ecommerce')}
-                  // cssOverride={mergeCss(cardStyles.innerCard, { marginTop: theme.spacing[2] })}
+                  noShadow
                 >
                   <CardContent cssOverride={cardStyles.innerContent}>
                     <Flex justify="space-between" align="center">

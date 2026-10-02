@@ -1,3 +1,4 @@
+import { Card, CardContent } from '@/components/ui/card';
 import Checkbox from '@/components/ui/checkbox';
 import {
   Table,
@@ -15,6 +16,8 @@ import type {
 } from '@/features/products/components/shared/select-products-dialog/types';
 import type { ProductListItemWithVariants } from '@/features/products/schemas/catalog/product';
 import ProductPickerSkeleton from '@/features/products/skeletons/product-picker-skeleton';
+import { cardStyles } from '@/theme/card-styles';
+import { defineStyles, mergeCss } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
 type ProductPickerItem = {
@@ -60,58 +63,72 @@ const ProductTable = (props: ProductTableProps) => {
   } = props;
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead onlyCheckbox>
-            <Checkbox
-              checked={allOnPageSelected}
-              isPartialChecked={partialOnPageSelected}
-              disabled={pageSelectableCount === 0}
-              onCheckedChange={(checked) => onToggleAllOnPage(checked === true)}
-            />
-          </TableHead>
-          <TableHead>
-            {selectVariants ? __('Variants', 'kirki-ecommerce') : __('Products', 'kirki-ecommerce')}
-          </TableHead>
-          <TableHead>{__('Inventory', 'kirki-ecommerce')}</TableHead>
-          <TableHead alignment="right">{__('Price', 'kirki-ecommerce')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {isLoading ? (
-          <ProductPickerSkeleton />
-        ) : pickerItems.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={4}>
-              <Text variant="small" color="secondary">
-                {__('No products found.', 'kirki-ecommerce')}
-              </Text>
-            </TableCell>
-          </TableRow>
-        ) : (
-          pickerItems.map((item) => (
-            <ProductPickerRow
-              key={item.product.id}
-              product={item.product}
-              selection={item.selection}
-              expanded={expandedProductIds.has(item.product.id)}
-              onToggleExpand={() => onToggleExpand(item.product.id)}
-              selectVariants={selectVariants}
-              isProductSelected={selectedProductIds.has(item.product.id)}
-              selectedVariantIds={selectedVariantIds}
-              onToggleProduct={(checked) => onToggleProduct(item.selection, checked)}
-              onToggleVariants={(variants, checked) =>
-                onToggleVariants(item.selection, variants, checked)
-              }
-            />
-          ))
-        )}
-      </TableBody>
-    </Table>
+    <Card
+      cssOverride={mergeCss(cardStyles.innerCard, cardStyles.tableCardRounded, styles.tableCard)}
+    >
+      <CardContent cssOverride={cardStyles.tableContent}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead onlyCheckbox>
+                <Checkbox
+                  checked={allOnPageSelected}
+                  isPartialChecked={partialOnPageSelected}
+                  disabled={pageSelectableCount === 0}
+                  onCheckedChange={(checked) => onToggleAllOnPage(checked === true)}
+                />
+              </TableHead>
+              <TableHead>
+                {selectVariants
+                  ? __('Variants', 'kirki-ecommerce')
+                  : __('Products', 'kirki-ecommerce')}
+              </TableHead>
+              <TableHead>{__('Inventory', 'kirki-ecommerce')}</TableHead>
+              <TableHead alignment="right">{__('Price', 'kirki-ecommerce')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <ProductPickerSkeleton />
+            ) : pickerItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4}>
+                  <Text variant="small" color="secondary">
+                    {__('No products found.', 'kirki-ecommerce')}
+                  </Text>
+                </TableCell>
+              </TableRow>
+            ) : (
+              pickerItems.map((item) => (
+                <ProductPickerRow
+                  key={item.product.id}
+                  product={item.product}
+                  selection={item.selection}
+                  expanded={expandedProductIds.has(item.product.id)}
+                  onToggleExpand={() => onToggleExpand(item.product.id)}
+                  selectVariants={selectVariants}
+                  isProductSelected={selectedProductIds.has(item.product.id)}
+                  selectedVariantIds={selectedVariantIds}
+                  onToggleProduct={(checked) => onToggleProduct(item.selection, checked)}
+                  onToggleVariants={(variants, checked) =>
+                    onToggleVariants(item.selection, variants, checked)
+                  }
+                />
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 };
 
 ProductTable.displayName = 'ProductTable';
 
 export default ProductTable;
+
+const styles = defineStyles({
+  tableCard: {
+    overflow: 'auto',
+  },
+});

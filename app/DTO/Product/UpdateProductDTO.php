@@ -33,9 +33,6 @@ class UpdateProductDTO extends DTO
     public $ribbon_color;
 
     /** @var int|null */
-    public $currency_id;
-
-    /** @var int|null */
     public $brand_id;
 
     /** @var string|null */
@@ -67,9 +64,6 @@ class UpdateProductDTO extends DTO
 
     /** @var int|null */
     public $schema_id;
-
-    /** @var string|null */
-    public $llm_instructions;
 
     /** @var bool|null */
     public $has_variants = false;

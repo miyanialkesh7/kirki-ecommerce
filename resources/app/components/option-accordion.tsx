@@ -71,8 +71,8 @@ const OptionAccordion = (props: OptionAccordionProps) => {
           >
             <Flex gap={4} align="center">
               {leftIcon}
-              <Flex direction="column" gap={2}>
-                <Flex gap={1} align="center" cssOverride={{ height: 24 }}>
+              <Flex direction="column" gap={1}>
+                <Flex gap={1} align="center" cssOverride={{ minHeight: 24 }}>
                   <Text weight="semibold" variant="small" color="primary">
                     {header}
                   </Text>
@@ -104,6 +104,7 @@ const OptionAccordion = (props: OptionAccordionProps) => {
                   cssOverride={mergeCss(
                     cardStyles.innerCardContent,
                     variant === 'shipping' && styles.shippingContent,
+                    variant === 'email' && styles.emailContent,
                   )}
                 >
                   {children}
@@ -152,6 +153,10 @@ const styles = defineStyles({
   },
   emailCard: {
     border: 'none',
+    backgroundColor: theme.colors.background.surfaceAlt,
+  },
+  emailContent: {
+    padding: theme.spacing[2],
   },
   shippingTrigger: {
     '&:has(button[data-state="open"])': {

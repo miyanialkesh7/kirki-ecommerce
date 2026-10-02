@@ -435,6 +435,75 @@ class CartApiTest extends RestTestCase
         $this->assertGreaterThanOrEqual(400, $second_apply->get_status());
     }
 
+    /**
+     * A signed-in shopper with no customer record yet counts as registered for
+     * a registered-customers-only coupon.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_signed_in_shopper_without_customer_record_can_apply_registered_only_coupon(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_include_eligibility' => CustomerIncludeEligibility::CUSTOMERS]);
+        $this->sign_in_new_shopper_with_cart_item();
+
+        $applied = $this->assert_api_success($this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers));
+
+        $this->assertNotNull($this->find_coupon_in_response($applied['data'], $code));
+    }
+
+    /**
+     * A signed-in shopper with no customer record yet is not a guest for a guests-only coupon.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_signed_in_shopper_without_customer_record_cannot_apply_guest_only_coupon(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_include_eligibility' => CustomerIncludeEligibility::GUESTS]);
+        $this->sign_in_new_shopper_with_cart_item();
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+        $this->assertGreaterThanOrEqual(400, $response->get_status());
+        $this->assertEquals('This coupon is only available for guest checkout.', $this->normalize_response_data($response->get_data())['message']);
+    }
+
+    /**
+     * A signed-in shopper with no customer record yet is excluded by a coupon that excludes registered customers.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_signed_in_shopper_without_customer_record_cannot_apply_coupon_excluding_registered_customers(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_exclude_eligibility' => CustomerExcludeEligibility::CUSTOMERS]);
+        $this->sign_in_new_shopper_with_cart_item();
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+        $this->assertGreaterThanOrEqual(400, $response->get_status());
+        $this->assertEquals('This coupon is not available for you.', $this->normalize_response_data($response->get_data())['message']);
+    }
+
+    /**
+     * A visitor who is not signed in is still asked to log in for a registered-customers-only coupon.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_guest_cannot_apply_registered_only_coupon(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_include_eligibility' => CustomerIncludeEligibility::CUSTOMERS]);
+        $this->logout();
+        $this->add_cart_item();
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+        $this->assertGreaterThanOrEqual(400, $response->get_status());
+        $this->assertEquals('Please login to use this coupon.', $this->normalize_response_data($response->get_data())['message']);
+    }
+
     public function test_invalid_coupon_is_dropped_without_disabling_other_coupons(): void
     {
         $this->prepare_variant();
@@ -1102,6 +1171,35 @@ class CartApiTest extends RestTestCase
         ], $this->cart_headers);
 
         return $variant_id;
+    }
+
+    /**
+     * Create a coupon with customer eligibility overrides, as the admin set up by the test case.
+     *
+     * @param array $overrides Coupon payload overrides.
+     *
+     * @return string The coupon code.
+     * @since 1.0.0
+     */
+    protected function create_eligibility_coupon(array $overrides): string
+    {
+        $this->prepare_variant();
+        $code = 'ELIGIBLE-' . wp_generate_password(6, false);
+        $this->create_coupon($code, $overrides);
+
+        return $code;
+    }
+
+    /**
+     * Sign in as a new subscriber with no customer record and put an item in their cart.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    protected function sign_in_new_shopper_with_cart_item(): void
+    {
+        wp_set_current_user(static::factory()->user->create(['role' => 'subscriber']));
+        $this->add_cart_item();
     }
 
     protected function find_coupon_in_response(array $cart, string $code): ?array

@@ -25,12 +25,12 @@ class CreateRefundsTable implements Migration
         Schema::create('kirki_ecommerce_refunds', function (Structure $table) {
             $table->id();
             $table->unsigned_big_integer('order_id');
-            $table->enum('status', ['pending', 'completed', 'failed', 'cancelled'])->default('pending');
+            $table->string('status', 50)->default('pending')->comment('Supported values: pending, completed, failed, cancelled');
 
             $table->integer('invoiced_amount')->comment('Refund amount in cents, in the order currency');
             $table->text('reason')->nullable();
 
-            $table->enum('refund_type', ['partial', 'full'])->default('partial');
+            $table->string('refund_type', 50)->default('partial')->comment('Supported values: partial, full');
 
             $table->string('refund_id', 255)->nullable()->comment('Gateway refund ID');
 
@@ -38,13 +38,13 @@ class CreateRefundsTable implements Migration
             $table->unsigned_big_integer('updated_by')->nullable()->comment('WordPress user ID who updated the refund');
             $table->timestamps();
 
-            $table->index('status');
+            $table->index('status', 'idx_kecom_refunds_status');
 
-            $table->foreign('order_id', 'fk_refunds_order_id')
+            $table->foreign('order_id', 'fk_kecom_refunds_order_id')
                 ->references('id')
                 ->on('kirki_ecommerce_orders')
                 ->cascade_on_delete();
-            $table->foreign('created_by', 'fk_refunds_created_by')
+            $table->foreign('created_by', 'fk_kecom_refunds_created_by')
                 ->references('id')
                 ->on('users')
                 ->null_on_delete();

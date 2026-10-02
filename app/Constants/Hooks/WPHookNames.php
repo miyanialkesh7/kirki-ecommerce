@@ -18,4 +18,6 @@ class WPHookNames extends \Kirki\Ecommerce\Framework\Wordpress\Constants\HookNam
     public const REGISTRATION_ERRORS = 'registration_errors';
     public const PROFILE_UPDATE = 'profile_update';
     public const USER_REGISTER = 'user_register';
+    public const SEND_RETRIEVE_PASSWORD_EMAIL = 'send_retrieve_password_email';
+    public const WP_SEND_NEW_USER_NOTIFICATION_TO_USER = 'wp_send_new_user_notification_to_user';
 }

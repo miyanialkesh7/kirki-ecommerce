@@ -36,14 +36,14 @@ class CreateProductTranslationsTable implements Migration
 
             $table->timestamps();
 
-            $table->unique(['product_id', 'language_code'], 'unique_product_language');
-            $table->index('language_code');
+            $table->unique(['product_id', 'language_code'], 'uq_kecom_product_translations_product_id_language_code');
+            $table->index('language_code', 'idx_kecom_product_translations_language_code');
 
-            $table->foreign('product_id')
+            $table->foreign('product_id', 'fk_kecom_product_translations_product_id')
                 ->references('id')
                 ->on('kirki_ecommerce_products')
                 ->cascade_on_delete();
-            $table->foreign('language_code')
+            $table->foreign('language_code', 'fk_kecom_product_translations_language_code')
                 ->references('code')
                 ->on('kirki_ecommerce_languages')
                 ->cascade_on_delete();

@@ -17,7 +17,7 @@ class AdminOrderNotification
 
     const NEW_ORDER = 'new_order';
     const CANCELLED_ORDER = 'cancelled_order';
-    const FAILED_ORDER = 'failed_order';
+    const PAYMENT_FAILED = 'payment_failed';
 
     /**
      * Get the email settings type these notifications belong to.

@@ -7,8 +7,6 @@ use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\Framework\Http\Request;
 use Kirki\Ecommerce\Framework\Sanitizer;
 
-use function Kirki\Ecommerce\App\customer;
-
 /**
  * Validates and sanitizes the payload for running an action on an order.
  *
@@ -16,18 +14,6 @@ use function Kirki\Ecommerce\App\customer;
  */
 class OrderActionRequest extends Request
 {
-    /**
-     * Restrict order actions to admins.
-     *
-     * @since 1.0.0
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return customer()->is_admin();
-    }
-
     /**
      * Convert the submitted amount to minor units.
      *

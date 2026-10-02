@@ -33,6 +33,7 @@ export const endpoints = {
   ATTRIBUTE_VALUE: (attributeId: string | number, valueId: string | number) =>
     `/attributes/${attributeId}/values/${valueId}`,
   ATTRIBUTE_VALUES_BULK: (attributeId: string | number) => `/attributes/${attributeId}/values/bulk`,
+  ATTRIBUTE_VALUES_BATCH: (attributeId: string | number) => `/attributes/${attributeId}/values/batch`,
 
   VARIANT: (id: string | number) => `/variants/${id}`,
   VARIANTS: '/variants',
@@ -79,6 +80,7 @@ export const endpoints = {
   TAX_PROFILES: '/tax-profiles',
   TAX_PROFILE: (id: string | number) => `/tax-profiles/${id}`,
 
+  PAYMENT_METHODS: '/payment-methods',
   ONLINE_PAYMENTS: '/online-payments',
   ONLINE_PAYMENT: (id: string | number) => `/online-payments/${id}`,
   ONLINE_PAYMENTS_INSTALLABLE: '/online-payments/installable',

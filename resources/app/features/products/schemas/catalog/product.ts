@@ -15,15 +15,6 @@ export const ProductStatusSchema = z.enum(['draft', 'published', 'scheduled', 't
 
 export type ProductStatus = z.infer<typeof ProductStatusSchema>;
 
-export const ProductCurrencySchema = z.object({
-  id: z.number(),
-  code: z.string(),
-  name: z.string(),
-  symbol: z.string(),
-});
-
-export type ProductCurrency = z.infer<typeof ProductCurrencySchema>;
-
 export const ProductBrandSchema = z.object({
   id: z.number(),
   name: z.string(),
@@ -101,7 +92,6 @@ export const ProductSchema = z.object({
   status: ProductStatusSchema,
   ribbon: z.string().nullable(),
   ribbon_color: z.string().nullable(),
-  currency: ProductCurrencySchema.nullable(),
   brand: ProductBrandSchema.nullable(),
   description: z.string().nullable(),
   short_description: z.string().nullable().optional(),
@@ -115,7 +105,6 @@ export const ProductSchema = z.object({
   og_description: z.string().nullable(),
   og_image: MediaRefSchema.nullable(),
   schema_id: z.number().nullable(),
-  llm_instructions: z.string().nullable(),
   has_variants: z.boolean(),
   categories: z.array(ProductCategoryRefSchema),
   tags: z.array(ProductTagRefSchema),

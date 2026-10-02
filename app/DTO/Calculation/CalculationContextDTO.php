@@ -32,6 +32,9 @@ class CalculationContextDTO extends DTO
     /** @var int */
     public $customer_id;
 
+    /** @var int|null WordPress user ID of the signed-in shopper who owns the cart, when there is one */
+    public $user_id;
+
     /** @var string[] */
     public $coupon_codes = [];
 
@@ -82,7 +85,7 @@ class CalculationContextDTO extends DTO
     /**
      * Build a calculation context from a cart.
      *
-     * Copies the cart's addresses, shipping method, coupon codes and items. When the cart
+     * Copies the cart's owner, addresses, shipping method, coupon codes and items. When the cart
      * belongs to a user with a customer record, also sets the customer ID and the count of
      * that customer's orders that are neither failed/cancelled nor refunded.
      *
@@ -95,6 +98,7 @@ class CalculationContextDTO extends DTO
     {
         $dto = new static();
         $dto->cart_id = $cart->id;
+        $dto->user_id = !empty($cart->user_id) ? (int) $cart->user_id : null;
         $dto->customer_id = null;
         $customer = null;
 
