@@ -24,7 +24,7 @@ class CreateCurrenciesTable implements Migration
     {
         Schema::create('kirki_ecommerce_currencies', function (Structure $table) {
             $table->id();
-            $table->string('code', 10)->unique();
+            $table->string('code', 10);
             $table->string('name', 100);
             $table->string('symbol', 10)->nullable();
             $table->decimal('exchange_rate', 15, 6)->default(1.000000);
@@ -32,8 +32,9 @@ class CreateCurrenciesTable implements Migration
             $table->boolean('is_active')->default(1);
             $table->timestamps();
 
-            $table->index('is_base');
-            $table->index('is_active');
+            $table->unique('code', 'uq_kecom_currencies_code');
+            $table->index('is_base', 'idx_kecom_currencies_is_base');
+            $table->index('is_active', 'idx_kecom_currencies_is_active');
         });
     }
 

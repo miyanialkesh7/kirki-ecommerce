@@ -14,7 +14,11 @@ import Text from '@/components/ui/text';
 import { useCategoriesQuery } from '@/features/categories';
 import ConditionRow from '@/features/settings/tax/shared/components/tax-rules/condition-row';
 import { resolveSelectedDestinations } from '@/features/settings/tax/shared/lib/tax-rules/helper';
-import type { TaxConditionRow, TaxRegionState, TaxRule } from '@/features/settings/tax/shared/lib/utils';
+import type {
+  TaxConditionRow,
+  TaxRegionState,
+  TaxRule,
+} from '@/features/settings/tax/shared/lib/utils';
 import { taxRuleActionOptionsArray } from '@/features/settings/tax/shared/lib/utils';
 import {
   RATE_ACTIONS,
@@ -94,6 +98,7 @@ const TaxRuleFormCard = (props: TaxRuleFormCardProps) => {
         conditions: existingConditions.map((c) => ({
           id: uuid(),
           condition: c.type ?? 'tax_profile',
+          operator: c.operator === '!=' ? '!=' : '=',
           value: c.value ?? null,
         })),
         action_type: existingRule.action?.type || 'set_product_tax_rate',
@@ -169,7 +174,11 @@ const TaxRuleFormCard = (props: TaxRuleFormCardProps) => {
   }));
 
   return (
-    <Card data-search-skip="true" cssOverride={mergeCss(cardStyles.formCard, styles.dashedCard)}>
+    <Card
+      data-search-skip="true"
+      noShadow
+      cssOverride={mergeCss(cardStyles.formCard, styles.dashedCard)}
+    >
       <CardContent>
         <Form {...form}>
           <Flex direction="column" gap={4}>
@@ -213,10 +222,7 @@ const TaxRuleFormCard = (props: TaxRuleFormCardProps) => {
                   onValueChange={() => form.setValue('action_value', '')}
                 />
                 {RATE_ACTIONS.includes(selectedAction ?? '') && (
-                  <TextField
-                    name="action_value"
-                    placeholder={__('e.g., 8.5', 'kirki-ecommerce')}
-                  />
+                  <TextField name="action_value" placeholder={__('e.g., 8.5', 'kirki-ecommerce')} />
                 )}
               </Grid>
             </Flex>
@@ -243,8 +249,7 @@ export default TaxRuleFormCard;
 
 const styles = defineStyles({
   dashedCard: {
-    borderStyle: 'dashed',
-    borderColor: theme.colors.border.default,
+    border: `1px dashed ${theme.colors.border.default}`,
   },
   errorText: {
     color: theme.colors.text.critical,

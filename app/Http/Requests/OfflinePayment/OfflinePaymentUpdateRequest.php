@@ -22,7 +22,7 @@ class OfflinePaymentUpdateRequest extends Request
         return [
             'id' => 'required|string',
             'name' => 'required|string',
-            'icon' => 'nullable|string',
+            'icon' => 'nullable|integer',
             'is_enabled' => 'nullable|boolean',
             'is_offline' => 'nullable|boolean',
             'instructions' => 'nullable|string',
@@ -40,7 +40,7 @@ class OfflinePaymentUpdateRequest extends Request
         return [
             'id' => Sanitizer::TEXT,
             'name' => Sanitizer::TEXT,
-            'icon' => Sanitizer::TEXT,
+            'icon' => Sanitizer::INT,
             'is_enabled' => Sanitizer::BOOL,
             'is_offline' => Sanitizer::BOOL,
             'instructions' => Sanitizer::TEXT,

@@ -23,7 +23,7 @@ import {
   resolveNotificationTemplate,
 } from '@/features/settings/email/lib/utils';
 import type { EmailSettingsFormInput } from '@/features/settings/email/schemas/forms/email-settings-form';
-import { CartIcon, EditPenIcon, InventoryBoxIcon, SettingsIcon, UserIcon } from '@/icons';
+import { CartIcon, EditPenIcon, InventoryBoxIcon, SettingsIcon } from '@/icons';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
@@ -78,7 +78,7 @@ const AdminEmail = (props: AdminEmailProps) => {
   const { control } = useFormContext<EmailSettingsFormInput>();
   const adminEmails = useWatch({ control, name: 'admin_emails' });
 
-  const { orderEmails, inventoryEmails, userEmails } = useMemo(() => {
+  const { orderEmails, inventoryEmails } = useMemo(() => {
     if (!adminEmails) {
       return {
         orderEmails: [],
@@ -154,29 +154,6 @@ const AdminEmail = (props: AdminEmailProps) => {
                       item={item}
                       label={getNotificationTemplateLabel(
                         resolveNotificationTemplate(item, 'admin_inventory'),
-                      )}
-                      onToggle={handleToggleOrder}
-                      onEdit={handleEditOrder}
-                    />
-                  ))}
-                </StackedItems>
-              )}
-            </OptionAccordion>
-            <OptionAccordion
-              header={__('User', 'kirki-ecommerce')}
-              subHeader={__('Get notified about new user registration', 'kirki-ecommerce')}
-              leftIcon={<UserIcon />}
-              open
-              variant="email"
-            >
-              {userEmails.length > 0 && (
-                <StackedItems variant="card">
-                  {userEmails.map((item) => (
-                    <EmailRow
-                      key={item.key}
-                      item={item}
-                      label={getNotificationTemplateLabel(
-                        resolveNotificationTemplate(item, 'admin_user'),
                       )}
                       onToggle={handleToggleOrder}
                       onEdit={handleEditOrder}

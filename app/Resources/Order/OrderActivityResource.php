@@ -29,6 +29,7 @@ class OrderActivityResource extends Resource
             'description' => OrderActivity::describe($this->resource),
             'created_by' => $this->created_by,
             'author_name' => $this->resolve_author_name(),
+            'notify_customer' => (bool) ($this->metadata['notify_customer'] ?? false),
             'created_at' => $this->created_at ? $this->human_readable_time_diff($this->created_at) : '',
         ];
     }

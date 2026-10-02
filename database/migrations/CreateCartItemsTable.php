@@ -31,18 +31,18 @@ class CreateCartItemsTable implements Migration
 
             $table->timestamps();
 
-            $table->foreign('cart_id', 'fk_kirki_ecommerce_cart_items_cart_id')
+            $table->foreign('cart_id', 'fk_kecom_cart_items_cart_id')
                 ->references('id')
                 ->on('kirki_ecommerce_carts')
                 ->cascade_on_delete();
-            $table->foreign('product_id', 'fk_kirki_ecommerce_cart_items_product_id')
+            $table->foreign('product_id', 'fk_kecom_cart_items_product_id')
                 ->references('id')
                 ->on('kirki_ecommerce_products')
                 ->cascade_on_delete();
-            $table->foreign('variant_id', 'fk_kirki_ecommerce_cart_items_variant_id')
+            $table->foreign('variant_id', 'fk_kecom_cart_items_variant_id')
                 ->references('id')
                 ->on('kirki_ecommerce_variants')
-                ->null_on_delete();
+                ->cascade_on_delete();
         });
     }
 

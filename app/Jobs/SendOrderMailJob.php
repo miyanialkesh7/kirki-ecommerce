@@ -2,6 +2,7 @@
 
 namespace Kirki\Ecommerce\App\Jobs;
 
+use Kirki\Ecommerce\App\Jobs\Concerns\SendsMail;
 use Kirki\Ecommerce\App\Mails\Mailer;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Framework\Contracts\ShouldQueue;
@@ -22,6 +23,7 @@ class SendOrderMailJob implements ShouldQueue
 {
     use Queueable;
     use SerializesModels;
+    use SendsMail;
 
     const QUEUE = 'emails';
 
@@ -68,6 +70,13 @@ class SendOrderMailJob implements ShouldQueue
     public $email;
 
     /**
+     * Scalar constructor arguments passed to the mailer after the order.
+     *
+     * @var array<int, scalar>
+     */
+    public $mailer_args = [];
+
+    /**
      * Create a new job instance.
      *
      * The order is stored as an identifier and re-fetched when the job runs.
@@ -75,15 +84,17 @@ class SendOrderMailJob implements ShouldQueue
      *
      * @since 1.0.0
      *
-     * @param Order  $order        The order the email is about.
-     * @param string $mailer_class The Mailer subclass that builds the email.
-     * @param string $email        The recipient email address.
+     * @param Order              $order        The order the email is about.
+     * @param string             $mailer_class The Mailer subclass that builds the email.
+     * @param string             $email        The recipient email address.
+     * @param array<int, scalar> $mailer_args  Scalar constructor arguments passed to the mailer after the order, such as a note's text.
      */
-    public function __construct(Order $order, string $mailer_class, string $email)
+    public function __construct(Order $order, string $mailer_class, string $email, array $mailer_args = [])
     {
         $this->order = $order;
         $this->mailer_class = $mailer_class;
         $this->email = $email;
+        $this->mailer_args = array_values($mailer_args);
 
         $this->on_queue(static::QUEUE);
     }
@@ -98,24 +109,13 @@ class SendOrderMailJob implements ShouldQueue
      */
     public function handle()
     {
-        if (empty($this->email) || !is_subclass_of($this->mailer_class, Mailer::class)) {
+        if (!$this->can_send($this->mailer_class, $this->email)) {
             return;
         }
 
         /** @var Mailer $mailer */
-        $mailer = new $this->mailer_class($this->order);
+        $mailer = new $this->mailer_class($this->order, ...$this->mailer_args);
 
-        if (!$mailer->is_enabled()) {
-            return;
-        }
-
-        if (!$mailer->send($this->email)) {
-            throw new RuntimeException(
-                esc_html(
-                    /* translators: 1: mailer class, 2: recipient email */
-                    sprintf(__('Failed to send %1$s to %2$s.', 'kirki-ecommerce'), $this->mailer_class, $this->email)
-                )
-            );
-        }
+        $this->deliver($mailer, $this->email);
     }
 }

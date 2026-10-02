@@ -449,4 +449,17 @@ class Utils
                 return null;
         }
     }
+
+    /**
+     * Determine whether the running WordPress is at least the given version.
+     *
+     * @since 1.0.0
+     *
+     * @param string $version WordPress version to compare against, such as `6.1`.
+     * @return bool
+     */
+    public static function wp_version_at_least(string $version)
+    {
+        return version_compare((string) get_bloginfo('version'), $version, '>=');
+    }
 }

@@ -27,13 +27,13 @@ class CreateAttributeValueVariantTable implements Migration
             $table->unsigned_big_integer('attribute_value_id');
             $table->timestamps();
 
-            $table->primary(['variant_id', 'attribute_value_id'], 'pk_kirki_ecommerce_attribute_value_variant');
+            $table->primary(['variant_id', 'attribute_value_id']);
 
-            $table->foreign('variant_id', 'fk_kirki_ecommerce_attribute_value_variant_variant_id')
+            $table->foreign('variant_id', 'fk_kecom_attribute_value_variant_variant_id')
                 ->references('id')
                 ->on('kirki_ecommerce_variants')
                 ->cascade_on_delete();
-            $table->foreign('attribute_value_id', 'fk_kirki_ecommerce_attribute_value_variant_attribute_value_id')
+            $table->foreign('attribute_value_id', 'fk_kecom_attribute_value_variant_attribute_value_id')
                 ->references('id')
                 ->on('kirki_ecommerce_attribute_values')
                 ->cascade_on_delete();

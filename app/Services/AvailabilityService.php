@@ -34,13 +34,25 @@ class AvailabilityService
             return AvailabilityStatus::OUT_OF_STOCK;
         }
 
-        $threshold = is_null($variant->low_stock_threshold) ? $store_default_threshold : $variant->low_stock_threshold;
-
-        if ($variant->available_quantity <= $threshold) {
+        if ($variant->available_quantity <= $this->resolve_low_stock_threshold($variant, $store_default_threshold)) {
             return AvailabilityStatus::LOW_STOCK;
         }
 
         return AvailabilityStatus::IN_STOCK;
+    }
+
+    /**
+     * Resolve the low-stock threshold of a variant: its own when set, otherwise the store default.
+     *
+     * @since 1.0.0
+     *
+     * @param Variant $variant                 Variant to evaluate.
+     * @param int     $store_default_threshold Low-stock threshold used when the variant sets none.
+     * @return int
+     */
+    public function resolve_low_stock_threshold(Variant $variant, int $store_default_threshold = 0)
+    {
+        return is_null($variant->low_stock_threshold) ? $store_default_threshold : (int) $variant->low_stock_threshold;
     }
 
     /**

@@ -25,7 +25,7 @@ class CreateCollectionsTable implements Migration
         Schema::create('kirki_ecommerce_collections', function (Structure $table) {
             $table->id();
             $table->string('title', 255);
-            $table->string('slug', 255)->unique();
+            $table->string('slug', 255);
             $table->text('description')->nullable();
             $table->unsigned_big_integer('banner')->nullable();
             $table->string('seo_title', 255)->nullable();
@@ -37,12 +37,12 @@ class CreateCollectionsTable implements Migration
             $table->unsigned_big_integer('updated_by')->nullable();
             $table->timestamps();
 
-            $table->foreign('created_by')->on('users')->references('ID')->null_on_delete();
-            $table->foreign('updated_by')->on('users')->references('ID')->null_on_delete();
+            $table->unique('slug', 'uq_kecom_collections_slug');
+            $table->foreign('created_by', 'fk_kecom_collections_created_by')->on('users')->references('ID')->null_on_delete();
+            $table->foreign('updated_by', 'fk_kecom_collections_updated_by')->on('users')->references('ID')->null_on_delete();
 
-            $table->index('slug');
-            $table->index('is_active');
-            $table->index('ordering');
+            $table->index('is_active', 'idx_kecom_collections_is_active');
+            $table->index('ordering', 'idx_kecom_collections_ordering');
         });
     }
 

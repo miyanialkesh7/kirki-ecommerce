@@ -31,6 +31,7 @@ type TaxConditionRow = {
   condition: string;
   value: unknown;
   type?: string;
+  operator?: '=' | '!=';
 };
 
 export type {
@@ -49,6 +50,11 @@ export const taxRuleConditionOptions: SelectOption[] = [
   { title: __('Tax Profile', 'kirki-ecommerce'), value: 'tax_profile' },
   { title: __('Destination', 'kirki-ecommerce'), value: 'destination_region' },
   { title: __('Product Category', 'kirki-ecommerce'), value: 'product_categories' },
+];
+
+export const taxRuleOperatorOptions: SelectOption[] = [
+  { title: __('is', 'kirki-ecommerce'), value: '=' },
+  { title: __('is not', 'kirki-ecommerce'), value: '!=' },
 ];
 
 export const taxRuleActionOptionsArray: SelectOption[] = [

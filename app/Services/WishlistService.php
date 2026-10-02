@@ -79,7 +79,7 @@ class WishlistService
     {
         $query = Wishlist::query()
             ->where('user_id', $user_id)
-            ->with(['variant.product.media', 'variant.product.currency', 'variant.media', 'variant.product.categories']);
+            ->with(['variant.product.media', 'variant.media', 'variant.product.categories']);
 
         if ($filters) {
             $query->when(!empty($filters->sort_by) && !empty($filters->sort_order), function (QueryBuilder $q) use ($filters) {

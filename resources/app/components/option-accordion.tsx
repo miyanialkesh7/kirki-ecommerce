@@ -71,8 +71,8 @@ const OptionAccordion = (props: OptionAccordionProps) => {
           >
             <Flex gap={4} align="center">
               {leftIcon}
-              <Flex direction="column" gap={2}>
-                <Flex gap={1} align="center" cssOverride={{ height: 24 }}>
+              <Flex direction="column" gap={1}>
+                <Flex gap={1} align="center" cssOverride={{ minHeight: 24 }}>
                   <Text weight="semibold" variant="small" color="primary">
                     {header}
                   </Text>

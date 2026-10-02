@@ -25,12 +25,12 @@ class DestinationRegionCondition extends Condition
     /**
      * Check whether the shipping address is in the target country and, when given, one of the target states.
      *
-     * The operator is ignored; country and state are always matched with equality or membership.
+     * Country and state are matched with equality or membership; the "!=" operator negates that match.
      *
      * @since 1.0.0
      *
      * @param DecisionContext $context  Context to read from.
-     * @param string          $operator Comparison operator.
+     * @param string          $operator Comparison operator, "!=" negates the match and any other value keeps it.
      * @param mixed           $value    Value configured on the rule's condition, an array with a country (single or list) and optional state list.
      * @return bool False when the context has no shipping address or the value is empty.
      */
@@ -46,6 +46,22 @@ class DestinationRegionCondition extends Condition
             return false;
         }
 
+        $matches = $this->matches_destination($shipping_address, $value);
+
+        return $operator === '!=' ? !$matches : $matches;
+    }
+
+    /**
+     * Check whether the shipping address is in the target country and, when given, one of the target states.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $shipping_address Shipping address from the context.
+     * @param array<string, mixed> $value            Target country (single or list) and optional state list.
+     * @return bool
+     */
+    protected function matches_destination(array $shipping_address, array $value)
+    {
         $target_country = $value['country'] ?? null;
         $target_states = $value['state'] ?? [];
 

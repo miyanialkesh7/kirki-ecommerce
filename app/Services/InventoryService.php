@@ -2,7 +2,11 @@
 
 namespace Kirki\Ecommerce\App\Services;
 
+use Kirki\Ecommerce\App\Events\Inventory\VariantsLowStockEvent;
+use Kirki\Ecommerce\App\Events\Inventory\VariantsOutOfStockEvent;
 use Kirki\Ecommerce\App\Models\Order;
+use Kirki\Ecommerce\App\Models\Variant;
+use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\Framework\Exceptions\NotFoundException;
 use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Framework\Http\Response;
@@ -19,16 +23,28 @@ class InventoryService
     /** @var VariantService */
     protected $variant_service;
 
+    /** @var AvailabilityService */
+    protected $availability_service;
+
     /**
-     * Set up the service with the variant service.
+     * Stock-level crossings buffered by collect_stock_alerts(), keyed by level then variant ID; null outside a collect scope.
+     *
+     * @var array{low: array<int, int>, out: array<int, int>}|null
+     */
+    protected $pending_stock_alerts = null;
+
+    /**
+     * Set up the service with the variant and availability services.
      *
      * @since 1.0.0
      *
-     * @param VariantService $variant_service Variant lookup and quantity updates.
+     * @param VariantService      $variant_service      Variant lookup and quantity updates.
+     * @param AvailabilityService $availability_service Low-stock threshold resolution.
      */
-    public function __construct(VariantService $variant_service)
+    public function __construct(VariantService $variant_service, AvailabilityService $availability_service)
     {
         $this->variant_service = $variant_service;
+        $this->availability_service = $availability_service;
     }
 
     /**
@@ -125,7 +141,13 @@ class InventoryService
 
         throw_if($variant->track_inventory && !$variant->allow_back_order && $variant->available_quantity < $quantity, __('Insufficient stock.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
 
-        return $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+        $is_decremented = $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+
+        if ($is_decremented) {
+            $this->record_stock_level_crossing($variant, $quantity);
+        }
+
+        return $is_decremented;
     }
 
     /**
@@ -154,7 +176,13 @@ class InventoryService
 
         throw_if(!$variant->allow_back_order && $variant->available_quantity < $quantity, __('Insufficient stock to reserve.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
 
-        return $this->variant_service->increment($variant_id, 'committed_quantity', $quantity) && $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+        $is_reserved = $this->variant_service->increment($variant_id, 'committed_quantity', $quantity) && $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+
+        if ($is_reserved) {
+            $this->record_stock_level_crossing($variant, $quantity);
+        }
+
+        return $is_reserved;
     }
 
     /**
@@ -245,5 +273,109 @@ class InventoryService
         $order->items->each(function ($item) {
             $this->confirm_reserved_stock($item->variant_id, $item->quantity);
         });
+    }
+
+    /**
+     * Run a group of stock changes and send their low-stock and out-of-stock alerts together.
+     *
+     * Crossings recorded while the callback runs are buffered, then raised as
+     * at most one low-stock and one out-of-stock event, each listing every
+     * affected variant. If the callback throws, the buffer is discarded.
+     *
+     * @since 1.0.0
+     *
+     * @param callable $callback Makes the stock changes.
+     * @return mixed The callback's return value.
+     * @throws \Throwable Whatever the callback throws.
+     */
+    public function collect_stock_alerts(callable $callback)
+    {
+        if (!is_null($this->pending_stock_alerts)) {
+            return $callback();
+        }
+
+        $this->pending_stock_alerts = ['low' => [], 'out' => []];
+
+        try {
+            $result = $callback();
+            $alerts = $this->pending_stock_alerts;
+        } finally {
+            $this->pending_stock_alerts = null;
+        }
+
+        $this->dispatch_stock_alerts(array_values($alerts['low']), array_values($alerts['out']));
+
+        return $result;
+    }
+
+    /**
+     * Record a low-stock or out-of-stock crossing caused by a stock reduction.
+     *
+     * Only a crossing alerts, so further reductions below a level stay quiet
+     * until the variant is restocked above it. Running out takes precedence,
+     * so one variant is never in both alerts. Outside collect_stock_alerts()
+     * the alert is raised straight away.
+     *
+     * @since 1.0.0
+     *
+     * @param Variant $variant  The variant as loaded before the reduction.
+     * @param int     $quantity Amount the available quantity was reduced by.
+     * @return void
+     */
+    protected function record_stock_level_crossing(Variant $variant, int $quantity)
+    {
+        if (!$variant->track_inventory || $quantity <= 0) {
+            return;
+        }
+
+        $before = (int) $variant->available_quantity;
+        $after = $before - $quantity;
+        $variant_id = (int) $variant->id;
+        $level = null;
+
+        if ($before > 0 && $after <= 0) {
+            $level = 'out';
+        } else {
+            $threshold = $this->availability_service->resolve_low_stock_threshold($variant, (int) Settings::get('product.low_stock_threshold', 0));
+
+            if ($threshold > 0 && $before > $threshold && $after <= $threshold) {
+                $level = 'low';
+            }
+        }
+
+        if (is_null($level)) {
+            return;
+        }
+
+        if (is_null($this->pending_stock_alerts)) {
+            $this->dispatch_stock_alerts($level === 'low' ? [$variant_id] : [], $level === 'out' ? [$variant_id] : []);
+            return;
+        }
+
+        if ($level === 'out') {
+            unset($this->pending_stock_alerts['low'][$variant_id]);
+        }
+
+        $this->pending_stock_alerts[$level][$variant_id] = $variant_id;
+    }
+
+    /**
+     * Raise the low-stock and out-of-stock events for the given variants.
+     *
+     * @since 1.0.0
+     *
+     * @param int[] $low_stock_ids    IDs of the variants that crossed their low-stock threshold.
+     * @param int[] $out_of_stock_ids IDs of the variants that ran out.
+     * @return void
+     */
+    protected function dispatch_stock_alerts(array $low_stock_ids, array $out_of_stock_ids)
+    {
+        if (!empty($low_stock_ids)) {
+            VariantsLowStockEvent::dispatch($low_stock_ids);
+        }
+
+        if (!empty($out_of_stock_ids)) {
+            VariantsOutOfStockEvent::dispatch($out_of_stock_ids);
+        }
     }
 }

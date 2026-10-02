@@ -128,7 +128,7 @@ class UpdateOrderAction
 
         try {
             $exchange_rate = Currency::exchange_rate($dto->currency_code);
-            $this->sync_order_items($order, $calculated_result, $dto->currency_code, $exchange_rate);
+            $this->inventory_service->collect_stock_alerts(fn() => $this->sync_order_items($order, $calculated_result, $dto->currency_code, $exchange_rate));
 
             $order_dto = $this->prepare_update_order_dto($order, $calculated_result, $dto, $context, $exchange_rate);
             $this->order_service->update_order($order_dto);

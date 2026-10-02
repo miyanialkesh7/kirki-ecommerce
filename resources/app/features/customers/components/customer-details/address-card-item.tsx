@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import CheckboxField from '@/components/form/checkbox-field';
@@ -13,7 +14,6 @@ import type { CustomerFormInput } from '@/features/customers/schemas/forms/custo
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
-import { Trash2 } from 'lucide-react';
 
 const ADDRESS_TYPE_OPTIONS = [
   { label: __('Home', 'kirki-ecommerce'), value: 'home' },

@@ -27,6 +27,7 @@ const TaxRulesFormShape = z.object({
       z.object({
         id: z.string(),
         condition: z.string(),
+        operator: z.enum(['=', '!=']).default('='),
         value: z.unknown().nullable(),
         type: z.string().optional(),
       }),
@@ -58,7 +59,7 @@ export const TaxRulesFormSchema = prepareFormSchema(TaxRulesFormShape).transform
   relation: 'AND' as const,
   conditions: values.conditions.map((c) => ({
     type: c.condition,
-    operator: '=',
+    operator: c.operator,
     value: c.value ?? '',
   })),
   action: {

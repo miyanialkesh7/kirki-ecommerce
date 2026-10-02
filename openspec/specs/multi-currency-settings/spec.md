@@ -64,7 +64,8 @@ currency for storefront use. The base currency SHALL NOT be deactivatable.
 Each non-base currency row SHALL offer a three-dot (overflow) menu containing exactly
 "Set as default" and "Delete". Selecting either SHALL open a confirmation dialog, and
 the action SHALL run only when the administrator confirms. The base currency row SHALL
-show no overflow menu.
+show no overflow menu. Deleting a currency SHALL NOT be blocked by products that exist
+in the store, including products created while that currency was the base.
 
 #### Scenario: Setting the base currency
 
@@ -79,6 +80,15 @@ show no overflow menu.
   dialog
 - **THEN** the currency is removed and the list refreshes
 - **AND** dismissing the dialog makes no change
+
+#### Scenario: Deleting a currency that was previously the base
+
+- **WHEN** the administrator switches the store's base currency, and then chooses
+  "Delete" on the currency that was previously the base and confirms the dialog
+- **THEN** that currency is removed even though products were created while it was the
+  base
+- **AND** those products keep their stored amounts, which are read in the store's
+  current base currency
 
 ### Requirement: Currency write requests carry only currency fields
 

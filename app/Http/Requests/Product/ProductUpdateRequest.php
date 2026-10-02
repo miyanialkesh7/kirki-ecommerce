@@ -78,7 +78,6 @@ class ProductUpdateRequest extends Request
             'scheduled_at' => 'required_if:status,' . ProductStatus::SCHEDULED . '|date|format:' . Somoy::ATOM . '|after:now|nullable',
             'ribbon' => 'string|nullable|max:100',
             'ribbon_color' => 'string|nullable|max:20',
-            'currency_id' => 'integer|nullable',
             'brand_id' => 'integer|nullable',
             'description' => 'string|nullable',
             'additional_info' => 'array|nullable', // JSON string, can be validated later
@@ -92,7 +91,6 @@ class ProductUpdateRequest extends Request
             'og_description' => 'string|nullable',
             'og_image' => 'integer|nullable',
             'schema_id' => 'integer|nullable',
-            'llm_instructions' => 'string|nullable',
             'has_variants' => 'boolean|nullable',
 
             //media
@@ -186,7 +184,6 @@ class ProductUpdateRequest extends Request
             'scheduled_at' => Sanitizer::TEXT,
             'ribbon' => Sanitizer::TEXT,
             'ribbon_color' => Sanitizer::TEXT,
-            'currency_id' => Sanitizer::INT,
             'brand_id' => Sanitizer::INT,
             'description' => Sanitizer::TEXT,
             'additional_info' => Sanitizer::ARRAY,
@@ -198,7 +195,6 @@ class ProductUpdateRequest extends Request
             'og_description' => Sanitizer::TEXT,
             'og_image' => Sanitizer::INT,
             'schema_id' => Sanitizer::INT,
-            'llm_instructions' => Sanitizer::TEXT,
             'has_variants' => Sanitizer::BOOL,
 
             // relations
