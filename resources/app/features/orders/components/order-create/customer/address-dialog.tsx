@@ -196,42 +196,30 @@ const AddressDialog = ({
               />
             </Field>
 
-            <CountryField<OrderFormInput> name={fields.country} />
+            <CountryField name={fields.country} />
 
             <Grid>
-              <TextField<OrderFormInput>
-                name={fields.firstName}
-                label={__('First name', 'kirki-ecommerce')}
-              />
-              <TextField<OrderFormInput>
-                name={fields.lastName}
-                label={__('Last name', 'kirki-ecommerce')}
-              />
+              <TextField name={fields.firstName} label={__('First name', 'kirki-ecommerce')} />
+              <TextField name={fields.lastName} label={__('Last name', 'kirki-ecommerce')} />
             </Grid>
 
-            <TextField<OrderFormInput>
-              name={fields.addressLine1}
-              label={__('Address', 'kirki-ecommerce')}
-            />
-            <TextField<OrderFormInput>
+            <TextField name={fields.addressLine1} label={__('Address', 'kirki-ecommerce')} />
+            <TextField
               name={fields.addressLine2}
               label={__('Apartment, suite, etc. (optional)', 'kirki-ecommerce')}
             />
 
             <Grid columns={3}>
-              <TextField<OrderFormInput> name={fields.city} label={__('City', 'kirki-ecommerce')} />
-              <StateField<OrderFormInput>
+              <TextField name={fields.city} label={__('City', 'kirki-ecommerce')} />
+              <StateField
                 country={country}
                 name={fields.state}
                 label={__('State', 'kirki-ecommerce')}
               />
-              <TextField<OrderFormInput>
-                name={fields.postalCode}
-                label={__('Zip code', 'kirki-ecommerce')}
-              />
+              <TextField name={fields.postalCode} label={__('Zip code', 'kirki-ecommerce')} />
             </Grid>
 
-            <TextField<OrderFormInput> name={fields.phone} label={__('Phone', 'kirki-ecommerce')} />
+            <TextField name={fields.phone} label={__('Phone', 'kirki-ecommerce')} />
           </Flex>
         </DialogBody>
         <DialogFooter>

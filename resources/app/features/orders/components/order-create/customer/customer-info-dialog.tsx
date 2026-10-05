@@ -48,23 +48,11 @@ const ContactInfoDialog = ({ open, onOpenChange, onSave, isSaving }: ContactInfo
         <DialogBody>
           <Flex direction="column" gap={4}>
             <Grid>
-              <TextField<OrderFormInput>
-                name="shipping_first_name"
-                label={__('First Name', 'kirki-ecommerce')}
-              />
-              <TextField<OrderFormInput>
-                name="shipping_last_name"
-                label={__('Last Name', 'kirki-ecommerce')}
-              />
+              <TextField name="customer_first_name" label={__('First Name', 'kirki-ecommerce')} />
+              <TextField name="customer_last_name" label={__('Last Name', 'kirki-ecommerce')} />
             </Grid>
-            <TextField<OrderFormInput>
-              name="shipping_email"
-              label={__('Email', 'kirki-ecommerce')}
-            />
-            <TextField<OrderFormInput>
-              name="shipping_phone"
-              label={__('Phone Number', 'kirki-ecommerce')}
-            />
+            <TextField name="customer_email" label={__('Email', 'kirki-ecommerce')} />
+            <TextField name="customer_phone" label={__('Phone Number', 'kirki-ecommerce')} />
           </Flex>
         </DialogBody>
         <DialogFooter>
