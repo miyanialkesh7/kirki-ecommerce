@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { Card, CardContent } from '@/components/ui/card';
 import Container from '@/components/ui/container';
@@ -33,6 +33,7 @@ import { getDefaults, pickFormValues } from '@/libs/zod';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/services/settings';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const MultiCurrencySettings = () => {
@@ -47,6 +48,8 @@ const MultiCurrencySettings = () => {
     resolver: zodResolver(MultiCurrencySettingsFormSchema),
     defaultValues: getDefaults(MultiCurrencySettingsFormSchema),
   });
+
+  const currencies = useWatch({ control: form.control, name: 'currencies' });
 
   const { isDirty } = form.formState;
 
@@ -125,7 +128,11 @@ const MultiCurrencySettings = () => {
         <Flex direction="column" gap={4}>
           <SettingsPageHeader icon={<CurrencyIcon />} title={__('Currency', 'kirki-ecommerce')} />
 
-          <Card data-search-id="currency.management" data-search-keywords="multi currency, exchange rate, conversion" cssOverride={cardStyles.innerCard}>
+          <Card
+            data-search-id="currency.management"
+            data-search-keywords="multi currency, exchange rate, conversion"
+            cssOverride={cardStyles.innerCard}
+          >
             <CardContent cssOverride={{ paddingBottom: theme.spacing[4] }}>
               <Flex direction="column" gap={3}>
                 <Flex
@@ -144,11 +151,17 @@ const MultiCurrencySettings = () => {
                   <AddCurrencyPopup />
                 </Flex>
                 <AvailableCurrencyList />
-                <ApiConfig currencySettings={currencySettingsData} />
+                {isDefined(currencies) && currencies.length > 1 && (
+                  <ApiConfig currencySettings={currencySettingsData} />
+                )}
               </Flex>
             </CardContent>
           </Card>
-          <Card data-search-id="currency.preferences" data-search-keywords="symbol, rounding, price display" cssOverride={cardStyles.formCard}>
+          <Card
+            data-search-id="currency.preferences"
+            data-search-keywords="symbol, rounding, price display"
+            cssOverride={cardStyles.formCard}
+          >
             <CardContent>
               <Flex direction="column" gap={2}>
                 <Text weight="semibold">{__('Currency Preferences', 'kirki-ecommerce')}</Text>
