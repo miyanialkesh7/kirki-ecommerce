@@ -10,10 +10,10 @@ import {
 
 import Button from '@/components/ui/button';
 import { useWordpressMedia } from '@/hooks';
-import { isTinyMceFloatPanelNode } from '@/hooks/use-tinymce-richtext';
 import { getPortalContainer } from '@/libs/portal-container';
 import { theme } from '@/theme';
 import { defineStyles, mergeCss, scopedMerge } from '@/theme/mixins';
+import { isTinyMceFloatPanelNode } from '@/utils/richtext';
 
 const Dialog = DialogPrimitive.Root;
 
