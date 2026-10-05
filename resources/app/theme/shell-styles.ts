@@ -39,6 +39,9 @@ const getShellStyles = (theme: Theme): CSSObject => {
     [WP_MEDIA_FRAME_SELECTOR]: {
       pointerEvents: 'auto',
     },
+    '.mce-floatpanel': {
+      pointerEvents: 'auto',
+    },
     [`#wpwrap:has(${NOT_FOUND_SELECTOR})`]: {
       backgroundColor: surfaceTertiary,
     },
