@@ -1,7 +1,6 @@
 import TextareaField from '@/components/form/textarea-field';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Text from '@/components/ui/text';
-import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
 import { theme } from '@/theme';
 import { __ } from '@/wpi18n';
 
@@ -20,7 +19,7 @@ const NotesCard = ({ isEditable = true }: NotesCardProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <TextareaField<OrderFormInput>
+        <TextareaField
           name="admin_notes"
           disabled={!isEditable}
           placeholder={!isEditable ? '' : __('Write a note...', 'kirki-ecommerce')}
