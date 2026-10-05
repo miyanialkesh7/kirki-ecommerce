@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { useSearchParams } from 'react-router';
+import { useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import SelectField from '@/components/form/select-field';
@@ -34,7 +34,11 @@ import {
   VALUE_ACTIONS,
 } from '@/features/settings/shipping/schemas/forms/shipping-rule-form';
 import { useShippingProfilesQuery } from '@/features/settings/shipping/services/shipping';
-import type { ShippingRegion, ShippingRule, ShippingZone } from '@/features/settings/shipping/types';
+import type {
+  ShippingRegion,
+  ShippingRule,
+  ShippingZone,
+} from '@/features/settings/shipping/types';
 import { useBaseCurrencySymbol } from '@/hooks';
 import { LighteningIcon } from '@/icons';
 import type { ErrorResponse } from '@/libs/api';
@@ -47,6 +51,7 @@ import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';
 import { noop } from '@/utils/function';
+import { isDefined } from '@/utils/object';
 import { __, sprintf } from '@/wpi18n';
 
 type ShippingRuleFormCardProps = {
@@ -66,8 +71,7 @@ const ShippingRuleFormCard = ({
   onCancel,
   onSaved,
 }: ShippingRuleFormCardProps) => {
-  const [searchParams] = useSearchParams();
-  const zoneID = searchParams.get('zoneId');
+  const { zone_id: zoneId } = useParams();
   const baseCurrencySymbol = useBaseCurrencySymbol();
 
   const [openDestinationPopup, setOpenDestinationPopup] = useState(false);
@@ -158,7 +162,7 @@ const ShippingRuleFormCard = ({
           },
           methodID: methodId,
           setSelectedRegion: setSelectedRegion as (regions: unknown) => void,
-          activeZoneId: zoneID,
+          activeZoneId: zoneId,
         });
         break;
 
@@ -171,15 +175,18 @@ const ShippingRuleFormCard = ({
     shippingProfile,
     shippingSettingsData,
     methodId,
-    zoneID,
+    zoneId,
     conditionData,
   ]);
 
   const handleSave = async (payload: ShippingRuleFormPayload) => {
-    const zones = (shippingSettingsData as { shipping_zones: ShippingZone[] })
-      .shipping_zones;
+    if (!isDefined(zoneId)) {
+      return;
+    }
+
+    const zones = (shippingSettingsData as { shipping_zones: ShippingZone[] }).shipping_zones;
     const updatedShippingZones = zones.map((zone) => {
-      if (String(zone.id) !== String(zoneID)) {
+      if (String(zone.id) !== String(zoneId)) {
         return zone;
       }
 
@@ -256,10 +263,7 @@ const ShippingRuleFormCard = ({
                     }}
                   />
                   {NUMERIC_CONDITIONS.includes(selectedCondition ?? '') ? (
-                    <SelectField
-                      name="operator"
-                      options={getOperatorOptions(selectedCondition)}
-                    />
+                    <SelectField name="operator" options={getOperatorOptions(selectedCondition)} />
                   ) : (
                     <Input value={__('is', 'kirki-ecommerce')} readOnly />
                   )}
@@ -328,19 +332,13 @@ const ShippingRuleFormCard = ({
           selectedRegion={selectedRegion}
           selectedCountry={selectedCountry ?? null}
           setSelectedCountry={(value) => {
-            const next =
-              typeof value === 'function'
-                ? value(selectedCountry ?? null)
-                : value;
+            const next = typeof value === 'function' ? value(selectedCountry ?? null) : value;
             form.setValue('selected_country', next);
           }}
           setSelectedRegion={setSelectedRegion}
           selectedConditionValue={selectedConditionValue}
           setSelectedConditionValue={(value) => {
-            const next =
-              typeof value === 'function'
-                ? value(selectedConditionValue)
-                : value;
+            const next = typeof value === 'function' ? value(selectedConditionValue) : value;
             form.setValue('condition_value', next);
           }}
           setRulesObj={noop}

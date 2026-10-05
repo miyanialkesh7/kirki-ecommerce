@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type ReactNode, useEffect, useMemo } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import SelectField from '@/components/form/select-field';
@@ -33,7 +33,6 @@ import { settingsKeys } from '@/libs/query-keys';
 import { getDefaults, pickFormValues } from '@/libs/zod';
 import { updateSettings, useSettingsQuery } from '@/services/settings';
 import { cardStyles } from '@/theme/card-styles';
-import { uuid } from '@/utils';
 import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
@@ -58,19 +57,15 @@ const methodSettingsByType: Record<string, ReactNode> = {
 };
 
 const ShippingDeliveryMethod = () => {
+  const { zone_id: zoneIdParam, method_id: methodId = '' } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const methodIdParam = searchParams.get('methodId');
-  const zoneIdParam = searchParams.get('zoneId');
-
-  const methodId = useMemo(() => methodIdParam || uuid(), [methodIdParam]);
 
   const { data: shippingSettingsData, isLoading } = useSettingsQuery('shipping');
   const shippingZones = (shippingSettingsData?.shipping_zones as ShippingZone[] | undefined) ?? [];
 
   const editingMethod = shippingZones
     .flatMap((zone) => zone.shipping_methods || [])
-    .find((method) => method.id === methodIdParam);
+    .find((method) => method.id === methodId);
 
   const methodExists = shippingZones.some((zone) =>
     zone.shipping_methods?.some((method) => method.id === methodId),
@@ -88,15 +83,30 @@ const ShippingDeliveryMethod = () => {
 
   const breadcrumbs: SettingsBreadcrumb[] = [
     { label: __('Shipping', 'kirki-ecommerce'), to: ShippingRoutes.buildLink() },
-    ...(isDefined(zoneIdParam)
-      ? [
-          {
-            label: parentZone?.title ?? __('Zone', 'kirki-ecommerce'),
-            to: ShippingRoutes.get('ShippingZone').buildLink({ zone_Id: zoneIdParam }),
-          },
-        ]
-      : []),
+    {
+      label: parentZone?.title ?? __('Zone', 'kirki-ecommerce'),
+      to: ShippingRoutes.get('ShippingZone').buildLink({ zone_id: zoneIdParam ?? '' }),
+    },
   ];
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!parentZone) {
+      toast.error(__('Shipping zone not found', 'kirki-ecommerce'));
+      void navigate(ShippingRoutes.buildLink(), { replace: true });
+      return;
+    }
+
+    if (!methodId) {
+      toast.error(__('Shipping method not found', 'kirki-ecommerce'));
+      void navigate(ShippingRoutes.get('ShippingZone').buildLink({ zone_id: parentZone.id }), {
+        replace: true,
+      });
+    }
+  }, [isLoading, parentZone, methodId, navigate]);
 
   useEffect(() => {
     if (!editingMethod) {
@@ -107,8 +117,13 @@ const ShippingDeliveryMethod = () => {
   }, [editingMethod?.id]);
 
   const handleSave = async (payload: ShippingMethodFormPayload) => {
+    if (!isDefined(zoneIdParam)) {
+      return;
+    }
+
     const shippingMethod: ShippingMethodData = {
       ...payload,
+      zoneId: zoneIdParam,
       id: methodId,
       is_enabled: editingMethod?.is_enabled ?? true,
       shipping_rules: editingMethod?.shipping_rules ?? [],
@@ -148,11 +163,10 @@ const ShippingDeliveryMethod = () => {
           : __('Shipping method created', 'kirki-ecommerce'),
       );
       form.reset(payload);
-      void navigate(
-        `${ShippingRoutes.get('ShippingDeliveryMethod').buildLink()}?methodId=${methodId}&zoneId=${zoneIdParam}`,
-      );
     } catch (error) {
-      const zoneIndex = updatedShippingZones.findIndex((zone) => String(zone.id) === String(zoneIdParam));
+      const zoneIndex = updatedShippingZones.findIndex(
+        (zone) => String(zone.id) === String(zoneIdParam),
+      );
       const methodIndex = updatedShippingZones[zoneIndex]?.shipping_methods.findIndex(
         (method) => method.id === shippingMethod.id,
       );
@@ -176,7 +190,7 @@ const ShippingDeliveryMethod = () => {
     onDiscard: handleDiscardData,
   });
 
-  return !isLoading ? (
+  return !isLoading && parentZone && methodId ? (
     <Container size="sm">
       <Form {...form}>
         <Flex direction="column" gap={4}>

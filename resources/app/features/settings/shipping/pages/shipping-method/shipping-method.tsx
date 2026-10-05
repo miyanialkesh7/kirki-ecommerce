@@ -31,9 +31,13 @@ import type { ShippingSettings } from '@/schemas/catalog/settings';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
+import { uuid } from '@/utils';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
-const ShippingRoutes = RouteConfig.Settings.get('ShippingSettings');
+const ShippingMethodRoute = RouteConfig.Settings.get('ShippingSettings')
+  .get('ShippingZone')
+  .get('ShippingDeliveryMethod');
 
 type ShippingMethodProps = {
   shippingSettingsData: ShippingSettings | null | undefined;
@@ -95,17 +99,14 @@ export const ShippingMethod = ({
   };
 
   const handleEditDeliveryMethod = (item: ShippingMethodData) => {
-    void navigate(
-      `${ShippingRoutes.get('ShippingDeliveryMethod').buildLink()}?methodId=${item.id}&zoneId=${item.zoneId}`,
-    );
+    void navigate(ShippingMethodRoute.buildLink({ zone_id: item.zoneId, method_id: item.id }));
   };
 
   const handleAddMethod = () => {
-    if (zoneId !== undefined && zoneId !== null) {
-      void navigate(`${ShippingRoutes.get('ShippingDeliveryMethod').buildLink()}?zoneId=${zoneId}`);
+    if (!isDefined(zoneId)) {
       return;
     }
-    void navigate(ShippingRoutes.get('ShippingDeliveryMethod').buildLink());
+    void navigate(ShippingMethodRoute.buildLink({ zone_id: zoneId, method_id: uuid() }));
   };
 
   return (

@@ -38,7 +38,7 @@ const ShippingZoneActions = ({
   const handleEditAndDelete = (action: string, item: ShippingZone) => {
     if (action === 'edit') {
       confirmAction({
-        action: () => navigate(ShippingRoutes.get('ShippingZone').buildLink({ zone_Id: item.id })),
+        action: () => navigate(ShippingRoutes.get('ShippingZone').buildLink({ zone_id: item.id })),
       });
     } else {
       setUnsavedDataStatus(true);
