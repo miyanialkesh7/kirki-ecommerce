@@ -14,6 +14,7 @@ use Kirki\Ecommerce\App\Hooks\Filters\ValidateLoginConsents;
 use Kirki\Ecommerce\App\Hooks\Filters\ValidateRegisterConsents;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\AttachCustomerToNewWordPressUser;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\EnqueueAdminScripts;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\RedirectToOnboarding;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\RemoveDuplicateSubmenu;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\SendCustomerNewAccountEmail;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\SMTPConfig;
@@ -31,6 +32,7 @@ return [
         EnqueueAdminScripts::class,
         EnqueueSiteScripts::class,
         RemoveDuplicateSubmenu::class,
+        RedirectToOnboarding::class,
         RegisterRestApi::class,
         AddWpHeadMeta::class,
         SMTPConfig::class,

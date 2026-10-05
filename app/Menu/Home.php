@@ -6,7 +6,7 @@ use Kirki\Ecommerce\Framework\Wordpress\Constants\MenuTypes;
 use Kirki\Ecommerce\Framework\Wordpress\Menu;
 
 /**
- * Registers the Home submenu, which currently points at the products page.
+ * Registers the Home submenu, which opens the dashboard's Home page.
  *
  * @since 1.0.0
  */
@@ -19,7 +19,7 @@ class Home extends Menu
     protected $capabilities = 'manage_options';
 
     /** @inheritDoc */
-    protected $menu_slug = 'kirki-ecommerce#/products';
+    protected $menu_slug = 'kirki-ecommerce#/';
 
     /** @inheritDoc */
     protected $parent_slug = 'kirki-ecommerce';
@@ -35,26 +35,5 @@ class Home extends Menu
         $this->menu_title = __('Home', 'kirki-ecommerce');
 
         parent::__construct();
-    }
-
-    /**
-     * Register the submenu page, then hide the first submenu item with an inline admin style.
-     *
-     * @since 1.0.0
-     *
-     * @return void
-     */
-    public function render()
-    {
-        parent::render();
-
-        // @todo: will be removed after the home menu is back
-        add_action('admin_head', function () {
-            echo '<style>
-                #toplevel_page_kirki-ecommerce > ul.wp-submenu > li.wp-first-item {
-                    display: none;
-                }
-            </style>';
-        });
     }
 }

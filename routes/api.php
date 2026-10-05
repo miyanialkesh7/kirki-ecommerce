@@ -10,6 +10,7 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\OrderCalculationController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CategoryController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OfflinePaymentController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnboardingController;
+use Kirki\Ecommerce\App\Http\Controllers\Api\SetupChecklistController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnlinePaymentController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\PaymentMethodController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\VariantController;
@@ -51,6 +52,11 @@ Route::get('/payment/webhook/{provider_id}', [WebhookController::class, 'handle_
 Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], function () {
     // Onboarding
     Route::post('/onboarding', [OnboardingController::class, 'store']);
+    Route::post('/onboarding/sample-data', [OnboardingController::class, 'import_sample_data']);
+
+    // Setup Checklist
+    Route::get('/setup-checklist', [SetupChecklistController::class, 'index']);
+    Route::post('/setup-checklist/{step}/complete', [SetupChecklistController::class, 'complete']);
 
     // App Config
     Route::get('/app-config', [AppConfigController::class, 'get']);
@@ -237,6 +243,7 @@ Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], 
     Route::get('/offline-payments/{id}', [OfflinePaymentController::class, 'show']);
     Route::post('/offline-payments', [OfflinePaymentController::class, 'create']);
     Route::put('/offline-payments/{id}', [OfflinePaymentController::class, 'update']);
+    Route::patch('/offline-payments/{id}', [OfflinePaymentController::class, 'set_enabled']);
     Route::delete('/offline-payments/{id}', [OfflinePaymentController::class, 'delete']);
 });
 

@@ -76,6 +76,18 @@ const setEnabledOnlinePayment = ({
     .then((response) => parseResponse(z.boolean(), response));
 };
 
+const setEnabledOfflinePayment = ({
+  id,
+  data,
+}: {
+  id: string | number;
+  data: { is_enabled: boolean };
+}) => {
+  return apiClient
+    .patch(endpoints.OFFLINE_PAYMENT(id), data)
+    .then((response) => parseResponse(z.boolean(), response));
+};
+
 const getOfflinePayments = () => {
   return apiClient
     .get(endpoints.OFFLINE_PAYMENTS)
@@ -221,6 +233,21 @@ const useUpdateOfflinePaymentMutation = () => {
   });
 };
 
+const useSetEnabledOfflinePaymentMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setEnabledOfflinePayment,
+    onSuccess(response) {
+      toastMutationSuccess(response.message || __('Payment method updated', 'kirki-ecommerce'));
+      void queryClient.invalidateQueries({ queryKey: paymentKeys.offline.all });
+      void queryClient.invalidateQueries({ queryKey: paymentKeys.methods.all });
+    },
+    onError(error) {
+      toastMutationError(error);
+    },
+  });
+};
+
 const useDeleteOfflinePaymentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -245,6 +272,7 @@ export {
   getOnlinePayments,
   getPaymentMethods,
   installOnlinePayment,
+  setEnabledOfflinePayment,
   setEnabledOnlinePayment,
   updateOfflinePayment,
   updateOnlinePayment,
@@ -256,6 +284,7 @@ export {
   useOnlinePaymentQuery,
   useOnlinePaymentsQuery,
   usePaymentMethodsQuery,
+  useSetEnabledOfflinePaymentMutation,
   useSetEnabledOnlinePaymentMutation,
   useUpdateOfflinePaymentMutation,
   useUpdateOnlinePaymentMutation,

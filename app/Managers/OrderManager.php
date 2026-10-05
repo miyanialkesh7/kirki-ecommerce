@@ -623,7 +623,11 @@ class OrderManager
     }
 
     /**
-     * Set the payment metadata of an order.
+     * Save a gateway's payment data on an order without replacing the order's provider snapshot.
+     *
+     * The data is stored under the `gateway` key of the order's payment metadata, next to the
+     * `payment_provider` snapshot written when the order was placed. A payload that is not valid
+     * JSON is stored as the given string.
      *
      * @since 1.0.0
      *
@@ -633,7 +637,18 @@ class OrderManager
      */
     public function set_payment_metadata(int $id, string $payment_metadata)
     {
-        return $this->order_service->partial_update_order($id, ['payment_metadata' => $payment_metadata]);
+        $order = $this->order_service->find_order($id);
+
+        if (!$order) {
+            return false;
+        }
+
+        $stored = is_array($order->payment_metadata) ? $order->payment_metadata : [];
+        $gateway = json_decode($payment_metadata, true);
+
+        $stored['gateway'] = $gateway === null ? $payment_metadata : $gateway;
+
+        return $this->order_service->partial_update_order($id, ['payment_metadata' => $stored]);
     }
 
     /**

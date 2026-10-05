@@ -14,7 +14,7 @@ http:
       {
         "data": {
           "merchant_code": "263100000",
-          "signature_key": "sq7HjrUOBfKmC576",
+          "signature_key": "<signature_key>",
           "terminal": 9,
           "sandbox": true
         }
@@ -40,7 +40,7 @@ examples:
           {
             "data": {
               "merchant_code": "263100000",
-              "signature_key": "sq7HjrUOBfKmC576",
+              "signature_key": "<signature_key>",
               "terminal":9,
               "sandbox": true
             }
@@ -64,7 +64,7 @@ examples:
               "description": "Redsys payment gateway",
               "settings": {
                 "merchant_code": "263100000",
-                "signature_key": "sq7HjrUOBfKmC576",
+                "signature_key": "<signature_key>",
                 "termianl": 9,
                 "sandbox": true
               },
@@ -113,7 +113,7 @@ examples:
           {
            "data": {
               "merchant_code": "263100000",
-              "signature_key": "sq7HjrUOBfKmC576",
+              "signature_key": "<signature_key>",
               "terminal":9,
               "sandbox": true
             }

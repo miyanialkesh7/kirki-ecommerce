@@ -24,6 +24,8 @@ class AdminApiAccessTest extends RestTestCase
             'install payment add-on' => ['POST', 'online-payments/install'],
             'create product' => ['POST', 'products'],
             'app config' => ['GET', 'app-config'],
+            'setup checklist' => ['GET', 'setup-checklist'],
+            'complete setup step' => ['POST', 'setup-checklist/tax/complete'],
         ];
     }
 

@@ -4,7 +4,9 @@ namespace Kirki\Ecommerce\Tests\Unit\Payment;
 
 use Exception;
 use Kirki\Ecommerce\App\Constants\Order\PaymentStatus;
+use Kirki\Ecommerce\App\Managers\MoneyManager;
 use Kirki\Ecommerce\App\Managers\OrderManager;
+use Kirki\Ecommerce\App\Constants\Order\RefundStatus;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Payment\Providers\PayPal;
 use Kirki\Ecommerce\Framework\Container;
@@ -20,7 +22,7 @@ class PayPalWebhookTest extends TestCase
         'HTTP_PAYPAL_TRANSMISSION_TIME' => '2026-01-01T00:00:00Z',
     ];
 
-    const CAPTURE_COMPLETED_PAYLOAD = '{"event_type":"PAYMENT.CAPTURE.COMPLETED","links":[],"resource":{"id":"CAPTURE-1","custom_id":"7","supplementary_data":{"related_ids":{"order_id":"PAYPAL-ORDER-1"}},"metadata":{}}}';
+    const CAPTURE_COMPLETED_PAYLOAD = '{"event_type":"PAYMENT.CAPTURE.COMPLETED","links":[],"resource":{"id":"CAPTURE-1","custom_id":"7","amount":{"currency_code":"USD","value":"50.00"},"supplementary_data":{"related_ids":{"order_id":"PAYPAL-ORDER-1"}},"metadata":{}}}';
 
     protected $http_calls;
 
@@ -28,7 +30,17 @@ class PayPalWebhookTest extends TestCase
 
     protected $verification_response;
 
+    protected $capture_response;
+
     protected $order;
+
+    protected $refund;
+
+    protected $db_calls;
+
+    protected $fail_on;
+
+    protected $provider;
 
     protected function setUp(): void
     {
@@ -36,11 +48,16 @@ class PayPalWebhookTest extends TestCase
 
         $this->http_calls = [];
         $this->order_calls = [];
+        $this->db_calls = [];
+        $this->fail_on = null;
+        $this->refund = null;
         $this->verification_response = ['status' => 200, 'body' => ['verification_status' => 'SUCCESS']];
+        $this->capture_response = ['status' => 201, 'body' => ['status' => 'COMPLETED']];
         $this->order = new Order();
         $this->order->id = 7;
         $this->order->payment_status = PaymentStatus::UNPAID;
         $this->order->currency_code = 'USD';
+        $this->order->invoiced_total = 5000;
 
         $this->bind_fakes();
     }
@@ -65,6 +82,8 @@ class PayPalWebhookTest extends TestCase
 
             protected $body = null;
 
+            protected $headers = [];
+
             public function __construct($test)
             {
                 $this->test = $test;
@@ -72,6 +91,8 @@ class PayPalWebhookTest extends TestCase
 
             public function with_headers(array $headers)
             {
+                $this->headers = array_merge($this->headers, $headers);
+
                 return $this;
             }
 
@@ -101,7 +122,7 @@ class PayPalWebhookTest extends TestCase
 
             public function post(string $url, array $data = [])
             {
-                $this->test->record_http_call($url, $this->bearer_token, $this->body);
+                $this->test->record_http_call($url, $this->bearer_token, $this->body, $this->headers);
 
                 return $this->test->respond_to($url);
             }
@@ -121,23 +142,58 @@ class PayPalWebhookTest extends TestCase
             }
         };
 
-        $container = new Container();
+        $this->bind_money_dependencies();
+
+        $container = Container::get_instance();
         $container->instance('app', $container);
         $container->bind('client-request', fn() => $http);
         $container->bind(OrderManager::class, fn() => $orders);
+        $container->bind('money', fn() => new MoneyManager());
+        $container->bind('db', fn() => new class($test) {
+            protected $test;
+
+            public function __construct($test)
+            {
+                $this->test = $test;
+            }
+
+            public function begin_transaction()
+            {
+                $this->test->record_db_call('begin');
+            }
+
+            public function commit()
+            {
+                $this->test->record_db_call('commit');
+            }
+
+            public function rollback()
+            {
+                $this->test->record_db_call('rollback');
+            }
+        });
 
         $this->set_container_instance($container);
     }
 
-    public function record_http_call(string $url, $bearer_token, $body): void
+    public function record_db_call(string $call): void
     {
-        $this->http_calls[] = ['url' => $url, 'bearer_token' => $bearer_token, 'body' => $body];
+        $this->db_calls[] = $call;
+    }
+
+    public function record_http_call(string $url, $bearer_token, $body, array $headers = []): void
+    {
+        $this->http_calls[] = ['url' => $url, 'bearer_token' => $bearer_token, 'body' => $body, 'headers' => $headers];
     }
 
     public function respond_to(string $url)
     {
         if (strpos($url, '/v1/oauth2/token') !== false) {
             return $this->make_response(200, ['access_token' => 'token-123']);
+        }
+
+        if (strpos($url, '/capture') !== false && strpos($url, '/refund') === false) {
+            return $this->make_response($this->capture_response['status'], $this->capture_response['body']);
         }
 
         if ($this->verification_response instanceof Exception) {
@@ -151,8 +207,20 @@ class PayPalWebhookTest extends TestCase
     {
         $this->order_calls[] = $method;
 
+        if ($method === $this->fail_on) {
+            throw new Exception('boom');
+        }
+
         if ($method === 'find_by_transaction_id') {
             return $this->order;
+        }
+
+        if ($method === 'mark_payment_as_paid') {
+            $this->order->payment_status = PaymentStatus::PAID;
+        }
+
+        if ($method === 'get_refund') {
+            return $this->refund;
         }
 
         return null;
@@ -202,8 +270,15 @@ class PayPalWebhookTest extends TestCase
         $provider = new class extends PayPal {
             public $body = '';
 
+            public $logs = [];
+
             public function __construct()
             {
+            }
+
+            protected function log_error($message)
+            {
+                $this->logs[] = $message;
             }
 
             protected function get_request_body()
@@ -213,6 +288,7 @@ class PayPalWebhookTest extends TestCase
         };
 
         $provider->body = $payload;
+        $this->provider = $provider;
 
         $settings = array_merge([
             'is_enabled' => true,
@@ -388,5 +464,220 @@ class PayPalWebhookTest extends TestCase
         $this->assertSame('c2lnbmF0dXJl+/=', $sent['transmission_sig']);
         $this->assertSame('2026-01-01T00:00:00Z', $sent['transmission_time']);
         $this->assertSame('PAYMENT.CAPTURE.COMPLETED', $sent['webhook_event']['event_type']);
+    }
+
+    protected function capture_payload(string $value, string $currency = 'USD'): string
+    {
+        return json_encode([
+            'id' => 'WH-EVT-1',
+            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
+            'resource' => [
+                'id' => 'CAPTURE-1',
+                'custom_id' => '7',
+                'amount' => ['currency_code' => $currency, 'value' => $value],
+                'supplementary_data' => ['related_ids' => ['order_id' => 'PAYPAL-ORDER-1']],
+            ],
+        ]);
+    }
+
+    protected function approved_payload(): string
+    {
+        return '{"id":"WH-EVT-3","event_type":"CHECKOUT.ORDER.APPROVED","resource":{"id":"PAYPAL-ORDER-1"}}';
+    }
+
+    protected function refunded_payload(): string
+    {
+        return '{"id":"WH-EVT-4","event_type":"PAYMENT.CAPTURE.REFUNDED","resource":{"id":"REFUND-1","status":"COMPLETED","custom_id":"12","links":[{"rel":"up","href":"https://api.sandbox.paypal.com/v2/payments/captures/CAPTURE-1"}]}}';
+    }
+
+    protected function capture_calls(): array
+    {
+        return array_values(array_filter($this->http_calls, function ($call) {
+            return strpos($call['url'], '/v2/checkout/orders/PAYPAL-ORDER-1/capture') !== false;
+        }));
+    }
+
+    protected function make_refund(string $status, ?string $refund_id): object
+    {
+        return new class($status, $refund_id) {
+            public $id = 12;
+
+            public $order_id = 7;
+
+            public $invoiced_amount = 5000;
+
+            public $status;
+
+            public $refund_id;
+
+            public function __construct($status, $refund_id)
+            {
+                $this->status = $status;
+                $this->refund_id = $refund_id;
+            }
+
+            public function to_array()
+            {
+                return ['id' => $this->id, 'order_id' => $this->order_id, 'status' => $this->status, 'refund_id' => $this->refund_id];
+            }
+        };
+    }
+
+    public function test_it_pays_the_order_and_commits_when_the_captured_amount_matches(): void
+    {
+        $this->send_signature_headers();
+
+        $this->assertTrue($this->make_provider($this->capture_payload('50.00'))->webhook());
+
+        $this->assertContains('mark_payment_as_paid', $this->order_calls);
+        $this->assertNotContains('mark_as_on_hold', $this->order_calls);
+        $this->assertSame(['begin', 'commit'], $this->db_calls);
+        $this->assertSame([], $this->provider->logs);
+    }
+
+    public function test_it_does_not_pay_the_order_when_the_captured_amount_is_lower(): void
+    {
+        $this->send_signature_headers();
+
+        $this->assertTrue($this->make_provider($this->capture_payload('49.99'))->webhook());
+
+        $this->assertNotContains('mark_payment_as_paid', $this->order_calls);
+        $this->assertContains('mark_as_on_hold', $this->order_calls);
+        $this->assertContains('set_payment_metadata', $this->order_calls);
+        $this->assertCount(1, $this->provider->logs);
+        $this->assertStringContainsString('does not match order 7', $this->provider->logs[0]);
+    }
+
+    public function test_it_does_not_pay_the_order_when_the_captured_currency_differs(): void
+    {
+        $this->send_signature_headers();
+
+        $this->assertTrue($this->make_provider($this->capture_payload('50.00', 'EUR'))->webhook());
+
+        $this->assertNotContains('mark_payment_as_paid', $this->order_calls);
+        $this->assertContains('mark_as_on_hold', $this->order_calls);
+    }
+
+    public function test_it_does_not_pay_the_order_when_the_capture_has_no_amount(): void
+    {
+        $this->send_signature_headers();
+
+        $payload = '{"id":"WH-EVT-1","event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"CAPTURE-1","custom_id":"7","supplementary_data":{"related_ids":{"order_id":"PAYPAL-ORDER-1"}}}}';
+
+        $this->assertTrue($this->make_provider($payload)->webhook());
+
+        $this->assertNotContains('mark_payment_as_paid', $this->order_calls);
+        $this->assertContains('mark_as_on_hold', $this->order_calls);
+    }
+
+    public function test_it_does_not_hold_an_already_paid_order_for_a_later_mismatched_capture(): void
+    {
+        $this->send_signature_headers();
+        $this->order->payment_status = PaymentStatus::PAID;
+
+        $this->assertTrue($this->make_provider($this->capture_payload('1.00'))->webhook());
+
+        $this->assertNotContains('mark_as_on_hold', $this->order_calls);
+        $this->assertNotContains('mark_payment_as_paid', $this->order_calls);
+    }
+
+    public function test_it_pays_the_order_once_when_capture_completed_is_delivered_twice(): void
+    {
+        $this->send_signature_headers();
+
+        $this->assertTrue($this->make_provider($this->capture_payload('50.00'))->webhook());
+        $this->assertTrue($this->make_provider($this->capture_payload('50.00'))->webhook());
+
+        $this->assertCount(1, array_keys($this->order_calls, 'mark_payment_as_paid', true));
+        $this->assertCount(1, array_keys($this->order_calls, 'set_payment_metadata', true));
+    }
+
+    public function test_it_captures_an_approved_order(): void
+    {
+        $this->send_signature_headers();
+
+        $this->assertTrue($this->make_provider($this->approved_payload())->webhook());
+
+        $this->assertCount(1, $this->capture_calls());
+        $this->assertSame([], $this->db_calls);
+    }
+
+    public function test_it_accepts_an_approval_event_for_an_order_paypal_already_captured(): void
+    {
+        $this->send_signature_headers();
+        $this->capture_response = ['status' => 422, 'body' => ['name' => 'UNPROCESSABLE_ENTITY', 'details' => [['issue' => 'ORDER_ALREADY_CAPTURED']]]];
+
+        $this->assertTrue($this->make_provider($this->approved_payload())->webhook());
+
+        $this->assertSame([], $this->provider->logs);
+    }
+
+    public function test_it_skips_the_capture_when_the_order_is_already_paid(): void
+    {
+        $this->send_signature_headers();
+        $this->order->payment_status = PaymentStatus::PAID;
+
+        $this->assertTrue($this->make_provider($this->approved_payload())->webhook());
+
+        $this->assertSame([], $this->capture_calls());
+    }
+
+    public function test_it_rejects_and_logs_an_approval_event_when_the_capture_fails_for_another_reason(): void
+    {
+        $this->send_signature_headers();
+        $this->capture_response = ['status' => 422, 'body' => ['name' => 'UNPROCESSABLE_ENTITY', 'details' => [['issue' => 'INSTRUMENT_DECLINED']]]];
+
+        $this->assertFalse($this->make_provider($this->approved_payload())->webhook());
+
+        $this->assertCount(1, $this->provider->logs);
+        $this->assertStringContainsString('CHECKOUT.ORDER.APPROVED', $this->provider->logs[0]);
+        $this->assertStringContainsString('WH-EVT-3', $this->provider->logs[0]);
+    }
+
+    public function test_it_completes_a_pending_refund_once(): void
+    {
+        $this->send_signature_headers();
+        $this->refund = $this->make_refund(RefundStatus::PENDING, null);
+
+        $this->assertTrue($this->make_provider($this->refunded_payload())->webhook());
+
+        $this->assertCount(1, array_keys($this->order_calls, 'update_refund', true));
+    }
+
+    public function test_it_ignores_a_refund_completed_event_for_a_refund_already_completed(): void
+    {
+        $this->send_signature_headers();
+        $this->refund = $this->make_refund(RefundStatus::COMPLETED, 'REFUND-1');
+
+        $this->assertTrue($this->make_provider($this->refunded_payload())->webhook());
+
+        $this->assertNotContains('update_refund', $this->order_calls);
+    }
+
+    public function test_it_rolls_back_and_logs_when_handling_fails_part_way(): void
+    {
+        $this->send_signature_headers();
+        $this->fail_on = 'mark_payment_as_paid';
+
+        $this->assertFalse($this->make_provider($this->capture_payload('50.00'))->webhook());
+
+        $this->assertSame(['begin', 'rollback'], $this->db_calls);
+        $this->assertCount(1, $this->provider->logs);
+        $this->assertStringContainsString('PAYMENT.CAPTURE.COMPLETED', $this->provider->logs[0]);
+        $this->assertStringContainsString('WH-EVT-1', $this->provider->logs[0]);
+        $this->assertStringContainsString('boom', $this->provider->logs[0]);
+        $this->assertStringNotContainsString('WH-123', $this->provider->logs[0]);
+        $this->assertStringNotContainsString('CAPTURE-1', $this->provider->logs[0]);
+    }
+
+    public function test_it_ignores_an_event_type_it_does_not_handle(): void
+    {
+        $this->send_signature_headers();
+
+        $this->assertTrue($this->make_provider('{"id":"WH-EVT-9","event_type":"BILLING.SUBSCRIPTION.CREATED","resource":{}}')->webhook());
+
+        $this->assert_order_untouched();
+        $this->assertSame([], $this->db_calls);
+        $this->assertSame([], $this->capture_calls());
     }
 }

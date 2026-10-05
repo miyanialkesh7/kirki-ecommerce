@@ -45,7 +45,7 @@ class OfflinePaymentService
      */
     public function get()
     {
-        return collection($this->settings->get('offline_payments') ?? [])
+        return collection($this->offline_payments())
             ->map(fn($offline_payment) => PaymentProvider::from_offline($offline_payment))
             ->values();
     }
@@ -60,9 +60,7 @@ class OfflinePaymentService
      */
     public function find(string $id)
     {
-        $offline_payments = $this->settings->get('offline_payments');
-
-        foreach ($offline_payments as $offline_payment) {
+        foreach ($this->offline_payments() as $offline_payment) {
             if ($offline_payment['id'] === $id) {
                 return PaymentProvider::from_offline($offline_payment);
             }
@@ -101,7 +99,7 @@ class OfflinePaymentService
      */
     public function create(CreateOfflinePaymentDTO $data)
     {
-        $offline_payments = $this->settings->get('offline_payments');
+        $offline_payments = $this->offline_payments();
 
         $data->id = empty($data->id) ? Str::uuid() : $data->id;
 
@@ -121,23 +119,54 @@ class OfflinePaymentService
      *
      * @param UpdateOfflinePaymentDTO $data Offline payment method data, including the ID of the method to replace.
      * @return PaymentProvider
+     * @throws NotFoundException When no method has that ID.
      */
     public function update(UpdateOfflinePaymentDTO $data)
     {
-        $offline_payments = $this->settings->get('offline_payments');
+        $offline_payments = $this->offline_payments();
 
         foreach ($offline_payments as $key => $offline_payment) {
             if ($offline_payment['id'] === $data->id) {
                 $offline_payments[$key] = $data->to_array();
-                break;
+
+                $this->settings->set([
+                    'offline_payments' => $offline_payments,
+                ]);
+
+                return PaymentProvider::from_offline($data->to_array());
             }
         }
 
-        $this->settings->set([
-            'offline_payments' => $offline_payments,
-        ]);
+        throw_anyway(__('Payment method not found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
+    }
 
-        return PaymentProvider::from_offline($data->to_array());
+    /**
+     * Enable or disable an offline payment provider, leaving its other fields untouched.
+     *
+     * @since 1.0.0
+     *
+     * @param string $id         Offline payment method ID.
+     * @param bool   $is_enabled Whether the method should be enabled.
+     * @return bool Always true.
+     * @throws NotFoundException When no method has that ID.
+     */
+    public function set_enabled(string $id, bool $is_enabled)
+    {
+        $offline_payments = $this->offline_payments();
+
+        foreach ($offline_payments as $key => $offline_payment) {
+            if ($offline_payment['id'] === $id) {
+                $offline_payments[$key]['is_enabled'] = $is_enabled;
+
+                $this->settings->set([
+                    'offline_payments' => $offline_payments,
+                ]);
+
+                return true;
+            }
+        }
+
+        throw_anyway(__('Payment method not found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
     }
 
     /**
@@ -151,7 +180,7 @@ class OfflinePaymentService
      */
     public function delete(string $id)
     {
-        $offline_payments = $this->settings->get('offline_payments');
+        $offline_payments = $this->offline_payments();
 
         foreach ($offline_payments as $key => $offline_payment) {
             if ($offline_payment['id'] === $id) {
@@ -164,5 +193,17 @@ class OfflinePaymentService
         }
 
         throw_anyway(__('Payment method not found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
+    }
+
+    /**
+     * Get the stored offline payment methods, or an empty list when none were ever saved.
+     *
+     * @since 1.0.0
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function offline_payments()
+    {
+        return $this->settings->get('offline_payments') ?? [];
     }
 }
