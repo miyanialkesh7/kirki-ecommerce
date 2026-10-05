@@ -1,6 +1,6 @@
 import { Edit3, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import HeaderActionsCard from '@/components/header-actions-card';
 import {
@@ -78,8 +78,7 @@ const resolveConditionDisplayValue = (
 };
 
 export const ShippingRules = ({ methodId }: ShippingRulesProps) => {
-  const [searchParams] = useSearchParams();
-  const zoneId = searchParams.get('zoneId');
+  const { zone_id: zoneId } = useParams();
 
   const [showAddCard, setShowAddCard] = useState(false);
   const [editingRuleIndex, setEditingRuleIndex] = useState<number | null>(null);

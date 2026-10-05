@@ -95,7 +95,9 @@ const settingsRoutes: RouteObject[] = [
         element: withSuspense(ShippingZone, <ShippingZoneSkeleton />),
       },
       {
-        path: SettingsRoutes.get('ShippingSettings').get('ShippingDeliveryMethod').template,
+        path: SettingsRoutes.get('ShippingSettings')
+          .get('ShippingZone')
+          .get('ShippingDeliveryMethod').template,
         element: withSuspense(ShippingDeliveryMethod, <ShippingDeliveryMethodSkeleton />),
       },
       {

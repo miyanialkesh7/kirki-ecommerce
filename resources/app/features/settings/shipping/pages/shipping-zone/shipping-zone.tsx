@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
+import { toast } from 'sonner';
 
 import RegionsField from '@/components/form/regions-field';
 import TextField from '@/components/form/text-field';
@@ -30,8 +31,8 @@ import { mergeRegionsByCountry } from '@/utils/region';
 import { __ } from '@/wpi18n';
 
 const ShippingZonePage = () => {
-  const { zone_Id } = useParams();
-  const zoneId = zone_Id;
+  const { zone_id: zoneId } = useParams();
+  const navigate = useNavigate();
 
   const [shippingZonesObj, setShippingZonesObj] = useState<ShippingZone[]>([]);
 
@@ -72,6 +73,14 @@ const ShippingZonePage = () => {
       return acc;
     }, {});
   }, [shippingZonesObj]);
+
+  useEffect(() => {
+    if (isLoading || activeZone) {
+      return;
+    }
+    toast.error(__('Shipping zone not found', 'kirki-ecommerce'));
+    void navigate(RouteConfig.Settings.get('ShippingSettings').buildLink(), { replace: true });
+  }, [isLoading, activeZone, navigate]);
 
   useEffect(() => {
     if (!zones.length) {
@@ -120,7 +129,7 @@ const ShippingZonePage = () => {
 
   return (
     <>
-      {!isLoading ? (
+      {!isLoading && activeZone ? (
         <Container size="sm">
           <Form {...form}>
             <Flex direction="column" gap={4}>
@@ -153,7 +162,7 @@ const ShippingZonePage = () => {
 
               <ShippingMethod
                 shippingSettingsData={shippingSettingsData}
-                shippingMethodList={activeZone ? shippingMethodList[activeZone.id] || [] : []}
+                shippingMethodList={shippingMethodList[activeZone.id] || []}
                 shippingZonesObj={shippingZonesObj}
                 setShippingZonesObj={setShippingZonesObj}
                 zoneId={zoneId}
