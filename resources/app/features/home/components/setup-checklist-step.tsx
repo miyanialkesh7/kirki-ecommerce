@@ -124,6 +124,9 @@ const styles = defineStyles({
     '& h3': {
       padding: `${theme.spacing[4]} ${theme.spacing[6]}`,
     },
+    '&:hover h3[data-state="closed"]': {
+      backgroundColor: theme.colors.background.solidSurfaceAlt,
+    },
   },
   header: {
     padding: `${theme.spacing[6]} ${theme.spacing[8]}`,
