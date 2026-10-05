@@ -68,6 +68,7 @@ class OrderResource extends Resource
             'is_refund_initiated' => $this->is_refund_initiated,
             'is_manual' => $this->is_manual,
             'currency_code' => $this->currency_code,
+            'is_inclusive_tax' => $is_inclusive_tax,
 
             'pricing' => [
                 'invoiced_items_subtotal_money_object' => Money::prepare_amount_object_from_minor($invoiced_items_subtotal_display, $this->currency_code),
