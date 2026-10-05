@@ -81,6 +81,7 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
     useInfiniteCouponsQuery({
       limit: PAGE_SIZE,
       search: debouncedSearch,
+      status: 'active',
       method: 'code',
     });
 
