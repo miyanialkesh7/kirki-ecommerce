@@ -166,7 +166,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
                       {__('Add', 'kirki-ecommerce')}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" cssOverride={{ width: 'max-content' }}>
                     <DropdownMenuItem onSelect={() => setIsOnlineInstallDialogOpen(true)}>
                       {__('Payment Gateways', 'kirki-ecommerce')}
                     </DropdownMenuItem>
