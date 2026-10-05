@@ -13,6 +13,7 @@ import { useWordpressMedia } from '@/hooks';
 import { getPortalContainer } from '@/libs/portal-container';
 import { theme } from '@/theme';
 import { defineStyles, mergeCss, scopedMerge } from '@/theme/mixins';
+import { isTinyMceFloatPanelNode } from '@/utils/richtext';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -72,7 +73,9 @@ const DialogContent = forwardRef<ComponentRef<typeof DialogPrimitive.Content>, D
             rest.onEscapeKeyDown?.(event);
           }}
           onInteractOutside={(event) => {
-            if (isWpMediaNode(event.detail.originalEvent.target)) {
+            const target = event.detail.originalEvent.target;
+
+            if (isWpMediaNode(target) || isTinyMceFloatPanelNode(target)) {
               event.preventDefault();
               return;
             }
