@@ -41,7 +41,7 @@ class OfflinePaymentCreateRequest extends Request
             'icon' => Sanitizer::INT,
             'is_enabled' => Sanitizer::BOOL,
             'is_offline' => Sanitizer::BOOL,
-            'instructions' => Sanitizer::TEXT,
+            'instructions' => Sanitizer::RICH_TEXT,
             'config' => Sanitizer::ARRAY,
         ];
     }
