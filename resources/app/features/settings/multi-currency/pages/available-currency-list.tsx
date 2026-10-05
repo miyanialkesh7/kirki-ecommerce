@@ -195,15 +195,17 @@ export const AvailableCurrencyList = () => {
       <CardContent cssOverride={styles.innerCardContent}>
         <Flex justify="space-between" cssOverride={{ paddingBottom: theme.spacing[3] }}>
           <Text weight="semibold">{__('Available Currencies', 'kirki-ecommerce')}</Text>
-          <Button
-            variant="ghost"
-            loading={isSyncing}
-            disabled={isSyncing}
-            onClick={() => syncRates()}
-          >
-            <RefreshCcw size="12" />
-            <Text variant="tiny"> {__('Sync Now', 'kirki-ecommerce')}</Text>
-          </Button>
+          {currencyList.length > 1 && (
+            <Button
+              variant="ghost"
+              loading={isSyncing}
+              disabled={isSyncing}
+              onClick={() => syncRates()}
+            >
+              <RefreshCcw size="12" />
+              <Text variant="tiny"> {__('Sync Now', 'kirki-ecommerce')}</Text>
+            </Button>
+          )}
         </Flex>
         <StackedItems>
           {currencyList.map((item, index) => {
