@@ -4,7 +4,6 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 import Alert from '@/components/ui/alert';
-import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import {
   Command,
@@ -192,12 +191,9 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
                         >
                           <Flex justify="space-between" align="center" grow={1}>
                             <Flex direction="column">
-                              <Flex gap={2} align="center">
-                                <Text variant="small" weight="medium">
-                                  {coupon.code ?? coupon.title}
-                                </Text>
-                                <Badge variant="destructive">{__('status')}</Badge>
-                              </Flex>
+                              <Text variant="small" weight="medium">
+                                {coupon.code ?? coupon.title}
+                              </Text>
                               <Text variant="tiny" color="secondary">
                                 {getCouponSubtitle(coupon)}
                               </Text>
