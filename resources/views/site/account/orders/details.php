@@ -38,7 +38,7 @@ $shipping = $pricing['invoiced_shipping_amount_money_object'] ?? null;
 $total = $pricing['invoiced_total_money_object'] ?? null;
 $tax_lines = $pricing['tax_lines'] ?? [];
 $tax_total = $pricing['invoiced_tax_total_money_object'] ?? null;
-$is_tax_inclusive = Tax::is_tax_inclusive();
+$is_tax_inclusive = $order['is_inclusive_tax'] ?? false;
 
 
 $order_activities = $data['activities'] ?? [];
