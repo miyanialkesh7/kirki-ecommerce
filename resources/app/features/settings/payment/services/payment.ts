@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { endpoints } from '@/config/endpoints';
@@ -7,6 +7,7 @@ import {
   OfflinePaymentSchema,
   OnlinePaymentListSchema,
   OnlinePaymentSchema,
+  type PaymentMethod,
   PaymentMethodSchema,
 } from '@/features/settings/payment/schemas/catalog/payment';
 import type { OfflinePaymentFormPayload } from '@/features/settings/payment/schemas/forms/offline-payment-form';
@@ -116,6 +117,33 @@ const deleteOfflinePayment = (id: string | number) => {
   return apiClient.delete(endpoints.OFFLINE_PAYMENT(id)).then((response) => parseMessage(response));
 };
 
+const updatePaymentMethodsCache = async (
+  queryClient: QueryClient,
+  updater: (methods: PaymentMethod[]) => PaymentMethod[],
+) => {
+  await queryClient.cancelQueries({ queryKey: paymentKeys.methods.all });
+  const previous = queryClient.getQueryData<PaymentMethod[]>(paymentKeys.methods.all);
+  queryClient.setQueryData<PaymentMethod[]>(
+    paymentKeys.methods.all,
+    (methods) => methods && updater(methods),
+  );
+  return { previous };
+};
+
+const restorePaymentMethodsCache = (
+  queryClient: QueryClient,
+  previous: PaymentMethod[] | undefined,
+) => {
+  if (previous) {
+    queryClient.setQueryData<PaymentMethod[]>(paymentKeys.methods.all, previous);
+  }
+};
+
+const setMethodEnabled = (id: string | number, isEnabled: boolean) => {
+  return (methods: PaymentMethod[]) =>
+    methods.map((method) => (method.id === id ? { ...method, is_enabled: isEnabled } : method));
+};
+
 const usePaymentMethodsQuery = () => {
   return useQuery({
     queryKey: paymentKeys.methods.all,
@@ -192,12 +220,15 @@ const useSetEnabledOnlinePaymentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: setEnabledOnlinePayment,
+    onMutate({ id, data }) {
+      return updatePaymentMethodsCache(queryClient, setMethodEnabled(id, data.is_enabled));
+    },
     onSuccess(response) {
       toastMutationSuccess(response.message || __('Payment gateway updated', 'kirki-ecommerce'));
       void queryClient.invalidateQueries({ queryKey: paymentKeys.online.all });
-      void queryClient.invalidateQueries({ queryKey: paymentKeys.methods.all });
     },
-    onError(error) {
+    onError(error, _variables, context) {
+      restorePaymentMethodsCache(queryClient, context?.previous);
       toastMutationError(error);
     },
   });
@@ -237,12 +268,15 @@ const useSetEnabledOfflinePaymentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: setEnabledOfflinePayment,
+    onMutate({ id, data }) {
+      return updatePaymentMethodsCache(queryClient, setMethodEnabled(id, data.is_enabled));
+    },
     onSuccess(response) {
       toastMutationSuccess(response.message || __('Payment method updated', 'kirki-ecommerce'));
       void queryClient.invalidateQueries({ queryKey: paymentKeys.offline.all });
-      void queryClient.invalidateQueries({ queryKey: paymentKeys.methods.all });
     },
-    onError(error) {
+    onError(error, _variables, context) {
+      restorePaymentMethodsCache(queryClient, context?.previous);
       toastMutationError(error);
     },
   });
@@ -252,12 +286,17 @@ const useDeleteOfflinePaymentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteOfflinePayment,
+    onMutate(id) {
+      return updatePaymentMethodsCache(queryClient, (methods) =>
+        methods.filter((method) => method.id !== id),
+      );
+    },
     onSuccess(response) {
       toastMutationSuccess(response.message || __('Payment method deleted', 'kirki-ecommerce'));
       void queryClient.invalidateQueries({ queryKey: paymentKeys.offline.all });
-      void queryClient.invalidateQueries({ queryKey: paymentKeys.methods.all });
     },
-    onError(error) {
+    onError(error, _variables, context) {
+      restorePaymentMethodsCache(queryClient, context?.previous);
       toastMutationError(error);
     },
   });
