@@ -13,8 +13,8 @@ http:
     data: |-
       {
         "data": {
-          "secret_key": "sk_test_5bfmggTjrfYuGjpmy5N85bnq",
-          "webhook_secret_key": "whsk_WnQNj9pS3j9SXqzTqBAQW2Vc",
+          "secret_key": "<secret_key>",
+          "webhook_secret_key": "<webhook_secret_key>",
           "sandbox": true
         }
       }
@@ -38,8 +38,8 @@ examples:
         data: |-
           {
             "data": {
-              "secret_key": "sk_test_5bfmggTjrfYuGjpmy5N85bnq",
-               "webhook_secret_key": "whsk_WnQNj9pS3j9SXqzTqBAQW2Vc",
+              "secret_key": "<secret_key>",
+               "webhook_secret_key": "<webhook_secret_key>",
               "sandbox": true
             }
           }
@@ -61,8 +61,8 @@ examples:
               "is_offline": false,
               "description": "QuickPay payment gateway",
               "settings": {
-                "secret_key": "sk_test_5bfmggTjrfYuGjpmy5N85bnq",
-                 "webhook_secret_key": "whsk_WnQNj9pS3j9SXqzTqBAQW2Vc",
+                "secret_key": "<secret_key>",
+                 "webhook_secret_key": "<webhook_secret_key>",
                 "sandbox": true
               },
               "fields": [
@@ -98,8 +98,8 @@ examples:
         data: |-
           {
            "data": {
-              "secret_key": "sk_test_5bfmggTjrfYuGjpmy5N85bnq",
-              "webhook_secret_key": "whsk_WnQNj9pS3j9SXqzTqBAQW2Vc",
+              "secret_key": "<secret_key>",
+              "webhook_secret_key": "<webhook_secret_key>",
               "sandbox": true
             }
           }

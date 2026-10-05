@@ -7,22 +7,26 @@ use Kirki\Ecommerce\App\Constants\PageKeys;
 use Kirki\Ecommerce\Framework\Resource;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Models\Page;
-use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\App\Supports\Utils;
-use Kirki\Ecommerce\Framework\Contracts\SomoyInterface;
-use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 use Kirki\Ecommerce\Framework\Supports\MediaAttachment;
-use Kirki\Ecommerce\Framework\Supports\Somoy;
 
 use function Kirki\Ecommerce\Framework\collection;
-use function Kirki\Ecommerce\Framework\dd;
 
+/**
+ * API resource for a settings group, shaping the stored values per settings key.
+ *
+ * @since 1.0.0
+ */
 class SettingResource extends Resource
 {
     /**
      * Convert the setting resource to an array.
      *
-     * @return array The setting data as an associative array.
+     * Applies the formatter matching the settings key, and returns the stored values unchanged for other keys.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> The formatted settings values.
      */
     public function to_array()
     {
@@ -43,6 +47,7 @@ class SettingResource extends Resource
                 break;
             case OptionKeys::CURRENCY_SETTINGS:
                 $data = $this->get_currency_settings($data);
+                break;
             case OptionKeys::EMAIL_SETTINGS:
                 $data = $this->get_email_settings($data);
             default:
@@ -53,11 +58,14 @@ class SettingResource extends Resource
     }
 
     /**
-     * Get the shipping settings.
-     * 
-     * @param array $data
-     * 
-     * @return array
+     * Get the advanced settings.
+     *
+     * Replaces the stored page IDs with page details and an active, inactive or not-found status.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $data Stored advanced settings.
+     * @return array<string, mixed> Settings with the `pages` entry expanded.
      */
     protected function get_advanced_settings($data)
     {
@@ -107,10 +115,13 @@ class SettingResource extends Resource
 
     /**
      * Get the shipping settings.
-     * 
-     * @param array $data
-     * 
-     * @return array
+     *
+     * Converts stored minor-unit amounts of shipping methods and ranges to decimal amounts, each with a money object.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $data Stored shipping settings.
+     * @return array<string, mixed> Settings with the amounts converted.
      */
     protected function get_shipping_settings($data)
     {
@@ -147,10 +158,11 @@ class SettingResource extends Resource
 
     /**
      * Get the currency settings.
-     * 
-     * @param array $data
-     * 
-     * @return array
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $data Stored currency settings.
+     * @return array<string, mixed> Only the whitelisted currency format and exchange rate provider fields.
      */
     protected function get_currency_settings($data)
     {
@@ -181,15 +193,17 @@ class SettingResource extends Resource
 
     /**
      * Get the email settings.
-     * 
-     * @param array $data
-     * 
-     * @return array
+     *
+     * Resolves the header logo media attachment.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $data Stored email settings.
+     * @return array<string, mixed> Settings with the logo and shortcodes filled in.
      */
     protected function get_email_settings($data)
     {
         $header_logo = MediaAttachment::make($data['default_template']['logo'] ?? null);
-        $order_confirmation_shortcodes = Settings::get(OptionKeys::EMAIL_SETTINGS)->get_default('customer_emails.order_notifications.order_confirmation.shortcodes') ?? [];
 
         $data = array_merge($data ?? [], [
             'default_template' => array_merge($data['default_template'] ?? [], [
@@ -197,7 +211,6 @@ class SettingResource extends Resource
             ])
         ]);
 
-        $data['customer_emails']['order_notifications']['order_confirmation']['shortcodes'] = $order_confirmation_shortcodes;
         return $data;
     }
 
@@ -208,9 +221,10 @@ class SettingResource extends Resource
      * object, and the store's registration flag is surfaced so the admin can
      * warn when a signup consent cannot be displayed.
      *
-     * @param array $data
+     * @since 1.0.0
      *
-     * @return array
+     * @param array<string, mixed> $data Stored legal settings.
+     * @return array<string, mixed> Settings with re-indexed consents and the registration flag.
      */
     protected function get_legal_settings($data)
     {

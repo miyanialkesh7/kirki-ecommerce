@@ -6,8 +6,20 @@ use Kirki\Ecommerce\Framework\Contracts\Migration;
 use Kirki\Ecommerce\Framework\Database\Schema\Structure;
 use Kirki\Ecommerce\Framework\Supports\Facades\Schema;
 
+/**
+ * Creates the kirki_ecommerce_variants table, which stores product variants.
+ *
+ * @since 1.0.0
+ */
 class CreateVariantsTable implements Migration
 {
+    /**
+     * Create the kirki_ecommerce_variants table.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
     public function up()
     {
         Schema::create('kirki_ecommerce_variants', function (Structure $table) {
@@ -15,11 +27,10 @@ class CreateVariantsTable implements Migration
             $table->unsigned_big_integer('product_id');
 
             $table->unsigned_big_integer('media')->nullable();
-            $table->string('sku', 100)->unique()->nullable();
+            $table->string('sku', 100)->nullable();
             $table->string('barcode', 100)->nullable();
 
             $table->integer('base_price')->default(0);
-            $table->boolean('show_unit_price')->default(0)->comment('Whether to show unit price');
             $table->string('base_unit', 10)->nullable()->comment('Unit of measurement for weight. Example: g, kg, lb, oz');
             $table->float('base_unit_amount')->nullable()->comment('Base unit amount');
             $table->string('total_unit', 10)->nullable()->comment('The unit of total unit amount in an item');
@@ -36,6 +47,7 @@ class CreateVariantsTable implements Migration
             $table->integer('available_quantity')->default(0)->comment('Quantity available for sale');
             $table->boolean('in_stock')->default(1)->comment('Used when track_inventory is disabled');
             $table->integer('committed_quantity')->default(0)->comment('Quantity on hold (ordered but not shipped)');
+            $table->integer('low_stock_threshold')->nullable();
 
             $table->boolean('has_limit_per_order')->default(0);
             $table->integer('max_per_order')->nullable();
@@ -54,15 +66,23 @@ class CreateVariantsTable implements Migration
 
             $table->timestamps();
 
-            $table->index('is_visible');
+            $table->unique('sku', 'uq_kecom_variants_sku');
+            $table->index('is_visible', 'idx_kecom_variants_is_visible');
 
-            $table->foreign('product_id', 'fk_kirki_ecommerce_variants_product_id')
+            $table->foreign('product_id', 'fk_kecom_variants_product_id')
                 ->references('id')
                 ->on('kirki_ecommerce_products')
                 ->cascade_on_delete();
         });
     }
 
+    /**
+     * Drop the kirki_ecommerce_variants table.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
     public function down()
     {
         Schema::drop_if_exists('kirki_ecommerce_variants');

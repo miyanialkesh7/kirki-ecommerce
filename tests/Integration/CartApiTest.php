@@ -16,6 +16,7 @@ use Kirki\Ecommerce\App\Models\Cart as CartModel;
 use Kirki\Ecommerce\App\Models\CartCoupon;
 use Kirki\Ecommerce\App\Models\CartItem;
 use Kirki\Ecommerce\App\Models\Coupon as CouponModel;
+use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Services\CartService;
 use Kirki\Ecommerce\App\Services\VariantService;
 use Kirki\Ecommerce\Framework\Http\Request;
@@ -293,6 +294,35 @@ class CartApiTest extends RestTestCase
         $this->assertEmpty($emptied['data']);
     }
 
+    /**
+     * The cart stores the shopper's contact email, rejects an invalid one, and keeps it when an update omits it.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_cart_customer_email_round_trips_and_is_kept_when_omitted(): void
+    {
+        $this->prepare_variant();
+        $this->add_cart_item();
+
+        $saved = $this->assert_api_success($this->request('PUT', 'cart', [
+            'customer_email' => 'guest@example.com',
+        ], $this->cart_headers));
+        $this->assertSame('guest@example.com', $saved['data']['customer_email']);
+
+        $invalid = $this->assert_validation_error($this->request('PUT', 'cart', [
+            'customer_email' => 'not-an-email',
+        ], $this->cart_headers));
+        $this->assertArrayHasKey('customer_email', $invalid['errors']);
+
+        $this->assert_api_success($this->request('PUT', 'cart', [
+            'customer_notes' => 'Leave at the door',
+        ], $this->cart_headers));
+
+        $fetched = $this->assert_api_success($this->request('GET', 'cart', [], $this->cart_headers));
+        $this->assertSame('guest@example.com', $fetched['data']['customer_email']);
+    }
+
     public function test_removing_non_last_item_keeps_cart_and_last_removal_deletes_it(): void
     {
         $this->prepare_variant();
@@ -433,6 +463,146 @@ class CartApiTest extends RestTestCase
 
         $second_apply = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
         $this->assertGreaterThanOrEqual(400, $second_apply->get_status());
+    }
+
+    /**
+     * A signed-in shopper with no customer record yet counts as registered for
+     * a registered-customers-only coupon.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_signed_in_shopper_without_customer_record_can_apply_registered_only_coupon(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_include_eligibility' => CustomerIncludeEligibility::CUSTOMERS]);
+        $this->sign_in_new_shopper_with_cart_item();
+
+        $applied = $this->assert_api_success($this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers));
+
+        $this->assertNotNull($this->find_coupon_in_response($applied['data'], $code));
+    }
+
+    /**
+     * A signed-in shopper with no customer record yet is not a guest for a guests-only coupon.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_signed_in_shopper_without_customer_record_cannot_apply_guest_only_coupon(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_include_eligibility' => CustomerIncludeEligibility::GUESTS]);
+        $this->sign_in_new_shopper_with_cart_item();
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+        $this->assertGreaterThanOrEqual(400, $response->get_status());
+        $this->assertEquals('This coupon is only available for guest checkout.', $this->normalize_response_data($response->get_data())['message']);
+    }
+
+    /**
+     * A signed-in shopper with no customer record yet is excluded by a coupon that excludes registered customers.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_signed_in_shopper_without_customer_record_cannot_apply_coupon_excluding_registered_customers(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_exclude_eligibility' => CustomerExcludeEligibility::CUSTOMERS]);
+        $this->sign_in_new_shopper_with_cart_item();
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+        $this->assertGreaterThanOrEqual(400, $response->get_status());
+        $this->assertEquals('This coupon is not available for you.', $this->normalize_response_data($response->get_data())['message']);
+    }
+
+    /**
+     * A visitor who is not signed in is still asked to log in for a registered-customers-only coupon.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_guest_cannot_apply_registered_only_coupon(): void
+    {
+        $code = $this->create_eligibility_coupon(['customer_include_eligibility' => CustomerIncludeEligibility::CUSTOMERS]);
+        $this->logout();
+        $this->add_cart_item();
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+        $this->assertGreaterThanOrEqual(400, $response->get_status());
+        $this->assertEquals('Please login to use this coupon.', $this->normalize_response_data($response->get_data())['message']);
+    }
+
+    /**
+     * A guest who saved a contact email to the cart can apply first-time-buyer and
+     * once-per-customer coupons.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_guest_with_cart_email_can_apply_buyer_scoped_coupons(): void
+    {
+        $first_time = $this->create_eligibility_coupon(['first_time_buyer_only' => true]);
+        $once = $this->create_eligibility_coupon(['has_customer_limit' => true, 'customer_limit' => 1]);
+        $this->logout();
+        $this->add_cart_item();
+
+        $this->assert_api_success($this->request('PUT', 'cart', [
+            'customer_email' => 'new-guest-' . strtolower(wp_generate_password(6, false)) . '@example.com',
+        ], $this->cart_headers));
+
+        $this->assert_api_success($this->request('POST', 'cart/coupon', ['code' => $first_time], $this->cart_headers));
+        $applied = $this->assert_api_success($this->request('POST', 'cart/coupon', ['code' => $once], $this->cart_headers));
+
+        $this->assertNotNull($this->find_coupon_in_response($applied['data'], $first_time));
+        $this->assertNotNull($this->find_coupon_in_response($applied['data'], $once));
+    }
+
+    /**
+     * A guest without a contact email is asked for one, not to log in, by buyer-scoped coupons.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_guest_without_cart_email_is_asked_for_email_by_buyer_scoped_coupons(): void
+    {
+        $first_time = $this->create_eligibility_coupon(['first_time_buyer_only' => true]);
+        $once = $this->create_eligibility_coupon(['has_customer_limit' => true, 'customer_limit' => 1]);
+        $this->logout();
+        $this->add_cart_item();
+
+        foreach ([$first_time, $once] as $code) {
+            $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+            $this->assertGreaterThanOrEqual(400, $response->get_status());
+            $this->assertEquals('Please enter your email address to use this coupon.', $this->normalize_response_data($response->get_data())['message']);
+        }
+    }
+
+    /**
+     * A signed-in shopper whose account email placed an earlier guest order is not a first-time buyer.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_signed_in_shopper_with_earlier_guest_order_is_not_a_first_time_buyer(): void
+    {
+        $code = $this->create_eligibility_coupon(['first_time_buyer_only' => true]);
+        $email = 'returning-' . strtolower(wp_generate_password(6, false)) . '@example.com';
+        Order::create([
+            'customer_email' => $email,
+            'currency_code' => 'USD',
+            'base_currency_code' => 'USD',
+        ]);
+
+        wp_set_current_user(static::factory()->user->create(['role' => 'subscriber', 'user_email' => $email]));
+        $this->add_cart_item();
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => $code], $this->cart_headers);
+
+        $this->assertGreaterThanOrEqual(400, $response->get_status());
+        $this->assertEquals('This coupon is only available for first time buyers.', $this->normalize_response_data($response->get_data())['message']);
     }
 
     public function test_invalid_coupon_is_dropped_without_disabling_other_coupons(): void
@@ -1102,6 +1272,35 @@ class CartApiTest extends RestTestCase
         ], $this->cart_headers);
 
         return $variant_id;
+    }
+
+    /**
+     * Create a coupon with customer eligibility overrides, as the admin set up by the test case.
+     *
+     * @param array $overrides Coupon payload overrides.
+     *
+     * @return string The coupon code.
+     * @since 1.0.0
+     */
+    protected function create_eligibility_coupon(array $overrides): string
+    {
+        $this->prepare_variant();
+        $code = 'ELIGIBLE-' . wp_generate_password(6, false);
+        $this->create_coupon($code, $overrides);
+
+        return $code;
+    }
+
+    /**
+     * Sign in as a new subscriber with no customer record and put an item in their cart.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    protected function sign_in_new_shopper_with_cart_item(): void
+    {
+        wp_set_current_user(static::factory()->user->create(['role' => 'subscriber']));
+        $this->add_cart_item();
     }
 
     protected function find_coupon_in_response(array $cart, string $code): ?array

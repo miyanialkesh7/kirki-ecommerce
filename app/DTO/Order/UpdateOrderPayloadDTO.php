@@ -4,6 +4,11 @@ namespace Kirki\Ecommerce\App\DTO\Order;
 
 use Kirki\Ecommerce\Framework\DTO;
 
+/**
+ * Input payload for editing an order: items, coupons, addresses and notes.
+ *
+ * @since 1.0.0
+ */
 class UpdateOrderPayloadDTO extends DTO
 {
     /** @var int */
@@ -89,6 +94,12 @@ class UpdateOrderPayloadDTO extends DTO
 
     /** @var string|null */
     public $billing_company;
+
+    /** @var string|null */
+    public $customer_first_name;
+
+    /** @var string|null */
+    public $customer_last_name;
 
     /** @var string|null */
     public $customer_email;

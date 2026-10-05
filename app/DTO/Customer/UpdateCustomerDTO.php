@@ -4,8 +4,14 @@ namespace Kirki\Ecommerce\App\DTO\Customer;
 
 use Kirki\Ecommerce\Framework\DTO;
 
+/**
+ * Data object for updating a customer.
+ *
+ * @since 1.0.0
+ */
 class UpdateCustomerDTO extends DTO
 {
+    /** @inheritDoc */
     protected static $base_fields = [];
 
     /** @var int */
@@ -37,4 +43,7 @@ class UpdateCustomerDTO extends DTO
 
     /** @var string|null */
     public $language = 'en';
+
+    /** @var \Kirki\Ecommerce\App\DTO\Address\UpdateAddressDTO[] */
+    public $addresses = [];
 }

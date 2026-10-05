@@ -4,6 +4,11 @@ namespace Kirki\Ecommerce\App\Constants;
 
 use Kirki\Ecommerce\Framework\Concerns\HasConstants;
 
+/**
+ * Keys of the plugin settings groups and other stored options.
+ *
+ * @since 1.0.0
+ */
 class OptionKeys
 {
     use HasConstants;
@@ -21,4 +26,7 @@ class OptionKeys
 
     const LAST_INVOICE_NUMBER = 'last_invoice_number';
     const LAST_INVOICE_NUMBER_RESET_YEAR = 'last_invoice_number_reset_year';
+
+    const ONBOARDING_COMPLETED_AT = 'onboarding_completed_at';
+    const SETUP_CHECKLIST = 'setup_checklist';
 }

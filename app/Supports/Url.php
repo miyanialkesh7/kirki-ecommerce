@@ -12,16 +12,17 @@
 namespace Kirki\Ecommerce\App\Supports;
 
 use Kirki\Ecommerce\Framework\Route;
+use WP_User;
 
 /**
- * Class Url
+ * Builds storefront and admin URLs for the plugin's pages.
  *
  * @since 1.0.0
  */
 class Url
 {
     /**
-     * Get registration URL.
+     * Get the WordPress registration URL.
      *
      * @since 1.0.0
      *
@@ -33,12 +34,11 @@ class Url
     }
 
     /**
-     * Get product URL.
+     * Get the storefront URL of a product.
      *
      * @since 1.0.0
      *
-     * @param string $slug
-     *
+     * @param string $slug Product slug.
      * @return string
      */
     public static function get_product_url(string $slug)
@@ -47,7 +47,7 @@ class Url
     }
 
     /**
-     * Get product fallback image.
+     * Get the placeholder image URL used for products without an image.
      *
      * @since 1.0.0
      *
@@ -59,10 +59,11 @@ class Url
     }
 
     /**
-     * Get order tracking URL.
+     * Get the storefront order tracking URL of an order.
      *
      * @since 1.0.0
      *
+     * @param string $order_uuid Order UUID.
      * @return string
      */
     public static function get_order_tracking_url(string $order_uuid)
@@ -71,7 +72,7 @@ class Url
     }
 
     /**
-     * Get shop URL.
+     * Get the storefront shop page URL.
      *
      * @since 1.0.0
      *
@@ -83,7 +84,7 @@ class Url
     }
 
     /**
-     * Get cart URL.
+     * Get the storefront cart page URL.
      *
      * @since 1.0.0
      *
@@ -95,7 +96,7 @@ class Url
     }
 
     /**
-     * Get checkout URL.
+     * Get the storefront checkout page URL.
      *
      * @since 1.0.0
      *
@@ -107,12 +108,11 @@ class Url
     }
 
     /**
-     * Get checkout success URL.
+     * Get the checkout URL carrying a successful order result.
      *
      * @since 1.0.0
      *
-     * @param string $order_uuid order UUID.
-     *
+     * @param string $order_uuid Order UUID.
      * @return string
      */
     public static function get_checkout_success_url(string $order_uuid): string
@@ -127,12 +127,11 @@ class Url
     }
 
     /**
-     * Get checkout fail URL.
+     * Get the checkout URL carrying a failed order result.
      *
      * @since 1.0.0
      *
-     * @param string $order_uuid order UUID.
-     *
+     * @param string $order_uuid Order UUID.
      * @return string
      */
     public static function get_checkout_failed_url(string $order_uuid): string
@@ -147,12 +146,11 @@ class Url
     }
 
     /**
-     * Get account URL.
+     * Get the storefront account page URL.
      *
      * @since 1.0.0
      *
      * @param string|null $path Path to append to the account URL.
-     *
      * @return string The account URL.
      */
     public static function get_account_url($path = null)
@@ -162,12 +160,11 @@ class Url
     }
 
     /**
-     * Get login URL.
+     * Get the WordPress login URL.
      *
      * @since 1.0.0
      *
-     * @param string $redirect
-     *
+     * @param string $redirect URL to send the user to after logging in.
      * @return string
      */
     public static function get_login_url($redirect = '')
@@ -176,12 +173,25 @@ class Url
     }
 
     /**
+     * Get the WordPress URL where a user sets a new password with a reset key.
+     *
+     * @since 1.0.0
+     *
+     * @param WP_User $user User the key belongs to.
+     * @param string  $key  Password reset key from get_password_reset_key().
+     * @return string
+     */
+    public static function get_password_reset_url(WP_User $user, string $key)
+    {
+        return network_site_url('wp-login.php?action=rp&key=' . $key . '&login=' . rawurlencode($user->user_login), 'login');
+    }
+
+    /**
      * Get the admin edit URL for a product.
      *
      * @since 1.0.0
      *
      * @param int $product_id
-     *
      * @return string
      */
     public static function get_product_edit_url($product_id)
@@ -190,12 +200,23 @@ class Url
     }
 
     /**
-     * Get the order edit URL for an order.
+     * Get the admin URL of the products list.
+     *
+     * @since 1.0.0
+     *
+     * @return string
+     */
+    public static function get_products_admin_url()
+    {
+        return admin_url('admin.php?page=kirki-ecommerce#/products');
+    }
+
+    /**
+     * Get the admin edit URL for an order.
      *
      * @since 1.0.0
      *
      * @param int $order_id
-     *
      * @return string
      */
     public static function get_order_edit_url($order_id)
@@ -204,13 +225,14 @@ class Url
     }
 
     /**
-     * Add query params to URL.
+     * Add query params to a URL.
+     *
+     * Also strips any leading slash from the URL.
      *
      * @since 1.0.0
      *
-     * @param string $url URL.
-     * @param array  $query_params Query params.
-     *
+     * @param string               $url          URL.
+     * @param array<string, mixed> $query_params Query params.
      * @return string
      */
     public static function add_query_params($url, array $query_params = array()): string
@@ -225,13 +247,12 @@ class Url
     }
 
     /**
-     * Remove query params from URL.
+     * Remove query params from a URL.
      *
      * @since 1.0.0
      *
-     * @param string $url URL.
-     * @param array  $query_params Query params.
-     *
+     * @param string   $url          URL.
+     * @param string[] $query_params Names of the query params to remove.
      * @return string
      */
     public static function remove_query_params($url, array $query_params = array()): string

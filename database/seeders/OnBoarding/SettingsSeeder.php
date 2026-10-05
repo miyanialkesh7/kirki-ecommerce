@@ -11,13 +11,19 @@ use Kirki\Ecommerce\Framework\Supports\Facades\Option;
 use function Kirki\Ecommerce\Framework\json_decoded_data;
 use function Kirki\Ecommerce\Framework\resource_path;
 
+/**
+ * Seeds the onboarding overrides for the general, product, checkout and payment settings.
+ *
+ * @since 1.0.0
+ */
 class SettingsSeeder extends Seeder
 {
     /**
      * Write the store's opening settings.
      *
-     * @return void
      * @since 1.0.0
+     *
+     * @return void
      */
     public function run(): void
     {
@@ -46,11 +52,11 @@ class SettingsSeeder extends Seeder
      * The shipped defaults are the starting point so this seeder does not have to
      * restate the full settings tree and cannot drift from it.
      *
-     * @param string $key       The settings option key.
-     * @param array  $overrides The onboarding values to apply over the defaults.
-     *
-     * @return void
      * @since 1.0.0
+     *
+     * @param string               $key       The settings option key.
+     * @param array<string, mixed> $overrides The onboarding values to apply over the defaults.
+     * @return void
      */
     protected function seed($key, array $overrides)
     {
@@ -74,12 +80,16 @@ class SettingsSeeder extends Seeder
     /**
      * The offline payment methods a new store opens with.
      *
+     * Both start disabled: enabling a payment method is the merchant's call, and the
+     * Home setup checklist's payments step completes only once they make it.
+     *
      * PaymentProvider::from_offline() maps name to title and instructions to
      * description, and only resolves an icon from an integer attachment id - so a
      * null icon is what "no icon" looks like here.
      *
-     * @return array
      * @since 1.0.0
+     *
+     * @return array<int, array<string, mixed>> Offline payment method definitions.
      */
     protected function get_offline_payments()
     {
@@ -92,7 +102,19 @@ class SettingsSeeder extends Seeder
                     'kirki-ecommerce'
                 ),
                 'icon' => null,
-                'is_enabled' => true,
+                'is_enabled' => false,
+                'is_offline' => true,
+                'config' => [],
+            ],
+            [
+                'id' => 'bank_transfer',
+                'name' => __('Direct bank transfer', 'kirki-ecommerce'),
+                'instructions' => __(
+                    'Make your payment directly into our bank account. Please use your order number as the payment reference. Your order will ship once the funds have cleared.',
+                    'kirki-ecommerce'
+                ),
+                'icon' => null,
+                'is_enabled' => false,
                 'is_offline' => true,
                 'config' => [],
             ],

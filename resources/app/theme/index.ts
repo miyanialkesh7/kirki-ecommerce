@@ -396,10 +396,8 @@ const theme = {
     sm: '0px 1px 2px 0px hsla(0, 0%, 0%, 0.05)',
     md: '0px 4px 6px -1px hsla(0, 0%, 0%, 0.1), 0px 2px 4px -2px hsla(0, 0%, 0%, 0.1)',
     lg: '0px 10px 15px -3px hsla(0, 0%, 0%, 0.1), 0px 4px 6px -4px hsla(0, 0%, 0%, 0.1)',
-    popover: `0px 0px 4px 0px rgba(0, 0, 0, 0.08),
-      0px 4px 12px 0px rgba(0, 0, 0, 0.08),
-      0px 2px 4px -2px rgba(0, 0, 0, 0.08),
-      0px 1.5px 0px 0px rgba(255, 255, 255, 0.08) inset`,
+    popover: `0px 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0px 4px 6px -4px rgba(0, 0, 0, 0.1)`,
     card: `0px -1px 1px 0.5px rgba(0, 0, 0, 0.1) inset, 0px 0.5px 1px 0px rgba(0, 0, 0, 0.1) inset`,
   },
 
@@ -412,6 +410,7 @@ const theme = {
     sticky: 100, // in-app sticky headers, e.g. page-heading, filter-popup panels
     dialogOverlay: 1000,
     dialogContent: 1001,
+    fullscreen: 10000, // full-screen takeovers such as onboarding — clears #adminmenuback (9990)
     dropdown: 100000, // select / popover / dropdown-menu content — clears #wpadminbar (99999)
     tooltip: 100100, // must float above dialogs and dropdowns
     toast: 100200, // persistent app notifications — always on top

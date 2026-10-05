@@ -7,7 +7,7 @@ import { __ } from '@/wpi18n';
 const PaymentSettingsSkeleton = () => (
   <Container size="sm">
     <SettingsPageSkeleton
-      cards={[3, 3]}
+      cards={[3]}
       header={
         <SettingsPageHeader icon={<PaymentIcon />} title={__('Payments', 'kirki-ecommerce')} />
       }

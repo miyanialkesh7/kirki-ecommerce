@@ -2,12 +2,18 @@
 
 namespace Kirki\Ecommerce\App\Http\Requests\Settings;
 
+use Kirki\Ecommerce\App\Constants\ComparisonOperator;
 use Kirki\Ecommerce\App\Constants\ConsentLocations;
 use Kirki\Ecommerce\App\Constants\ConsentMethods;
 use Kirki\Ecommerce\App\Constants\CurrencyFormat;
 use Kirki\Ecommerce\App\Constants\CurrencyPosition;
 use Kirki\Ecommerce\App\Constants\CurrencyUpdateFallback;
 use Kirki\Ecommerce\App\Constants\DecimalSeparator;
+use Kirki\Ecommerce\App\Constants\Email\AdminInventoryNotification;
+use Kirki\Ecommerce\App\Constants\Email\AdminOrderNotification;
+use Kirki\Ecommerce\App\Constants\Email\AdminUserNotification;
+use Kirki\Ecommerce\App\Constants\Email\CustomerOrderNotification;
+use Kirki\Ecommerce\App\Constants\Email\CustomerUserNotification;
 use Kirki\Ecommerce\App\Constants\MailEncryption;
 use Kirki\Ecommerce\App\Constants\Mailer;
 use Kirki\Ecommerce\App\Constants\OptionKeys;
@@ -19,9 +25,24 @@ use Kirki\Ecommerce\App\Constants\UpdateFrequency;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\Framework\Sanitizer;
 use Kirki\Ecommerce\Framework\Http\Request;
+use function Kirki\Ecommerce\Framework\deep_get;
 
+/**
+ * Validates and sanitizes a settings update for one settings group, selected by the `key` input.
+ *
+ * @since 1.0.0
+ */
 class SettingsUpdateRequest extends Request
 {
+    /**
+     * Normalize the shipping and tax settings payload before validation.
+     *
+     * Shipping method and range amounts are converted to minor units. Non-EU tax regions with central tax enabled get their state list emptied.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
     protected function prepare_for_validation()
     {
         $data = $this->input('data');
@@ -80,6 +101,15 @@ class SettingsUpdateRequest extends Request
         $this->merge(['data' => $data]);
     }
 
+    /**
+     * Build the validation rules for the settings group named by the `key` input.
+     *
+     * The `key` rule is always included; an unrecognised key adds no group rules.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed>
+     */
     public function rules()
     {
         $rules = [];
@@ -125,6 +155,15 @@ class SettingsUpdateRequest extends Request
         ], $rules);
     }
 
+    /**
+     * Build the sanitizers for the settings group named by the `key` input.
+     *
+     * Returns an empty array when the key is not a known settings group.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     public function filters()
     {
         $key = $this->get_string('key');
@@ -155,6 +194,11 @@ class SettingsUpdateRequest extends Request
         }
     }
 
+    /**
+     * @inheritDoc
+     *
+     * @since 1.0.0
+     */
     protected function messages()
     {
         $no_slashes_message = __('Slashes and backslashes are not allowed.', 'kirki-ecommerce');
@@ -168,6 +212,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the validation rules for the general store settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_general_settings_rules()
     {
         return [
@@ -175,6 +226,7 @@ class SettingsUpdateRequest extends Request
             'data.store_email' => 'required|email',
             'data.store_logo' => 'nullable|integer',
             'data.store_phone' => 'nullable|string',
+            'data.store_tax_id' => 'nullable|string',
             'data.store_address' => 'nullable|array',
             'data.store_address.address_line_1' => 'nullable|string',
             'data.store_address.address_line_2' => 'nullable|string',
@@ -197,6 +249,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the sanitizers for the general store settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_general_settings_filters()
     {
         return [
@@ -204,6 +263,7 @@ class SettingsUpdateRequest extends Request
             'data.store_email' => Sanitizer::EMAIL,
             'data.store_logo' => Sanitizer::INT,
             'data.store_phone' => Sanitizer::TEXT,
+            'data.store_tax_id' => Sanitizer::TEXT,
             'data.store_address' => Sanitizer::ARRAY,
             'data.store_address.address_line_1' => Sanitizer::TEXT,
             'data.store_address.address_line_2' => Sanitizer::TEXT,
@@ -226,6 +286,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the validation rules for the product settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_product_settings_rules()
     {
         return [
@@ -235,7 +302,6 @@ class SettingsUpdateRequest extends Request
             'data.display_layout' => 'nullable|string',
             'data.is_enabled_reviews' => 'boolean',
             'data.is_enabled_star_ratings' => 'boolean',
-            'data.is_unit_price_visible' => 'boolean',
             'data.low_stock_threshold' => 'nullable|integer|min:0',
             'data.barcode_generation' => 'nullable|array',
             'data.barcode_generation.data_origin' => 'nullable|string',
@@ -249,6 +315,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the sanitizers for the product settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_product_settings_filters()
     {
         return [
@@ -258,7 +331,6 @@ class SettingsUpdateRequest extends Request
             'data.display_layout' => Sanitizer::TEXT,
             'data.is_enabled_reviews' => Sanitizer::BOOL,
             'data.is_enabled_star_ratings' => Sanitizer::BOOL,
-            'data.is_unit_price_visible' => Sanitizer::BOOL,
             'data.low_stock_threshold' => Sanitizer::INT,
             'data.barcode_generation' => Sanitizer::ARRAY,
             'data.barcode_generation.data_origin' => Sanitizer::TEXT,
@@ -272,6 +344,15 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the validation rules for the shipping zones and their shipping methods.
+     *
+     * Flat rate and weight based methods must also provide `is_taxable`.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string|callable>
+     */
     protected function get_shipping_settings_rules()
     {
         return [
@@ -286,12 +367,11 @@ class SettingsUpdateRequest extends Request
             'data.shipping_zones.*.shipping_methods.*.is_enabled' => 'required|boolean',
             'data.shipping_zones.*.shipping_methods.*.name' => 'required|string',
             'data.shipping_zones.*.shipping_methods.*.type' => 'required|string|in:' . implode(',', ShippingMethodTypes::get_constant_values()),
-            'data.shipping_zones.*.shipping_methods.*.base_amount' => 'required|number',
             // TODO: replace with a reusable required-if-sibling rule once it can safely mix
             // with type-check rules (e.g. string/array) without failing on null when not required.
-            // Bound to the shipping method itself (not the is_taxable leaf) so the check
-            // still runs even when the client omits is_taxable entirely - a wildcard rule
-            // keyed on a leaf field is only evaluated when that key is present in the payload.
+            // Bound to the shipping method itself (not the is_taxable leaf) so the check still
+            // runs even when the client omits is_taxable entirely - a wildcard rule keyed on a
+            // leaf field is only evaluated when that key is present in the payload.
             'data.shipping_zones.*.shipping_methods.*' => function ($value, $key, $data) {
                 if (!is_array($value) || !in_array($value['type'] ?? null, [ShippingMethodTypes::FLAT_RATE, ShippingMethodTypes::WEIGHT_BASED], true)) {
                     return true;
@@ -300,6 +380,30 @@ class SettingsUpdateRequest extends Request
                 if (!array_key_exists('is_taxable', $value) || $value['is_taxable'] === null || $value['is_taxable'] === '') {
                     /* translators: %s: the field name */
                     return sprintf(__('The %s field is required.', 'kirki-ecommerce'), $key . '.is_taxable');
+                }
+
+                return true;
+            },
+            // Bound directly to the base_amount leaf (rather than the shipping method itself)
+            // so a failure attaches to this field's own key and the frontend can surface it
+            // inline instead of on the method object.
+            'data.shipping_zones.*.shipping_methods.*.base_amount' => function ($value, $key, $data) {
+                $method = deep_get($data, substr($key, 0, -\strlen('.base_amount')));
+                $type = is_array($method) ? ($method['type'] ?? null) : null;
+                $is_empty = $value === null || $value === '';
+
+                if ($type === ShippingMethodTypes::FLAT_RATE && $is_empty) {
+                    return __('This field is required.', 'kirki-ecommerce');
+                }
+
+                if ($type === ShippingMethodTypes::LOCAL_PICKUP && !empty($method['has_fee'])) {
+                    if ($is_empty) {
+                        return __('This field is required.', 'kirki-ecommerce');
+                    }
+
+                    if ($value <= 0) {
+                        return __('This field must be greater than 0.', 'kirki-ecommerce');
+                    }
                 }
 
                 return true;
@@ -326,7 +430,7 @@ class SettingsUpdateRequest extends Request
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.relation' => 'required|string',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions' => 'array',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.type' => 'required|string',
-            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => 'required|string',
+            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => 'required|string|in:' . ComparisonOperator::join(),
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.value' => 'required',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action' => 'array',
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action.type' => 'required|string',
@@ -349,6 +453,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the sanitizers for the shipping zones and their shipping methods.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_shipping_settings_filters()
     {
         return [
@@ -386,7 +497,7 @@ class SettingsUpdateRequest extends Request
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.relation' => Sanitizer::TEXT,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions' => Sanitizer::ARRAY,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.type' => Sanitizer::TEXT,
-            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => Sanitizer::TEXT,
+            'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.operator' => Sanitizer::ANY, // Validated against ComparisonOperator; sanitize_text_field() would escape "<" to "&lt;".
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.conditions.*.value' => Sanitizer::ANY,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action' => Sanitizer::ARRAY,
             'data.shipping_zones.*.shipping_methods.*.shipping_rules.*.action.type' => Sanitizer::TEXT,
@@ -411,6 +522,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the validation rules for the offline payment settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_payment_settings_rules()
     {
         return [
@@ -424,6 +542,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the sanitizers for the offline payment settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_payment_settings_filters()
     {
         return [
@@ -438,12 +563,14 @@ class SettingsUpdateRequest extends Request
     }
 
     /**
-     * Validation rules for one tax rule list, applied to both a region's
-     * country-wide rules and a state's per-state rules.
+     * Return the validation rules for one tax rule list.
+     *
+     * Applied to both a region's country-wide rules and a state's per-state rules.
+     *
+     * @since 1.0.0
      *
      * @param string $prefix Fully qualified path of the rules array.
-     *
-     * @return array
+     * @return array<string, string>
      */
     protected function get_tax_rules_rules($prefix)
     {
@@ -452,7 +579,7 @@ class SettingsUpdateRequest extends Request
             $prefix . '.*.relation' => 'required|string',
             $prefix . '.*.conditions' => 'required|array',
             $prefix . '.*.conditions.*.type' => 'required|string',
-            $prefix . '.*.conditions.*.operator' => 'required|string',
+            $prefix . '.*.conditions.*.operator' => 'required|string|in:' . ComparisonOperator::join(),
             $prefix . '.*.conditions.*.value' => 'required',
             $prefix . '.*.action' => 'required|array',
             $prefix . '.*.action.type' => 'required|string',
@@ -460,6 +587,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the validation rules for the tax settings, including each region's and state's tax rules.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_tax_settings_rules()
     {
         return array_merge(
@@ -497,11 +631,12 @@ class SettingsUpdateRequest extends Request
     }
 
     /**
-     * Sanitizers for one tax rule list, mirroring {@see static::get_tax_rules_rules()}.
+     * Return the sanitizers for one tax rule list, mirroring {@see static::get_tax_rules_rules()}.
+     *
+     * @since 1.0.0
      *
      * @param string $prefix Fully qualified path of the rules array.
-     *
-     * @return array
+     * @return array<string, string>
      */
     protected function get_tax_rules_filters($prefix)
     {
@@ -510,7 +645,7 @@ class SettingsUpdateRequest extends Request
             $prefix . '.*.relation' => Sanitizer::TEXT,
             $prefix . '.*.conditions' => Sanitizer::ARRAY,
             $prefix . '.*.conditions.*.type' => Sanitizer::TEXT,
-            $prefix . '.*.conditions.*.operator' => Sanitizer::TEXT,
+            $prefix . '.*.conditions.*.operator' => Sanitizer::ANY, // Validated against ComparisonOperator; sanitize_text_field() would escape "<" to "&lt;".
             $prefix . '.*.conditions.*.value' => Sanitizer::ANY,
             $prefix . '.*.action' => Sanitizer::ARRAY,
             $prefix . '.*.action.type' => Sanitizer::TEXT,
@@ -518,6 +653,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the sanitizers for the tax settings, including each region's and state's tax rules.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_tax_settings_filters()
     {
         return array_merge(
@@ -552,6 +694,13 @@ class SettingsUpdateRequest extends Request
         );
     }
 
+    /**
+     * Return the validation rules for the checkout settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_checkout_settings_rules()
     {
         return [
@@ -566,6 +715,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the sanitizers for the checkout settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_checkout_settings_filters()
     {
         return [
@@ -580,6 +736,15 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the validation rules for the currency settings.
+     *
+     * The API provider and API config are required only when automatic updates are enabled.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string|array|callable>
+     */
     protected function get_currency_settings_rules()
     {
         return [
@@ -655,6 +820,13 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Return the sanitizers for the currency settings.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_currency_settings_filters()
     {
         return [
@@ -672,9 +844,69 @@ class SettingsUpdateRequest extends Request
         ];
     }
 
+    /**
+     * Make email template rules
+     * 
+     * @since 1.0.0
+     * 
+     * @return array
+     */
+    protected function make_email_template_rules()
+    {
+        $notification_classes = [
+            AdminOrderNotification::class,
+            AdminInventoryNotification::class,
+            AdminUserNotification::class,
+            CustomerOrderNotification::class,
+            CustomerUserNotification::class,
+        ];
+
+        $email_template_rules = [];
+
+        foreach ($notification_classes as $notification_class) {
+            $type_key = 'data.' . $notification_class::get_type();
+
+            if (!isset($email_template_rules[$type_key])) {
+                $email_template_rules[$type_key] = 'nullable|array';
+            }
+
+            $group_key = $type_key . '.' . $notification_class::get_group();
+
+            if (!isset($email_template_rules[$group_key])) {
+                $email_template_rules[$group_key] = 'nullable|array';
+            }
+
+
+            $options = $notification_class::get_constant_values();
+
+            foreach ($options as $option) {
+                $option_key = $group_key . '.' . $option;
+
+                if (!isset($email_template_rules[$option_key])) {
+                    $email_template_rules[$option_key] = 'nullable|array';
+                    $email_template_rules = array_merge($email_template_rules, [
+                        $option_key . '.is_enabled' => 'nullable|boolean',
+                        $option_key . '.subject' => 'nullable|string',
+                        $option_key . '.heading' => 'nullable|string',
+                        $option_key . '.message' => 'nullable|string',
+                    ]);
+                }
+            }
+        }
+
+        return $email_template_rules;
+    }
+
+    /**
+     * Return the validation rules for the email settings: default template, mail server and notification emails.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_email_settings_rules()
     {
-        return [
+        return array_merge([
             // Default template settings
             'data.default_template' => 'nullable|array',
             'data.default_template.logo' => 'nullable|integer',
@@ -709,68 +941,72 @@ class SettingsUpdateRequest extends Request
             'data.mail_configuration.is_authentication_enabled' => 'nullable|boolean',
             'data.mail_configuration.username' => 'nullable|string',
             'data.mail_configuration.password' => 'nullable|string',
-
-            // Customer emails
-            'data.customer_emails' => 'nullable|array',
-
-            // Customer order notifications
-            'data.customer_emails.order_notifications' => 'nullable|array',
-
-            // Customer order confirmation
-            'data.customer_emails.order_notifications.order_confirmation' => 'nullable|array',
-            'data.customer_emails.order_notifications.order_confirmation.is_enabled' => 'nullable|boolean',
-            'data.customer_emails.order_notifications.order_confirmation.subject' => 'nullable|string',
-            'data.customer_emails.order_notifications.order_confirmation.heading' => 'nullable|string',
-            'data.customer_emails.order_notifications.order_confirmation.message' => 'nullable|string',
-
-            // Customer user notifications
-            'data.customer_emails.user_notifications' => 'nullable|array',
-
-            // Customer reset password
-            'data.customer_emails.user_notifications.reset_password' => 'nullable|array',
-            'data.customer_emails.user_notifications.reset_password.is_enabled' => 'nullable|boolean',
-            'data.customer_emails.user_notifications.reset_password.subject' => 'nullable|string',
-            'data.customer_emails.user_notifications.reset_password.heading' => 'nullable|string',
-            'data.customer_emails.user_notifications.reset_password.message' => 'nullable|string',
-
-            // Admin emails
-            'data.admin_emails' => 'nullable|array',
-
-            // Admin order notifications
-            'data.admin_emails.order_notifications' => 'nullable|array',
-
-            // Admin order confirmation
-            'data.admin_emails.order_notifications.order_confirmation' => 'nullable|array',
-            'data.admin_emails.order_notifications.order_confirmation.is_enabled' => 'nullable|boolean',
-            'data.admin_emails.order_notifications.order_confirmation.subject' => 'nullable|string',
-            'data.admin_emails.order_notifications.order_confirmation.heading' => 'nullable|string',
-            'data.admin_emails.order_notifications.order_confirmation.message' => 'nullable|string',
-
-            // Admin inventory notifications
-            'data.admin_emails.inventory_notifications' => 'nullable|array',
-
-            // Admin inventory low stock
-            'data.admin_emails.inventory_notifications.low_stock' => 'nullable|array',
-            'data.admin_emails.inventory_notifications.low_stock.is_enabled' => 'nullable|boolean',
-            'data.admin_emails.inventory_notifications.low_stock.subject' => 'nullable|string',
-            'data.admin_emails.inventory_notifications.low_stock.heading' => 'nullable|string',
-            'data.admin_emails.inventory_notifications.low_stock.message' => 'nullable|string',
-
-            // Admin user notifications
-            'data.admin_emails.user_notifications' => 'nullable|array',
-
-            // Admin reset password
-            'data.admin_emails.user_notifications.reset_password' => 'nullable|array',
-            'data.admin_emails.user_notifications.reset_password.is_enabled' => 'nullable|boolean',
-            'data.admin_emails.user_notifications.reset_password.subject' => 'nullable|string',
-            'data.admin_emails.user_notifications.reset_password.heading' => 'nullable|string',
-            'data.admin_emails.user_notifications.reset_password.message' => 'nullable|string',
-        ];
+        ], $this->make_email_template_rules());
     }
 
+    /**
+     * Make email template filters
+     * 
+     * @since 1.0.0
+     * 
+     * @return array
+     */
+    protected function make_email_template_filters()
+    {
+        $notification_classes = [
+            AdminOrderNotification::class,
+            AdminInventoryNotification::class,
+            AdminUserNotification::class,
+            CustomerOrderNotification::class,
+            CustomerUserNotification::class,
+        ];
+
+        $email_template_rules = [];
+
+        foreach ($notification_classes as $notification_class) {
+            $type_key = 'data.' . $notification_class::get_type();
+
+            if (!isset($email_template_rules[$type_key])) {
+                $email_template_rules[$type_key] = Sanitizer::ARRAY;
+            }
+
+            $group_key = $type_key . '.' . $notification_class::get_group();
+
+            if (!isset($email_template_rules[$group_key])) {
+                $email_template_rules[$group_key] = Sanitizer::ARRAY;
+            }
+
+
+            $options = $notification_class::get_constant_values();
+
+            foreach ($options as $option) {
+                $option_key = $group_key . '.' . $option;
+
+                if (!isset($email_template_rules[$option_key])) {
+                    $email_template_rules[$option_key] = Sanitizer::ARRAY;
+                    $email_template_rules = array_merge($email_template_rules, [
+                        $option_key . '.is_enabled' => Sanitizer::BOOL,
+                        $option_key . '.subject' => Sanitizer::TEXT,
+                        $option_key . '.heading' => Sanitizer::TEXT,
+                        $option_key . '.message' => Sanitizer::RICH_TEXT,
+                    ]);
+                }
+            }
+        }
+
+        return $email_template_rules;
+    }
+
+    /**
+     * Return the sanitizers for the email settings: default template, mail server and notification emails.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, string>
+     */
     protected function get_email_settings_filters()
     {
-        return [
+        return array_merge([
             // Default template settings
             'data.default_template' => Sanitizer::ARRAY,
             'data.default_template.logo' => Sanitizer::INT,
@@ -805,69 +1041,15 @@ class SettingsUpdateRequest extends Request
             'data.mail_configuration.is_authentication_enabled' => Sanitizer::BOOL,
             'data.mail_configuration.username' => Sanitizer::TEXT,
             'data.mail_configuration.password' => Sanitizer::TEXT,
-
-            // Customer emails
-            'data.customer_emails' => Sanitizer::ARRAY,
-
-            // Customer order notifications
-            'data.customer_emails.order_notifications' => Sanitizer::ARRAY,
-
-            // Customer order confirmation
-            'data.customer_emails.order_notifications.order_confirmation' => Sanitizer::ARRAY,
-            'data.customer_emails.order_notifications.order_confirmation.is_enabled' => Sanitizer::BOOL,
-            'data.customer_emails.order_notifications.order_confirmation.subject' => Sanitizer::TEXT,
-            'data.customer_emails.order_notifications.order_confirmation.heading' => Sanitizer::TEXT,
-            'data.customer_emails.order_notifications.order_confirmation.message' => Sanitizer::RICH_TEXT,
-
-            // Customer user notifications
-            'data.customer_emails.user_notifications' => Sanitizer::ARRAY,
-
-            // Customer reset password
-            'data.customer_emails.user_notifications.reset_password' => Sanitizer::ARRAY,
-            'data.customer_emails.user_notifications.reset_password.is_enabled' => Sanitizer::BOOL,
-            'data.customer_emails.user_notifications.reset_password.subject' => Sanitizer::TEXT,
-            'data.customer_emails.user_notifications.reset_password.heading' => Sanitizer::TEXT,
-            'data.customer_emails.user_notifications.reset_password.message' => Sanitizer::RICH_TEXT,
-
-            // Admin emails
-            'data.admin_emails' => Sanitizer::ARRAY,
-
-            // Admin order notifications
-            'data.admin_emails.order_notifications' => Sanitizer::ARRAY,
-
-            // Admin order confirmation
-            'data.admin_emails.order_notifications.order_confirmation' => Sanitizer::ARRAY,
-            'data.admin_emails.order_notifications.order_confirmation.is_enabled' => Sanitizer::BOOL,
-            'data.admin_emails.order_notifications.order_confirmation.subject' => Sanitizer::TEXT,
-            'data.admin_emails.order_notifications.order_confirmation.heading' => Sanitizer::TEXT,
-            'data.admin_emails.order_notifications.order_confirmation.message' => Sanitizer::RICH_TEXT,
-
-            // Admin inventory notifications
-            'data.admin_emails.inventory_notifications' => Sanitizer::ARRAY,
-
-            // Admin inventory low stock
-            'data.admin_emails.inventory_notifications.low_stock' => Sanitizer::ARRAY,
-            'data.admin_emails.inventory_notifications.low_stock.is_enabled' => Sanitizer::BOOL,
-            'data.admin_emails.inventory_notifications.low_stock.subject' => Sanitizer::TEXT,
-            'data.admin_emails.inventory_notifications.low_stock.heading' => Sanitizer::TEXT,
-            'data.admin_emails.inventory_notifications.low_stock.message' => Sanitizer::RICH_TEXT,
-
-            // Admin user notifications
-            'data.admin_emails.user_notifications' => Sanitizer::ARRAY,
-
-            // Admin reset password
-            'data.admin_emails.user_notifications.reset_password' => Sanitizer::ARRAY,
-            'data.admin_emails.user_notifications.reset_password.is_enabled' => Sanitizer::BOOL,
-            'data.admin_emails.user_notifications.reset_password.subject' => Sanitizer::TEXT,
-            'data.admin_emails.user_notifications.reset_password.heading' => Sanitizer::TEXT,
-            'data.admin_emails.user_notifications.reset_password.message' => Sanitizer::RICH_TEXT,
-        ];
+        ], $this->make_email_template_filters());
     }
 
     /**
-     * Validation rules for the advanced settings page assignments.
+     * Return the validation rules for the advanced settings page assignments.
      *
-     * @return array
+     * @since 1.0.0
+     *
+     * @return array<string, string>
      */
     protected function get_advance_settings_rules()
     {
@@ -883,9 +1065,11 @@ class SettingsUpdateRequest extends Request
     }
 
     /**
-     * Sanitizers for the advanced settings page assignments.
+     * Return the sanitizers for the advanced settings page assignments.
      *
-     * @return array
+     * @since 1.0.0
+     *
+     * @return array<string, string>
      */
     protected function get_advance_settings_filters()
     {
@@ -901,9 +1085,11 @@ class SettingsUpdateRequest extends Request
     }
 
     /**
-     * Validation rules for the legal consents.
+     * Return the validation rules for the legal consents.
      *
-     * @return array
+     * @since 1.0.0
+     *
+     * @return array<string, string>
      */
     protected function get_legal_settings_rules()
     {
@@ -920,13 +1106,15 @@ class SettingsUpdateRequest extends Request
     }
 
     /**
-     * Sanitizers for the legal consents.
+     * Return the sanitizers for the legal consents.
      *
      * The `data.consents` array rule must stay first: sanitization only keeps
      * the paths listed here, and the array rule seeds the whole subtree that
      * the leaf rules below then overwrite key by key.
      *
-     * @return array
+     * @since 1.0.0
+     *
+     * @return array<string, string>
      */
     protected function get_legal_settings_filters()
     {

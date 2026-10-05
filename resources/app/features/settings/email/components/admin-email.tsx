@@ -23,7 +23,7 @@ import {
   resolveNotificationTemplate,
 } from '@/features/settings/email/lib/utils';
 import type { EmailSettingsFormInput } from '@/features/settings/email/schemas/forms/email-settings-form';
-import { CartIcon, EditPenIcon, InventoryBoxIcon, SettingsIcon, UserIcon } from '@/icons';
+import { CartIcon, EditPenIcon, InventoryBoxIcon, SettingsIcon } from '@/icons';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
@@ -51,18 +51,13 @@ const EmailRow = (props: EmailRowProps) => {
             {label}
           </Text>
           {item.is_enabled === false && (
-            <Badge variant="destructive">
-              {__('Inactive', 'kirki-ecommerce')}
-            </Badge>
+            <Badge variant="destructive">{__('Inactive', 'kirki-ecommerce')}</Badge>
           )}
         </StackedItemTitle>
       </StackedItemContent>
       <StackedItemActions>
         <ActionGroup>
-          <Switch
-            checked={Boolean(item.is_enabled)}
-            onCheckedChange={() => onToggle(item)}
-          />
+          <Switch checked={Boolean(item.is_enabled)} onCheckedChange={() => onToggle(item)} />
           <Button
             variant="outline"
             size="icon-sm"
@@ -83,7 +78,7 @@ const AdminEmail = (props: AdminEmailProps) => {
   const { control } = useFormContext<EmailSettingsFormInput>();
   const adminEmails = useWatch({ control, name: 'admin_emails' });
 
-  const { orderEmails, inventoryEmails, userEmails } = useMemo(() => {
+  const { orderEmails, inventoryEmails } = useMemo(() => {
     if (!adminEmails) {
       return {
         orderEmails: [],
@@ -93,36 +88,28 @@ const AdminEmail = (props: AdminEmailProps) => {
     }
 
     return {
-      orderEmails: mapEmailGroup(
-        adminEmails.order_notifications,
-        'admin_order',
-      ),
-      inventoryEmails: mapEmailGroup(
-        adminEmails.inventory_notifications,
-        'admin_inventory',
-      ),
+      orderEmails: mapEmailGroup(adminEmails.order_notifications, 'admin_order'),
+      inventoryEmails: mapEmailGroup(adminEmails.inventory_notifications, 'admin_inventory'),
       userEmails: mapEmailGroup(adminEmails.user_notifications, 'admin_user'),
     };
   }, [adminEmails]);
 
   return (
     <>
-      <Card data-search-id="email.admin-emails" data-search-keywords="notification, alert, recipient, store owner, staff" cssOverride={styles.roundedCard}>
+      <Card
+        data-search-id="email.admin-emails"
+        data-search-keywords="notification, alert, recipient, store owner, staff"
+        cssOverride={styles.roundedCard}
+      >
         <CardContent>
-
           <Flex direction="column" gap={4}>
             <Flex direction="column" gap={2} align="flex-start">
               <Flex gap={2} align="center">
                 <SettingsIcon />
-                <Text weight="semibold">
-                  {__('Admin Emails', 'kirki-ecommerce')}
-                </Text>
+                <Text weight="semibold">{__('Admin Emails', 'kirki-ecommerce')}</Text>
               </Flex>
               <Text color="secondary">
-                {__(
-                  'Order and account alerts sent to store administrators.',
-                  'kirki-ecommerce',
-                )}
+                {__('Order and account alerts sent to store administrators.', 'kirki-ecommerce')}
               </Text>
             </Flex>
 
@@ -133,6 +120,8 @@ const AdminEmail = (props: AdminEmailProps) => {
                 'kirki-ecommerce',
               )}
               leftIcon={<CartIcon />}
+              open
+              variant="email"
             >
               {orderEmails.length > 0 && (
                 <StackedItems variant="card">
@@ -140,7 +129,9 @@ const AdminEmail = (props: AdminEmailProps) => {
                     <EmailRow
                       key={item.key}
                       item={item}
-                      label={getNotificationTemplateLabel(resolveNotificationTemplate(item, 'admin_order'))}
+                      label={getNotificationTemplateLabel(
+                        resolveNotificationTemplate(item, 'admin_order'),
+                      )}
                       onToggle={handleToggleOrder}
                       onEdit={handleEditOrder}
                     />
@@ -150,11 +141,10 @@ const AdminEmail = (props: AdminEmailProps) => {
             </OptionAccordion>
             <OptionAccordion
               header={__('Inventory', 'kirki-ecommerce')}
-              subHeader={__(
-                'Get notified about your inventory status',
-                'kirki-ecommerce',
-              )}
+              subHeader={__('Get notified about your inventory status', 'kirki-ecommerce')}
               leftIcon={<InventoryBoxIcon />}
+              open
+              variant="email"
             >
               {inventoryEmails.length > 0 && (
                 <StackedItems variant="card">
@@ -162,29 +152,9 @@ const AdminEmail = (props: AdminEmailProps) => {
                     <EmailRow
                       key={item.key}
                       item={item}
-                      label={getNotificationTemplateLabel(resolveNotificationTemplate(item, 'admin_inventory'))}
-                      onToggle={handleToggleOrder}
-                      onEdit={handleEditOrder}
-                    />
-                  ))}
-                </StackedItems>
-              )}
-            </OptionAccordion>
-            <OptionAccordion
-              header={__('User', 'kirki-ecommerce')}
-              subHeader={__(
-                'Get notified about new user registration',
-                'kirki-ecommerce',
-              )}
-              leftIcon={<UserIcon />}
-            >
-              {userEmails.length > 0 && (
-                <StackedItems variant="card">
-                  {userEmails.map((item) => (
-                    <EmailRow
-                      key={item.key}
-                      item={item}
-                      label={getNotificationTemplateLabel(resolveNotificationTemplate(item, 'admin_user'))}
+                      label={getNotificationTemplateLabel(
+                        resolveNotificationTemplate(item, 'admin_inventory'),
+                      )}
                       onToggle={handleToggleOrder}
                       onEdit={handleEditOrder}
                     />

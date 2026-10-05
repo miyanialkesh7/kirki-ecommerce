@@ -147,17 +147,24 @@ export const ShippingMethod = ({
                   )}
                   <StackedItemContent>
                     <StackedItemTitle>
-                      <Text variant="small" weight="medium">
-                        {item.name ?? ''}
-                      </Text>
-                      {item.subText && (
-                        <Text variant="tiny" color="subdued">
-                          {item.subText}
+                      <Flex align="center" gap={2}>
+                        <Text variant="small" weight="medium">
+                          {item.name ?? ''}
                         </Text>
-                      )}
-                      {item.is_enabled === false && (
-                        <Badge variant="destructive">{__('Inactive', 'kirki-ecommerce')}</Badge>
-                      )}
+                        {item.subText && (
+                          <Text
+                            variant="tiny"
+                            color="subdued"
+                            truncate
+                            cssOverride={{ maxWidth: 280 }}
+                          >
+                            {item.subText}
+                          </Text>
+                        )}
+                        {item.is_enabled === false && (
+                          <Badge variant="destructive">{__('Inactive', 'kirki-ecommerce')}</Badge>
+                        )}
+                      </Flex>
                     </StackedItemTitle>
                   </StackedItemContent>
                   <StackedItemActions>

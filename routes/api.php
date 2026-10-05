@@ -10,7 +10,9 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\OrderCalculationController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CategoryController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OfflinePaymentController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnboardingController;
+use Kirki\Ecommerce\App\Http\Controllers\Api\SetupChecklistController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnlinePaymentController;
+use Kirki\Ecommerce\App\Http\Controllers\Api\PaymentMethodController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\VariantController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\ProductController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\TagController;
@@ -19,7 +21,6 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\CouponController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CurrencyController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CurrencyExchangeController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CustomerController;
-use Kirki\Ecommerce\App\Http\Controllers\Api\TestController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\CountryController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\TaxProfileController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\ShippingBoxController;
@@ -38,26 +39,24 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\Site\CheckoutController;
 use Kirki\Ecommerce\App\Http\Controllers\Site\OrderActivityController as SiteOrderActivityController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\Site\SiteController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\Site\WishlistController;
-use Kirki\Ecommerce\App\Models\Post;
 use Kirki\Ecommerce\App\Payment\WebhookController;
-use Kirki\Ecommerce\Framework\Http\Request;
 use Kirki\Ecommerce\Framework\Route;
+use Kirki\Ecommerce\Framework\Middlewares\AdminMiddleware;
 use Kirki\Ecommerce\Framework\Middlewares\AuthMiddleware;
-use Kirki\Ecommerce\Framework\Supports\Facades\DB;
-
-use function Kirki\Ecommerce\Framework\response;
 
 Route::set_namespace('kirki/ecommerce/v1');
 
 Route::post('/payment/webhook/{provider_id}', [WebhookController::class, 'handle']);
 Route::get('/payment/webhook/{provider_id}', [WebhookController::class, 'handle_return']);
 
-Route::group(['middleware' => AuthMiddleware::class], function () {
-    // Test route
-    Route::get('/test', [TestController::class, 'test']);
-
+Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], function () {
     // Onboarding
     Route::post('/onboarding', [OnboardingController::class, 'store']);
+    Route::post('/onboarding/sample-data', [OnboardingController::class, 'import_sample_data']);
+
+    // Setup Checklist
+    Route::get('/setup-checklist', [SetupChecklistController::class, 'index']);
+    Route::post('/setup-checklist/{step}/complete', [SetupChecklistController::class, 'complete']);
 
     // App Config
     Route::get('/app-config', [AppConfigController::class, 'get']);
@@ -109,9 +108,11 @@ Route::group(['middleware' => AuthMiddleware::class], function () {
     Route::put('/attributes/{attribute_id}/values/{id}', [AttributeValueController::class, 'update']);
     Route::delete('/attributes/{attribute_id}/values/{id}', [AttributeValueController::class, 'delete']);
     Route::post('/attributes/{attribute_id}/values/bulk', [AttributeValueController::class, 'bulk_actions']);
+    Route::post('/attributes/{attribute_id}/values/batch', [AttributeValueController::class, 'batch']);
 
     // Customers
     Route::get('/customers/locations', [CustomerController::class, 'locations']);
+    Route::get('/customers/check-email', [CustomerController::class, 'check_email']);
     Route::get('/customers', [CustomerController::class, 'get']);
     Route::get('/customers/{id}', [CustomerController::class, 'show']);
     Route::post('/customers', [CustomerController::class, 'create']);
@@ -186,6 +187,7 @@ Route::group(['middleware' => AuthMiddleware::class], function () {
     // Settings
     Route::get('/settings/email/{type}/{group}/{key}/preview', [EmailTemplateController::class, 'preview']);
     Route::post('/settings/email/{type}/{group}/{key}/preview/test-mail', [EmailTemplateController::class, 'send_test_mail']);
+    Route::post('/settings/email/{type}/{group}/{key}/restore', [EmailTemplateController::class, 'restore']);
     Route::get('/settings/{key}', [SettingsController::class, 'get']);
     Route::put('/settings', [SettingsController::class, 'update']);
 
@@ -225,6 +227,9 @@ Route::group(['middleware' => AuthMiddleware::class], function () {
     Route::get('/pages', [PageController::class, 'get']);
     Route::post('/pages/fix', [PageController::class, 'run_fix']);
 
+    // Payment Methods
+    Route::get('/payment-methods', [PaymentMethodController::class, 'get']);
+
     // Online Payments
     Route::get('/online-payments/installable', [OnlinePaymentController::class, 'all']);
     Route::post('/online-payments/install', [OnlinePaymentController::class, 'install']);
@@ -238,23 +243,12 @@ Route::group(['middleware' => AuthMiddleware::class], function () {
     Route::get('/offline-payments/{id}', [OfflinePaymentController::class, 'show']);
     Route::post('/offline-payments', [OfflinePaymentController::class, 'create']);
     Route::put('/offline-payments/{id}', [OfflinePaymentController::class, 'update']);
+    Route::patch('/offline-payments/{id}', [OfflinePaymentController::class, 'set_enabled']);
     Route::delete('/offline-payments/{id}', [OfflinePaymentController::class, 'delete']);
 });
 
 //@todo remove this later as its just to mock the zip download
 Route::get('/online-payments/download/{id}', [OnlinePaymentController::class, 'download']);
-
-Route::get('/test-public', function (Request $request) {
-    DB::enable_query_log();
-    $posts = Post::with(['categories.term', 'tags.term'])->find(1);
-    $query = DB::get_query_log();
-
-    return response()->json([
-        'message' => 'Hello World',
-        'data' => $posts,
-        'query' => $query,
-    ]);
-});
 
 // Site api endpoints.
 Route::get('/shop/products', [SiteController::class, 'products']);

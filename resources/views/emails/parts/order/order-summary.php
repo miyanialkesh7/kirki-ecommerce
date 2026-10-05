@@ -1,7 +1,6 @@
 <?php
 
 use Kirki\Ecommerce\App\Constants\EmailDefaultTemplate;
-use Kirki\Ecommerce\App\Facades\Money;
 
 use function Kirki\Ecommerce\Framework\view_data;
 
@@ -20,12 +19,11 @@ $muted_color = $default_template['colors']['typography']['muted'] ?? EmailDefaul
 $exceptions_color = $default_template['colors']['typography']['exceptions'] ?? EmailDefaultTemplate::TYPOGRAPHY_COLOR_EXCEPTIONS;
 $divider_color = $default_template['colors']['background']['divider'] ?? EmailDefaultTemplate::BACKGROUND_COLOR_DIVIDER;
 
-$total_before_shipping_display = Money::prepare_amount_object_from_minor(
-    ($totals['invoiced_subtotal'] ?? 0) - ($totals['invoiced_discount'] ?? 0),
-    $currency_code
-)->display;
-
-$tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
+$is_tax_inclusive = !empty($order['is_tax_inclusive']);
+$price_variant = $is_tax_inclusive ? 'inclusive' : 'exclusive';
+$tax_lines = $order['tax_lines'] ?? [];
+$tax_total = $totals['invoiced_tax_total_money_object'] ?? null;
+$order_discount = $totals['invoiced_order_discount_money_object'] ?? null;
 ?>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
@@ -36,7 +34,7 @@ $tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <?php foreach ($items as $item) : ?>
                     <tr>
-                        <td style="padding-bottom: 16px; vertical-align: top; width: 56px;">
+                        <td style="padding-bottom: 16px; vertical-align: center; width: 56px;">
                             <div style="width: 48px; height: 48px; border-radius: 8px; background-color: #F5F5F5;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none">
                                     <path fill="#858b93" d="M15 18a5 5 0 1 1 10 0 5 5 0 0 1-10 0m5-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6" />
@@ -45,7 +43,7 @@ $tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
                                 </svg>
                             </div>
                         </td>
-                        <td style="padding-left:14px; padding-bottom: 16px; vertical-align: top;">
+                        <td style="padding-left:14px; padding-bottom: 16px; vertical-align: center;">
                             <p data-email-part="colors.typography.body" style="margin: 0; font-size: 13px; font-weight: 500; color: <?php echo esc_attr($body_color); ?>;">
                                 <?php
                                 echo esc_html(
@@ -63,25 +61,25 @@ $tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
                                     <?php echo esc_html($item['variant_name']); ?>
                                 </p>
                             <?php endif; ?>
-                            <?php if (!empty($item['discount_note'])) : ?>
+                            <?php foreach ($item['applied_product_coupons'] ?? [] as $applied_coupon) : ?>
                                 <p data-email-part="colors.typography.muted" style="margin: 4px 0 0 0; font-size: 11px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
                                     <svg data-email-part="colors.typography.muted" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px; color: <?php echo esc_attr($muted_color); ?>;">
                                         <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
                                         <circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none" />
                                     </svg>
-                                    <?php echo esc_html($item['discount_note']); ?>
+                                    <?php echo esc_html(!empty($applied_coupon['title']) ? $applied_coupon['title'] : ($applied_coupon['code'] ?? '')); ?>
                                 </p>
-                            <?php endif; ?>
+                            <?php endforeach; ?>
                         </td>
-                        <td style="padding-left: 16px; padding-bottom: 16px; vertical-align: top; text-align: right; white-space: nowrap;">
+                        <td style="padding-left: 16px; padding-bottom: 16px; vertical-align: center; text-align: right; white-space: nowrap;">
                             <?php
-                            $item_total_display = $item['invoiced_total_money_object']->display ?? '';
-                            $item_price_display = $item['invoiced_price_money_object']->display ?? '';
+                            $item_total_display = $item['invoiced_subtotal_' . $price_variant . '_money_object']->display ?? '';
+                            $item_price_display = $item['invoiced_strikethrough_price_' . $price_variant . '_money_object']->display ?? '';
                             ?>
                             <p data-email-part="colors.typography.body" style="margin: 0; font-size: 13px; font-weight: 500; color: <?php echo esc_attr($body_color); ?>;">
                                 <?php echo esc_html($item_total_display); ?>
                             </p>
-                            <?php if (!empty($item['invoiced_price']) && $item_price_display !== $item_total_display) : ?>
+                            <?php if ($item_price_display !== '' && $item_price_display !== $item_total_display) : ?>
                                 <p data-email-part="colors.typography.muted" style="margin: 0; font-size: 12px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>; text-decoration: line-through;">
                                     <?php echo esc_html($item_price_display); ?>
                                 </p>
@@ -90,24 +88,24 @@ $tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
                     </tr>
                 <?php endforeach; ?>
             </table>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-email-part="colors.background.divider" style="margin-top: 8px; padding-top: 24px; border-top: 1px solid <?php echo esc_attr($divider_color); ?>;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-email-part="colors.background.divider" style="margin-center: 8px; padding-top: 24px; border-top: 1px solid <?php echo esc_attr($divider_color); ?>;">
                 <tr>
                     <td style="width: 170px;"></td>
                     <td data-email-part="colors.typography.muted" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
                         <?php echo esc_html__('Subtotal', 'kirki-ecommerce'); ?>
                     </td>
                     <td data-email-part="colors.typography.body" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right;">
-                        <?php echo esc_html($totals['invoiced_subtotal_money_object']->display ?? ''); ?>
+                        <?php echo esc_html($totals['invoiced_items_subtotal_' . $price_variant . '_money_object']->display ?? ''); ?>
                     </td>
                 </tr>
-                <?php if (!empty($totals['invoiced_discount'])) : ?>
+                <?php if (!empty($order_discount->raw)) : ?>
                     <tr>
                         <td style="width: 170px;"></td>
                         <td data-email-part="colors.typography.muted" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
                             <?php echo esc_html__('Discount', 'kirki-ecommerce'); ?>
                         </td>
                         <td data-email-part="colors.typography.body" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right;">
-                            -<?php echo esc_html($totals['invoiced_discount_money_object']->display ?? ''); ?>
+                            -<?php echo esc_html($order_discount->display ?? ''); ?>
                         </td>
                     </tr>
                 <?php endif; ?>
@@ -117,7 +115,7 @@ $tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
                         <?php echo esc_html__('Total', 'kirki-ecommerce'); ?>
                     </td>
                     <td data-email-part="colors.typography.body colors.background.divider" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right; border-top: 1px solid <?php echo esc_attr($divider_color); ?>;">
-                        <?php echo esc_html($total_before_shipping_display); ?>
+                        <?php echo esc_html($totals['invoiced_order_total_' . $price_variant . '_money_object']->display ?? ''); ?>
                     </td>
                 </tr>
                 <tr>
@@ -126,26 +124,29 @@ $tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
                         <?php echo esc_html__('Shipping', 'kirki-ecommerce'); ?>
                     </td>
                     <td data-email-part="colors.typography.body" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right;">
-                        <?php echo esc_html($totals['invoiced_shipping_money_object']->display ?? ''); ?>
+                        <?php echo esc_html($totals['invoiced_shipping_amount_money_object']->display ?? ''); ?>
                     </td>
                 </tr>
-                <tr>
-                    <td style="width: 170px;"></td>
-                    <td data-email-part="colors.typography.muted" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
-                        <?php
-                        echo esc_html(
-                            sprintf(
-                                /* translators: %s: tax rate, e.g. 10% */
-                                __('VAT %s', 'kirki-ecommerce'),
-                                $tax_rate_display
-                            )
-                        );
-                        ?>
-                    </td>
-                    <td data-email-part="colors.typography.body" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right;">
-                        <?php echo esc_html($totals['invoiced_tax_money_object']->display ?? ''); ?>
-                    </td>
-                </tr>
+                <?php foreach ($is_tax_inclusive ? [] : $tax_lines as $tax_line) : ?>
+                    <tr>
+                        <td style="width: 170px;"></td>
+                        <td data-email-part="colors.typography.muted" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    /* translators: 1: tax name, 2: tax rate, e.g. VAT 10% */
+                                    __('%1$s %2$s%%', 'kirki-ecommerce'),
+                                    $tax_line['name'] ?? '',
+                                    $tax_line['rate'] ?? 0
+                                )
+                            );
+                            ?>
+                        </td>
+                        <td data-email-part="colors.typography.body" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right;">
+                            <?php echo esc_html($tax_line['invoiced_amount_money_object']->display ?? ''); ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
                 <tr>
                     <td style="width: 170px;"></td>
                     <td data-email-part="colors.typography.headings colors.background.divider" style="padding: 12px 0 2px 0; font-size: 14px; font-weight: 700; color: <?php echo esc_attr($headings_color); ?>; border-top: 1px solid <?php echo esc_attr($divider_color); ?>;">
@@ -158,21 +159,45 @@ $tax_rate_display = sprintf('%s%%', $items[0]['tax_rate'] ?? 0);
                         <?php echo esc_html($totals['invoiced_total_money_object']->display ?? ''); ?>
                     </td>
                 </tr>
-                <?php if (!empty($totals['base_tax'])) : ?>
+                <?php if ($is_tax_inclusive && !empty($tax_lines)) : ?>
                     <tr>
                         <td style="width: 170px;"></td>
                         <td colspan="2" data-email-part="colors.typography.muted" style="font-size: 12px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
                             <?php
                             echo esc_html(
-                                sprintf(
-                                    /* translators: %s: base-currency VAT amount, e.g. €19.63 */
-                                    __('Including %s VAT', 'kirki-ecommerce'),
-                                    $totals['base_tax_money_object']->display ?? ''
-                                )
+                                'VAT' === ($tax_lines[0]['name'] ?? '')
+                                    ? sprintf(
+                                        /* translators: %s: total tax amount included in the order total */
+                                        __('Incl. %s VAT', 'kirki-ecommerce'),
+                                        $tax_total->display ?? ''
+                                    )
+                                    : sprintf(
+                                        /* translators: %s: total tax amount included in the order total */
+                                        _n('Incl. %s Tax', 'Incl. %s Taxes', count($tax_lines), 'kirki-ecommerce'),
+                                        $tax_total->display ?? ''
+                                    )
                             );
                             ?>
                         </td>
                     </tr>
+                    <?php foreach ($tax_lines as $tax_line) : ?>
+                        <tr>
+                            <td style="width: 170px;"></td>
+                            <td colspan="2" data-email-part="colors.typography.muted" style="padding-left: 12px; font-size: 12px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
+                                <?php
+                                echo esc_html(
+                                    sprintf(
+                                        /* translators: 1: tax rate, 2: tax name, 3: tax amount, e.g. 19% VAT: €10.63 */
+                                        __('%1$s%% %2$s: %3$s', 'kirki-ecommerce'),
+                                        $tax_line['rate'] ?? 0,
+                                        $tax_line['name'] ?? '',
+                                        $tax_line['invoiced_amount_money_object']->display ?? ''
+                                    )
+                                );
+                                ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
                 <?php endif; ?>
             </table>
         </td>

@@ -4,6 +4,11 @@ namespace Kirki\Ecommerce\App\DTO\Variant;
 
 use Kirki\Ecommerce\Framework\DTO;
 
+/**
+ * Data object for updating a product variant.
+ *
+ * @since 1.0.0
+ */
 class UpdateVariantDTO extends DTO
 {
     /** @var int */
@@ -23,9 +28,6 @@ class UpdateVariantDTO extends DTO
 
     /** @var int|null */
     public $base_price;
-
-    /** @var bool|null */
-    public $show_unit_price;
 
     /** @var string|null */
     public $base_unit;

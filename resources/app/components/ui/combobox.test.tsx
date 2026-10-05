@@ -44,13 +44,13 @@ describe('Combobox search', () => {
     expect(screen.queryByText('Allemagne')).not.toBeInTheDocument();
   });
 
-  it('does not match a code when no keyword is supplied', () => {
+  it('matches an option by its value even when no keywords are supplied', () => {
     const withoutKeywords = OPTIONS.map(({ value, label }) => ({ value, label }));
 
     render(<Combobox options={withoutKeywords} onChange={vi.fn()} />);
 
     search('DE');
 
-    expect(screen.queryByText('Allemagne')).not.toBeInTheDocument();
+    expect(screen.getByText('Allemagne')).toBeInTheDocument();
   });
 });

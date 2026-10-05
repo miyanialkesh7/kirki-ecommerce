@@ -6,6 +6,10 @@ use Kirki\Ecommerce\Framework\Facade;
 
 
 /**
+ * Facade for the money manager, wrapping Brick Money with minor-unit and currency helpers.
+ *
+ * @since 1.0.0
+ *
  * @method static \Brick\Money\Money min(\Brick\Money\Money $money, \Brick\Money\Money ...$monies)
  * @method static \Brick\Money\Money max(\Brick\Money\Money $money, \Brick\Money\Money ...$monies)
  * @method static \Brick\Money\Money total(\Brick\Money\Money $money, \Brick\Money\Money ...$monies)
@@ -21,6 +25,7 @@ use Kirki\Ecommerce\Framework\Facade;
  * @method static string format_from_minor(mixed $minorAmount, mixed $currency = null, int $roundingMode = \Brick\Math\RoundingMode::HALF_UP, \Brick\Money\Context $context = null)
  * @method static string format_from_decimal(mixed $amount, mixed $currency = null, int $roundingMode = \Brick\Math\RoundingMode::HALF_UP, \Brick\Money\Context $context = null)
  * @method static string get_currency_symbol(string $code)
+ * @method static string get_currency_numeric_code(string $code)
  * @method static \Brick\Money\Money convert_to_currency(\Brick\Money\Money $money, string $currency, $exchange_rate = null)
  * @method static \Brick\Money\Money zero(string $currency = null)
  * @method static \Brick\Money\Money prepare_money_from_minor(int|float $amount, string $currency_code = null, string $target_currency = null)
@@ -32,6 +37,11 @@ use Kirki\Ecommerce\Framework\Facade;
  */
 class Money extends Facade
 {
+    /**
+     * @inheritDoc
+     *
+     * @since 1.0.0
+     */
     public static function get_accessor()
     {
         return 'money';

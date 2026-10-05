@@ -7,13 +7,19 @@ use Kirki\Ecommerce\App\Facades\Order;
 use Kirki\Ecommerce\Framework\Database\Seeder;
 use Kirki\Ecommerce\Framework\Supports\Facades\Log;
 
+/**
+ * Seeds a sample manual order placed for the last seeded customer.
+ *
+ * @since 1.0.0
+ */
 class OrderSeeder extends Seeder
 {
     /**
      * Seed a sample order linked to catalog products and coupons.
      *
-     * @return void
      * @since 1.0.0
+     *
+     * @return void
      */
     public function run(): void
     {
@@ -33,7 +39,7 @@ class OrderSeeder extends Seeder
             ],
             'currency_code' => 'USD',
             'payment_provider' => 'paypal',
-            'coupon_code' => 'WINTER20',
+            'coupon_codes' => ['WINTER20'],
             'shipping_method' => 'method-0001',
             'shipping_first_name' => $customer['first_name'],
             'shipping_last_name' => $customer['last_name'],

@@ -2,6 +2,7 @@ import { defineRoute } from '@/libs/route';
 
 export const RouteConfig = {
   Home: defineRoute('/'),
+  Onboarding: defineRoute('/onboarding'),
 
   Products: defineRoute('/products', {
     CreateProduct: defineRoute('/create'),

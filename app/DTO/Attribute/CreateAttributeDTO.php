@@ -4,6 +4,11 @@ namespace Kirki\Ecommerce\App\DTO\Attribute;
 
 use Kirki\Ecommerce\Framework\DTO;
 
+/**
+ * Data object for creating a product attribute.
+ *
+ * @since 1.0.0
+ */
 class CreateAttributeDTO extends DTO
 {
     /** @var string */
@@ -14,4 +19,7 @@ class CreateAttributeDTO extends DTO
 
     /** @var string|null */
     public $type = 'list';
+
+    /** @var array<int, array<string, mixed>> Value rows (`value`, optional `color`) created with the attribute. */
+    public $values = [];
 }

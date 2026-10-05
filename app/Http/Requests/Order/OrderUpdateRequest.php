@@ -7,17 +7,24 @@ use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\Framework\Sanitizer;
 use Kirki\Ecommerce\Framework\Http\Request;
 
-use function Kirki\Ecommerce\App\customer;
-
+/**
+ * Validates and sanitizes the payload for updating an order.
+ *
+ * @since 1.0.0
+ */
 class OrderUpdateRequest extends Request
 {
     use ValidatesAddressFields;
 
-    public function authorize()
-    {
-        return customer()->is_admin();
-    }
-
+    /**
+     * Default the customer ID and currency code before validation.
+     *
+     * A missing customer ID becomes 0 and a missing currency falls back to the display currency.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
     protected function prepare_for_validation()
     {
         $customer_id = $this->input('customer_id') ?? null;
@@ -28,6 +35,11 @@ class OrderUpdateRequest extends Request
         ]);
     }
 
+    /**
+     * @inheritDoc
+     *
+     * @since 1.0.0
+     */
     public function rules()
     {
         $shipping_country = (string) $this->input('shipping_country');
@@ -71,6 +83,8 @@ class OrderUpdateRequest extends Request
             'billing_email' => 'nullable|email',
             'billing_company' => 'nullable|string',
 
+            'customer_first_name' => 'required|string',
+            'customer_last_name' => 'required|string',
             'customer_email' => 'nullable|email',
             'customer_phone' => 'nullable|string',
             'admin_notes' => 'nullable|string',
@@ -79,6 +93,11 @@ class OrderUpdateRequest extends Request
         ];
     }
 
+    /**
+     * @inheritDoc
+     *
+     * @since 1.0.0
+     */
     public function messages()
     {
         return [
@@ -87,6 +106,11 @@ class OrderUpdateRequest extends Request
         ];
     }
 
+    /**
+     * @inheritDoc
+     *
+     * @since 1.0.0
+     */
     public function filters()
     {
         return [
@@ -127,6 +151,8 @@ class OrderUpdateRequest extends Request
             'billing_email' => Sanitizer::EMAIL,
             'billing_company' => Sanitizer::TEXT,
 
+            'customer_first_name' => Sanitizer::TEXT,
+            'customer_last_name' => Sanitizer::TEXT,
             'customer_email' => Sanitizer::EMAIL,
             'customer_phone' => Sanitizer::TEXT,
             'admin_notes' => Sanitizer::TEXT,

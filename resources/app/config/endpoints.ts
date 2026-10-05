@@ -23,6 +23,7 @@ export const endpoints = {
 
   CUSTOMERS: '/customers',
   CUSTOMER_LOCATIONS: '/customers/locations',
+  CUSTOMER_CHECK_EMAIL: '/customers/check-email',
   CUSTOMER: (id: string | number) => `/customers/${id}`,
   CUSTOMERS_BULK: '/customers/bulk',
 
@@ -32,6 +33,7 @@ export const endpoints = {
   ATTRIBUTE_VALUE: (attributeId: string | number, valueId: string | number) =>
     `/attributes/${attributeId}/values/${valueId}`,
   ATTRIBUTE_VALUES_BULK: (attributeId: string | number) => `/attributes/${attributeId}/values/bulk`,
+  ATTRIBUTE_VALUES_BATCH: (attributeId: string | number) => `/attributes/${attributeId}/values/batch`,
 
   VARIANT: (id: string | number) => `/variants/${id}`,
   VARIANTS: '/variants',
@@ -40,6 +42,12 @@ export const endpoints = {
     `/variants/bulk/${Array.isArray(ids) ? ids.join(',') : ids}`,
   VARIANT_GENERATE_SKU: '/variants/generate-sku',
   VARIANTS_GENERATE_SKUS: '/variants/generate-skus',
+
+  ONBOARDING: '/onboarding',
+  ONBOARDING_SAMPLE_DATA: '/onboarding/sample-data',
+
+  SETUP_CHECKLIST: '/setup-checklist',
+  SETUP_CHECKLIST_COMPLETE_STEP: (step: string) => `/setup-checklist/${step}/complete`,
 
   COUNTRIES: '/countries',
 
@@ -68,6 +76,8 @@ export const endpoints = {
     `/settings/email/${type}/${group}/${key}/preview`,
   EMAIL_NOTIFICATION_SEND_TEST_MAIL: (type: string, group: string, key: string) =>
     `/settings/email/${type}/${group}/${key}/preview/test-mail`,
+  EMAIL_NOTIFICATION_RESTORE: (type: string, group: string, key: string) =>
+    `/settings/email/${type}/${group}/${key}/restore`,
   APP_CONFIG: '/app-config',
 
   SHIPPING_PROFILES: '/shipping-profiles',
@@ -78,6 +88,7 @@ export const endpoints = {
   TAX_PROFILES: '/tax-profiles',
   TAX_PROFILE: (id: string | number) => `/tax-profiles/${id}`,
 
+  PAYMENT_METHODS: '/payment-methods',
   ONLINE_PAYMENTS: '/online-payments',
   ONLINE_PAYMENT: (id: string | number) => `/online-payments/${id}`,
   ONLINE_PAYMENTS_INSTALLABLE: '/online-payments/installable',

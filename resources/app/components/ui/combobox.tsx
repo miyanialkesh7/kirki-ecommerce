@@ -12,6 +12,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import Flex from '@/components/ui/flex';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { theme } from '@/theme';
@@ -24,6 +25,7 @@ type ComboboxOption = {
   value: string;
   leftIcon?: ReactNode;
   keywords?: string[];
+  description?: string;
 };
 
 // Fixed so the virtualizer's estimate is exact: it positions rows from this
@@ -351,8 +353,8 @@ const Combobox = ({
                   return (
                     <CommandItem
                       key={option.value}
-                      value={option.label}
-                      keywords={option.keywords}
+                      value={option.value}
+                      keywords={[option.label, option.description ?? '', ...(option.keywords ?? [])]}
                       onSelect={() => handleSelect(option.value)}
                     >
                       <span
@@ -363,7 +365,12 @@ const Combobox = ({
                       {hasLeadingIcons && (
                         <span css={scoped(styles.leadingIcon)}>{option.leftIcon}</span>
                       )}
-                      {option.label}
+                      <Flex direction="column" gap={1}>
+                        <span>{option.label}</span>
+                        {option.description && (
+                          <span css={scoped(styles.itemDescription)}>{option.description}</span>
+                        )}
+                      </Flex>
                     </CommandItem>
                   );
                 })}
@@ -522,6 +529,14 @@ const styles = defineStyles({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  itemDescription: {
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    ...theme.typography.tiny(),
+    color: theme.colors.text.secondary,
   },
   emptyState: {
     padding: `${theme.spacing[4]} ${theme.spacing[2]}`,

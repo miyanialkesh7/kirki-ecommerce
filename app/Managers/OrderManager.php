@@ -12,7 +12,15 @@ use Kirki\Ecommerce\App\Constants\Order\OrderStatus;
 use Kirki\Ecommerce\App\Constants\Order\OrderActivityType;
 use Kirki\Ecommerce\App\DTO\Refund\CreateRefundPayloadDTO;
 use Kirki\Ecommerce\App\DTO\Refund\UpdateRefundPayloadDTO;
+use Kirki\Ecommerce\App\Events\Order\OrderCancelledEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderDeliveredEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderOnHoldEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderPaymentFailedEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderProcessingEvent;
+use Kirki\Ecommerce\App\Events\Order\OrderShippedEvent;
 use Kirki\Ecommerce\App\Facades\OrderActivity;
+use Kirki\Ecommerce\App\Jobs\SendOrderMailJob;
+use Kirki\Ecommerce\App\Mails\Customers\CustomerNewOrderMail;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Services\InventoryService;
 use Kirki\Ecommerce\App\Services\OrderService;
@@ -24,21 +32,43 @@ use Kirki\Ecommerce\App\Services\CouponService;
 use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 
 /**
- * OrderManager class
- * 
- * A collaborator class that provides convenient methods for order operations.
- * This manager delegates to order action classes and the order service.
+ * Provides convenient methods for order operations.
+ *
+ * A collaborator class that delegates to the order action classes and the
+ * order service.
+ *
+ * @since 1.0.0
  */
 class OrderManager
 {
+    /** @var CreateOrderAction */
     protected $create_order_action;
+    /** @var UpdateOrderAction */
     protected $update_order_action;
+    /** @var OrderService */
     protected $order_service;
+    /** @var InventoryService */
     protected $inventory_service;
+    /** @var CreateRefundAction */
     protected $create_refund_action;
+    /** @var UpdateRefundAction */
     protected $update_refund_action;
+    /** @var CouponService */
     protected $coupon_service;
 
+    /**
+     * Create the manager with the actions and services it delegates to.
+     *
+     * @since 1.0.0
+     *
+     * @param CreateOrderAction  $create_order_action
+     * @param UpdateOrderAction  $update_order_action
+     * @param OrderService       $order_service
+     * @param InventoryService   $inventory_service
+     * @param CreateRefundAction $create_refund_action
+     * @param UpdateRefundAction $update_refund_action
+     * @param CouponService      $coupon_service
+     */
     public function __construct(
         CreateOrderAction $create_order_action,
         UpdateOrderAction $update_order_action,
@@ -60,6 +90,8 @@ class OrderManager
     /**
      * Create a new order.
      *
+     * @since 1.0.0
+     *
      * @param CreateOrderPayloadDTO $dto
      * @return Order
      */
@@ -71,6 +103,8 @@ class OrderManager
     /**
      * Update an existing order.
      *
+     * @since 1.0.0
+     *
      * @param UpdateOrderPayloadDTO $dto
      * @return Order
      */
@@ -80,10 +114,12 @@ class OrderManager
     }
 
     /**
-     * Mark an order fulfillment status as unfulfilled.
+     * Mark an order's fulfillment status as unfulfilled.
      *
-     * @param int $id
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the order was updated.
      */
     public function mark_as_unfulfilled(int $id)
     {
@@ -91,11 +127,17 @@ class OrderManager
     }
 
     /**
-     * Mark an order fulfillment status as pending.
+     * Cancel an order.
      *
-     * @param int $id
-     * @param string|null $reason
-     * @return bool
+     * When the cancel transition is applied, reverses coupon usage, releases
+     * reserved stock, records the reason and cancellation time, and logs the
+     * activity.
+     *
+     * @since 1.0.0
+     *
+     * @param int         $id     Order ID.
+     * @param string|null $reason Cancellation reason.
+     * @return bool True when the cancel transition was applied.
      */
     public function mark_as_cancel(int $id, $reason = null)
     {
@@ -114,17 +156,25 @@ class OrderManager
                 'cancelled_at' => Date::now(),
             ]);
             
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::CANCELLED);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::CANCELLED);
+
+            if ($order->order_status !== $status_before) {
+                OrderCancelledEvent::dispatch($order);
+            }
         }
 
         return $is_cancelled;
     }
 
     /**
-     * Mark an order fulfillment status as processing.
+     * Mark an order as processing, or resume fulfillment when it was on hold.
      *
-     * @param int $id
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the transition was applied.
      */
     public function mark_as_processing(int $id)
     {
@@ -134,21 +184,28 @@ class OrderManager
             ? OrderAction::RESUME_FULFILLMENT
             : OrderAction::MARK_AS_PROCESSING;
 
-        $is_updated = $this->order_service->apply_order_action($id, $order->order_status, $action);
+        $status_before = $order->order_status;
+        $is_updated = $this->order_service->apply_order_action($id, $status_before, $action);
 
         if ($is_updated) {
             $order = $this->order_service->find_order_or_fail($id);
             OrderActivity::log($order, $is_resuming ? OrderActivityType::FULFILLMENT_RESUMED : OrderActivityType::PROCESSING);
+
+            if (!$is_resuming && $order->order_status !== $status_before) {
+                OrderProcessingEvent::dispatch($order);
+            }
         }
 
         return $is_updated;
     }
 
     /**
-     * Mark an order fulfillment status as on hold.
+     * Mark an order's fulfillment as on hold.
      *
-     * @param int $id
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the transition was applied.
      */
     public function mark_as_on_hold(int $id)
     {
@@ -156,14 +213,25 @@ class OrderManager
         $is_on_hold = $this->order_service->apply_order_action($id, $order->order_status, OrderAction::MARK_AS_HOLD);
 
         if ($is_on_hold) {
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::ON_HOLD);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::ON_HOLD);
+
+            if ($order->order_status !== $status_before) {
+                OrderOnHoldEvent::dispatch($order);
+            }
         }
 
         return $is_on_hold;
     }
 
     /**
-     * Mark an order fulfillment status as shipped.
+     * Mark an order as shipped and record the shipping time.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the transition was applied.
      */
     public function mark_as_shipped(int $id)
     {
@@ -172,17 +240,27 @@ class OrderManager
 
         if ($is_shipped) {
             $this->order_service->partial_update_order($id, ['shipped_at' => Date::now()]);
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::SHIPPED);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::SHIPPED);
+
+            if ($order->order_status !== $status_before) {
+                OrderShippedEvent::dispatch($order);
+            }
         }
 
         return $is_shipped;
     }
 
     /**
-     * Mark an order fulfillment status as delivered.
+     * Mark an order as delivered and record the delivery time.
      *
-     * @param int $id
-     * @return bool
+     * Confirms the order's reserved stock when the order is already paid.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the transition was applied.
      */
     public function mark_as_delivered(int $id)
     {
@@ -196,7 +274,13 @@ class OrderManager
                 $this->inventory_service->confirm_all_reserved_stock($order);
             }
 
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::DELIVERED);
+            $status_before = $order->order_status;
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::DELIVERED);
+
+            if ($order->order_status !== $status_before) {
+                OrderDeliveredEvent::dispatch($order);
+            }
         }
 
         return $is_delivered;
@@ -205,9 +289,11 @@ class OrderManager
     /**
      * Set the shipping carrier and tracking details of an order.
      *
-     * @param int $id
-     * @param array $tracking Accepts carrier, tracking_number and tracking_url keys.
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int                  $id       Order ID.
+     * @param array<string, mixed> $tracking Accepts carrier, tracking_number and tracking_url keys.
+     * @return bool True when the order was updated.
      */
     public function add_tracking(int $id, array $tracking)
     {
@@ -227,8 +313,10 @@ class OrderManager
     /**
      * Mark an order as archived.
      *
-     * @param int $id
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the order was updated.
      */
     public function mark_as_archive(int $id)
     {
@@ -242,11 +330,16 @@ class OrderManager
     }
 
     /**
-     * Mark an order as paid.
+     * Mark an order's payment as paid.
      *
-     * @param int $id
-     * @param string|null $payment_provider
-     * @return bool
+     * Records the payment time and provider, confirms reserved stock when the
+     * order is already delivered, and logs the activity.
+     *
+     * @since 1.0.0
+     *
+     * @param int         $id               Order ID.
+     * @param string|null $payment_provider Payment provider ID to store on the order.
+     * @return bool True when the paid transition was applied.
      */
     public function mark_payment_as_paid(int $id, ?string $payment_provider = null)
     {
@@ -273,10 +366,12 @@ class OrderManager
     }
 
     /**
-     * Mark an order is unpaid.
+     * Mark an order's payment as unpaid.
      *
-     * @param int $id
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the order was updated.
      */
     public function mark_payment_as_unpaid(int $id)
     {
@@ -290,14 +385,21 @@ class OrderManager
     }
 
     /**
-     * Mark an order is failed.
+     * Mark an order's payment as failed and log the activity.
      *
-     * @param int $id
-     * @return bool
+     * The payment-failed event is dispatched only when the payment was not
+     * already failed, so a gateway repeating its failure notification does
+     * not notify anyone twice.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the order was updated.
      */
     public function mark_payment_as_failed(int $id)
     {
         $order = $this->order_service->find_order_or_fail($id);
+        $was_failed = $order->payment_status === PaymentStatus::FAILED;
         $order_status = OrderStatus::find_by_pair($order->fulfillment_status, PaymentStatus::FAILED);
 
         $is_updated = $this->order_service->partial_update_order($id, [
@@ -306,17 +408,24 @@ class OrderManager
         ]);
 
         if ($is_updated) {
-            OrderActivity::log($this->order_service->find_order_or_fail($id), OrderActivityType::PAYMENT_FAILED);
+            $order = $this->order_service->find_order_or_fail($id);
+            OrderActivity::log($order, OrderActivityType::PAYMENT_FAILED);
+
+            if (!$was_failed) {
+                OrderPaymentFailedEvent::dispatch($order);
+            }
         }
 
         return $is_updated;
     }
 
     /**
-     * Mark an order as refunded.
+     * Mark an order's initiated refund as completed and release its reserved stock.
      *
-     * @param int $id
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool True when the order was marked as refunded.
      */
     public function mark_refund_as_completed(int $id)
     {
@@ -332,7 +441,9 @@ class OrderManager
     /**
      * Find an order by ID.
      *
-     * @param int $id
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
      * @return Order|null
      */
     public function find(int $id)
@@ -343,9 +454,11 @@ class OrderManager
     /**
      * Find an order by ID or throw an exception.
      *
-     * @param int $id
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
      * @return Order
-     * @throws \Kirki\Ecommerce\Framework\Exceptions\NotFoundException
+     * @throws \Kirki\Ecommerce\Framework\Exceptions\NotFoundException When the order does not exist.
      */
     public function find_or_fail(int $id)
     {
@@ -354,6 +467,8 @@ class OrderManager
 
     /**
      * Find an order by UUID.
+     *
+     * @since 1.0.0
      *
      * @param string $uuid
      * @return Order|null
@@ -364,7 +479,9 @@ class OrderManager
     }
 
     /**
-     * Find an order by transaction ID.
+     * Find an order by payment transaction ID.
+     *
+     * @since 1.0.0
      *
      * @param string $transaction_id
      * @return Order|null
@@ -377,7 +494,9 @@ class OrderManager
     /**
      * Delete an order by ID.
      *
-     * @param int $id
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
      * @return bool
      */
     public function delete(int $id)
@@ -388,9 +507,11 @@ class OrderManager
     /**
      * Delete an order by ID or throw an exception.
      *
-     * @param int $id
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
      * @return bool
-     * @throws \Kirki\Ecommerce\Framework\Exceptions\NotFoundException
+     * @throws \Kirki\Ecommerce\Framework\Exceptions\NotFoundException When the order does not exist.
      */
     public function delete_or_fail(int $id)
     {
@@ -398,11 +519,13 @@ class OrderManager
     }
 
     /**
-     * Set transaction id for an order.
+     * Set the payment transaction ID of an order.
      *
-     * @param int $id
+     * @since 1.0.0
+     *
+     * @param int    $id             Order ID.
      * @param string $transaction_id
-     * @return bool
+     * @return bool True when the order was updated.
      */
     public function set_transaction_id(int $id, string $transaction_id)
     {
@@ -410,12 +533,16 @@ class OrderManager
     }
 
     /**
-     * Set payment provider fee for an order, in both the order's invoiced
-     * (transaction) currency and the store's base currency.
+     * Set the payment provider fee of an order.
      *
-     * @param int $id
+     * Stores the fee in both the order's invoiced (transaction) currency and the
+     * store's base currency.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id  Order ID.
      * @param int $fee Fee in the order's invoiced currency, minor units.
-     * @return bool
+     * @return bool False when the order does not exist or was not updated.
      */
     public function set_payment_provider_fee(int $id, int $fee)
     {
@@ -432,12 +559,15 @@ class OrderManager
     }
 
     /**
-     * Convert an invoiced-currency fee to the store's base currency, using
-     * the order's own frozen exchange rate rather than a live rate.
+     * Convert an invoiced-currency fee to the store's base currency.
      *
-     * @param int $fee
+     * Uses the order's own frozen exchange rate rather than a live rate.
+     *
+     * @since 1.0.0
+     *
+     * @param int   $fee   Fee in the order's invoiced currency, minor units.
      * @param Order $order
-     * @return int
+     * @return int Fee in the base currency, minor units.
      */
     protected function convert_fee_to_base_currency(int $fee, Order $order)
     {
@@ -455,8 +585,10 @@ class OrderManager
     /**
      * Create a refund for an order.
      *
+     * @since 1.0.0
+     *
      * @param CreateRefundPayloadDTO $dto
-     * @return Order
+     * @return Order The order with its refunds reloaded.
      */
     public function create_refund(CreateRefundPayloadDTO $dto)
     {
@@ -464,10 +596,12 @@ class OrderManager
     }
 
     /**
-     * Update a refund for an order.
+     * Update a refund of an order.
+     *
+     * @since 1.0.0
      *
      * @param UpdateRefundPayloadDTO $dto
-     * @return Order
+     * @return Order The order with its refunds reloaded.
      */
     public function update_refund(UpdateRefundPayloadDTO $dto)
     {
@@ -475,11 +609,13 @@ class OrderManager
     }
 
     /**
-     * Get a refund of an order.
+     * Get a single refund of an order.
+     *
+     * @since 1.0.0
      *
      * @param Order $order
-     * @param int $id
-     * @return Order
+     * @param int   $id    Refund ID.
+     * @return \Kirki\Ecommerce\App\Models\Refund|null Null when the order has no such refund.
      */
     public function get_refund(Order $order, int $id)
     {
@@ -487,33 +623,59 @@ class OrderManager
     }
 
     /**
-     * Set payment metadata for an order.
+     * Save a gateway's payment data on an order without replacing the order's provider snapshot.
      *
-     * @param int $id
-     * @param string $payment_metadata
-     * @return bool
+     * The data is stored under the `gateway` key of the order's payment metadata, next to the
+     * `payment_provider` snapshot written when the order was placed. A payload that is not valid
+     * JSON is stored as the given string.
+     *
+     * @since 1.0.0
+     *
+     * @param int    $id               Order ID.
+     * @param string $payment_metadata Provider payload to store, typically JSON.
+     * @return bool True when the order was updated.
      */
     public function set_payment_metadata(int $id, string $payment_metadata)
     {
-        return $this->order_service->partial_update_order($id, ['payment_metadata' => $payment_metadata]);
+        $order = $this->order_service->find_order($id);
+
+        if (!$order) {
+            return false;
+        }
+
+        $stored = is_array($order->payment_metadata) ? $order->payment_metadata : [];
+        $gateway = json_decode($payment_metadata, true);
+
+        $stored['gateway'] = $gateway === null ? $payment_metadata : $gateway;
+
+        return $this->order_service->partial_update_order($id, ['payment_metadata' => $stored]);
     }
 
-    /* * Send the invoice email of an order to the customer.
+    /**
+     * Send the invoice email of an order to the customer.
      *
-     * @param int $id
+     * Not implemented yet; always returns false.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
      * @return bool
      */
     public function send_invoice_email(int $id)
     {
         // @todo: implement once the order email layer exists. The plugin has no mailable,
-        // template or renderer yet, only the EmailSettings option and SendEmailJob.
+        // template or renderer yet, only the EmailSettings option.
         return false;
     }
 
     /**
      * Send the customer a link to pay for an order.
      *
-     * @param int $id
+     * Not implemented yet; always returns false.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
      * @return bool
      */
     public function send_payment_link(int $id)
@@ -524,15 +686,20 @@ class OrderManager
     }
 
     /**
-     * Resend the order confirmation email to the customer.
+     * Queue the order confirmation email to the customer again.
      *
-     * @param int $id
-     * @return bool
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return bool Always true; an unknown order throws instead.
+     * @throws \Exception When the order does not exist.
      */
     public function resend_order_email(int $id)
     {
-        // @todo: implement once the order email layer exists. SendNotificationEmail::handle()
-        // is currently an empty listener and OrderShipped is never dispatched.
-        return false;
+        $order = $this->order_service->find_order_or_fail($id);
+
+        SendOrderMailJob::dispatch($order, CustomerNewOrderMail::class, (string) $order->customer_email);
+
+        return true;
     }
 }

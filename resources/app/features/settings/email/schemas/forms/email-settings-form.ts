@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
-import { EmailDefaultTemplateShape } from '@/features/settings/email/schemas/catalog/email-template';
+import { EmailTemplateFormShape } from '@/features/settings/email/schemas/forms/email-template-form';
 import { MailConfigurationShape } from '@/features/settings/email/schemas/forms/mail-configuration-form';
 import { prepareFormSchema } from '@/libs/zod';
-import { isDefined } from '@/utils/object';
 
 /**
  * The list/toggle page only reads/writes `is_enabled` here — the record
@@ -33,17 +32,34 @@ const EmailSettingsFormShape = z.object({
   admin_emails: EmailRootFormShape.default({}),
   customer_emails: EmailRootFormShape.omit({ inventory_notifications: true }).default({}),
   mail_configuration: MailConfigurationShape.nullish(),
-  default_template: EmailDefaultTemplateShape.nullish(),
+  default_template: EmailTemplateFormShape.nullish(),
 });
+
+type NotificationGroups = Record<
+  string,
+  Record<string, Record<string, unknown>> | null | undefined
+>;
+
+const omitShortcodes = <Groups extends NotificationGroups>(groups: Groups): Groups =>
+  Object.fromEntries(
+    Object.entries(groups).map(([group, notifications]) => [
+      group,
+      notifications &&
+        Object.fromEntries(
+          Object.entries(notifications).map(([key, { shortcodes, ...notification }]) => [
+            key,
+            notification,
+          ]),
+        ),
+    ]),
+  ) as Groups;
 
 export const EmailSettingsFormSchema = prepareFormSchema(EmailSettingsFormShape).transform(
   (values) => ({
-    admin_emails: values.admin_emails,
-    customer_emails: values.customer_emails,
+    admin_emails: omitShortcodes(values.admin_emails),
+    customer_emails: omitShortcodes(values.customer_emails),
     mail_configuration: values.mail_configuration ?? null,
-    default_template: isDefined(values.default_template)
-      ? { ...values.default_template, logo: values.default_template.logo?.id }
-      : null,
+    default_template: values.default_template ?? null,
   }),
 );
 

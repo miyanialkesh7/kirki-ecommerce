@@ -6,8 +6,20 @@ use Kirki\Ecommerce\Framework\Contracts\Migration;
 use Kirki\Ecommerce\Framework\Database\Schema\Structure;
 use Kirki\Ecommerce\Framework\Supports\Facades\Schema;
 
+/**
+ * Creates the kirki_ecommerce_order_coupons table, which stores the coupons applied to orders.
+ *
+ * @since 1.0.0
+ */
 class CreateOrderCouponsTable implements Migration
 {
+    /**
+     * Create the kirki_ecommerce_order_coupons table.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
     public function up()
     {
         Schema::create('kirki_ecommerce_order_coupons', function (Structure $table) {
@@ -28,24 +40,31 @@ class CreateOrderCouponsTable implements Migration
             $table->timestamp('usage_reversed_at')->nullable()->comment('Set when the owning order is cancelled, reversing this coupon usage without deleting the record');
             $table->timestamps();
 
-            $table->unique(['order_id', 'coupon_id'], 'uq_kirki_ecommerce_order_coupons_order_id_coupon_id');
-            $table->index(['coupon_id', 'customer_id'], 'idx_kirki_ecommerce_order_coupons_coupon_id_customer_id');
+            $table->unique(['order_id', 'coupon_id'], 'uq_kecom_order_coupons_order_id_coupon_id');
+            $table->index(['coupon_id', 'customer_id'], 'idx_kecom_order_coupons_coupon_id_customer_id');
 
-            $table->foreign('order_id', 'fk_kirki_ecommerce_order_coupons_order_id')
+            $table->foreign('order_id', 'fk_kecom_order_coupons_order_id')
                 ->references('id')
                 ->on('kirki_ecommerce_orders')
                 ->cascade_on_delete();
-            $table->foreign('coupon_id', 'fk_kirki_ecommerce_order_coupons_coupon_id')
+            $table->foreign('coupon_id', 'fk_kecom_order_coupons_coupon_id')
                 ->references('id')
                 ->on('kirki_ecommerce_coupons')
                 ->null_on_delete();
-            $table->foreign('customer_id', 'fk_kirki_ecommerce_order_coupons_customer_id')
+            $table->foreign('customer_id', 'fk_kecom_order_coupons_customer_id')
                 ->references('id')
                 ->on('kirki_ecommerce_customers')
                 ->null_on_delete();
         });
     }
 
+    /**
+     * Drop the kirki_ecommerce_order_coupons table.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
     public function down()
     {
         Schema::drop_if_exists('kirki_ecommerce_order_coupons');

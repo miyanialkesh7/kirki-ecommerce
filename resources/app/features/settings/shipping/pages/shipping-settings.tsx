@@ -167,7 +167,12 @@ const ShippingSettings = () => {
                                           {method.name ?? ''}
                                         </Text>
                                         {method.subText && (
-                                          <Text variant="tiny" color="subdued">
+                                          <Text
+                                            variant="tiny"
+                                            color="subdued"
+                                            truncate
+                                            cssOverride={{ maxWidth: 280 }}
+                                          >
                                             {method.subText}
                                           </Text>
                                         )}

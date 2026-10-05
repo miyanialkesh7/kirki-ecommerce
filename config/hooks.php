@@ -13,11 +13,17 @@ use Kirki\Ecommerce\App\Hooks\Filters\ReplaceSiteTitle;
 use Kirki\Ecommerce\App\Hooks\Filters\PageInlineScript;
 use Kirki\Ecommerce\App\Hooks\Filters\ValidateLoginConsents;
 use Kirki\Ecommerce\App\Hooks\Filters\ValidateRegisterConsents;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\AttachCustomerToNewWordPressUser;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\EnqueueAdminScripts;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\RedirectToOnboarding;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\RemoveDuplicateSubmenu;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\SendCustomerNewAccountEmail;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\SMTPConfig;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\SyncCustomerEmailFromWordPressUser;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Filters\MailFromEmail;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Filters\MailFromName;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Filters\SendCustomerPasswordResetEmail;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Filters\SuppressCoreNewUserEmail;
 use Kirki\Ecommerce\Framework\Wordpress\Hooks\Actions\RegisterAdminMenu;
 use Kirki\Ecommerce\Framework\Wordpress\Hooks\Actions\RegisterRestApi;
 
@@ -27,6 +33,7 @@ return [
         EnqueueAdminScripts::class,
         EnqueueSiteScripts::class,
         RemoveDuplicateSubmenu::class,
+        RedirectToOnboarding::class,
         RegisterRestApi::class,
         AddWpHeadMeta::class,
         CustomizeAdminBar::class,
@@ -34,6 +41,9 @@ return [
         MergeGuestOrder::class,
         RenderLoginConsents::class,
         RenderRegisterConsents::class,
+        SyncCustomerEmailFromWordPressUser::class,
+        AttachCustomerToNewWordPressUser::class,
+        SendCustomerNewAccountEmail::class,
     ],
     'filters' => [
         ReplaceSiteTitle::class,
@@ -43,5 +53,7 @@ return [
         MailFromName::class,
         ValidateLoginConsents::class,
         ValidateRegisterConsents::class,
+        SendCustomerPasswordResetEmail::class,
+        SuppressCoreNewUserEmail::class,
     ],
 ];

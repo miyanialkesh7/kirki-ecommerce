@@ -7,8 +7,20 @@ use Kirki\Ecommerce\Framework\Database\Seeder;
 use Kirki\Ecommerce\Framework\Supports\Facades\Log;
 use Kirki\Ecommerce\Framework\Supports\Facades\Option;
 
+/**
+ * Seeds the default store settings options.
+ *
+ * @since 1.0.0
+ */
 class SettingsSeeder extends Seeder
 {
+    /**
+     * Store every settings group as a WordPress option and reset the invoice counter.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
     public function run(): void
     {
         $keys = [
@@ -32,6 +44,13 @@ class SettingsSeeder extends Seeder
         Log::info('SettingsSeeder run successfully');
     }
 
+    /**
+     * Build the general settings option payload.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> Option key and default settings data.
+     */
     protected function create_general_settings()
     {
         return [
@@ -57,6 +76,13 @@ class SettingsSeeder extends Seeder
         ];
     }
 
+    /**
+     * Build the product settings option payload.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> Option key and default settings data.
+     */
     protected function create_product_settings()
     {
         return [
@@ -68,7 +94,6 @@ class SettingsSeeder extends Seeder
                 "display_layout" => null,
                 "is_enabled_reviews" => true,
                 "is_enabled_star_ratings" => true,
-                "is_unit_price_visible" => true,
                 "barcode_generation" => [
                     "data_origin" => "SKU",
                     "format" => "Code 128 (recommended for SKU/internal use)",
@@ -83,6 +108,13 @@ class SettingsSeeder extends Seeder
         ];
     }
 
+    /**
+     * Build the shipping settings option payload.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> Option key and default settings data.
+     */
     protected function create_shipping_settings()
     {
         return [
@@ -116,9 +148,9 @@ class SettingsSeeder extends Seeder
                                         "relation" => "AND",
                                         "conditions" => [
                                             [
-                                                "type" => "product_profile",
-                                                "operator" => "=",
-                                                "value" => "fragile"
+                                                "type" => "cart_weight",
+                                                "operator" => ">",
+                                                "value" => 5
                                             ]
                                         ],
                                         "action" => [
@@ -159,9 +191,9 @@ class SettingsSeeder extends Seeder
                                         "relation" => "AND",
                                         "conditions" => [
                                             [
-                                                "type" => "product_profile",
-                                                "operator" => "=",
-                                                "value" => "fragile"
+                                                "type" => "cart_weight",
+                                                "operator" => ">",
+                                                "value" => 5
                                             ]
                                         ],
                                         "action" => [
@@ -198,9 +230,9 @@ class SettingsSeeder extends Seeder
                                         "relation" => "AND",
                                         "conditions" => [
                                             [
-                                                "type" => "product_profile",
-                                                "operator" => "=",
-                                                "value" => "fragile"
+                                                "type" => "cart_weight",
+                                                "operator" => ">",
+                                                "value" => 5
                                             ]
                                         ],
                                         "action" => [
@@ -226,9 +258,9 @@ class SettingsSeeder extends Seeder
                                 "relation" => "AND",
                                 "conditions" => [
                                     [
-                                        "type" => "product_profile",
-                                        "operator" => "=",
-                                        "value" => "fragile"
+                                        "type" => "cart_weight",
+                                        "operator" => ">",
+                                        "value" => 5
                                     ]
                                 ],
                                 "action" => [
@@ -243,6 +275,13 @@ class SettingsSeeder extends Seeder
         ];
     }
 
+    /**
+     * Build the payment settings option payload.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> Option key and default settings data.
+     */
     protected function create_payment_settings()
     {
         return [
@@ -262,6 +301,13 @@ class SettingsSeeder extends Seeder
         ];
     }
 
+    /**
+     * Build the tax settings option payload.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> Option key and default settings data.
+     */
     protected function create_tax_settings()
     {
         return [
@@ -355,6 +401,13 @@ class SettingsSeeder extends Seeder
         ];
     }
 
+    /**
+     * Build the checkout settings option payload.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> Option key and default settings data.
+     */
     protected function create_checkout_settings()
     {
         return [
@@ -373,6 +426,13 @@ class SettingsSeeder extends Seeder
         ];
     }
 
+    /**
+     * Build the currency settings option payload.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> Option key and default settings data.
+     */
     public function create_currency_settings()
     {
         return [

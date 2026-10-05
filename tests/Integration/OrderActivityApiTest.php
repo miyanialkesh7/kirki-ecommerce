@@ -2,14 +2,15 @@
 
 namespace Kirki\Ecommerce\Tests\Integration;
 
-use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\Tests\Support\CreatesTestProducts;
+use Kirki\Ecommerce\Tests\Support\EnablesPaymentProviders;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 use Kirki\Ecommerce\Tests\Support\SeedsTestShipping;
 
 class OrderActivityApiTest extends RestTestCase
 {
     use CreatesTestProducts;
+    use EnablesPaymentProviders;
     use SeedsTestShipping;
 
     protected $variant_id;
@@ -17,6 +18,7 @@ class OrderActivityApiTest extends RestTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->enable_payment_provider();
         $this->seed_base_currency();
         $this->seed_shipping_settings();
 
@@ -189,8 +191,9 @@ class OrderActivityApiTest extends RestTestCase
     {
         $user_id = static::factory()->user->create(['role' => 'subscriber']);
         wp_set_current_user($user_id);
+        $this->request('POST', 'cart/items', ['variant_id' => $this->variant_id, 'quantity' => 1]);
 
-        $checkout_response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
+        $checkout_response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => false]));
         $order = $this->assert_api_success($checkout_response, 201)['data'];
 
         $this->login_as_admin();
@@ -217,8 +220,9 @@ class OrderActivityApiTest extends RestTestCase
     {
         $owner_id = static::factory()->user->create(['role' => 'subscriber']);
         wp_set_current_user($owner_id);
+        $this->request('POST', 'cart/items', ['variant_id' => $this->variant_id, 'quantity' => 1]);
 
-        $checkout_response = $this->request('POST', 'orders', $this->order_payload(['is_manual' => false]));
+        $checkout_response = $this->request('POST', 'checkout', $this->order_payload(['is_manual' => false]));
         $order = $this->assert_api_success($checkout_response, 201)['data'];
 
         $other_user_id = static::factory()->user->create(['role' => 'subscriber']);
@@ -260,6 +264,9 @@ class OrderActivityApiTest extends RestTestCase
             'payment_provider' => 'paypal',
             'shipping_method' => 'method-0001',
             'is_manual' => true,
+            'customer_first_name' => 'John',
+            'customer_last_name' => 'Doe',
+            'customer_email' => 'buyer@example.com',
             'shipping_first_name' => 'John',
             'shipping_last_name' => 'Doe',
             'shipping_address_line1' => '123 Main St',

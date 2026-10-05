@@ -13,6 +13,7 @@ import { debounce } from '../utils/debounce';
 import { scrollToFirstError } from '../utils/dom';
 import { renderPaymentGatewayHTML } from '../utils/payment';
 import { type CountryState, createAddressModal } from './address-modal';
+import { EMAIL_PATTERN } from './form';
 import type { AddressRule } from '../types';
 import {
   type CheckoutAddress,
@@ -34,8 +35,21 @@ export { stateField } from './state-field';
 type AlpineFormData = {
   values: Record<string, string>;
   setError: (field: string, message: string) => void;
+  setValue: (field: string, value: unknown) => void;
   clearErrors: () => void;
 };
+
+/** The guest contact form's Alpine data, or null for signed-in shoppers, who have no contact form. */
+function getContactForm(): AlpineFormData | null {
+  const contactFormElement = document.querySelector('#contact-form');
+  return contactFormElement ? window.Alpine.$data(contactFormElement) : null;
+}
+
+/** The guest contact email, only when the contact form holds a valid one. */
+function getValidContactEmail(): string | null {
+  const email = String(getContactForm()?.values.customer_email || '').trim();
+  return EMAIL_PATTERN.test(email) ? email : null;
+}
 
 /** Alpine magic properties available inside x-data component objects */
 type AlpineContext = {
@@ -218,6 +232,31 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
       const debouncedUpdateCart = debounce(() => this.updateCart(), 400);
 
       listen(EVENTS.ADDRESS_CHANGED, () => debouncedUpdateCart());
+
+      // Save the guest contact email to the cart once it is valid, so email-based
+      // coupon rules can be checked before the order is placed.
+      const debouncedSyncContactEmail = debounce(() => {
+        if (this.hasUnsyncedContactEmail()) {
+          void this.updateCart();
+        }
+      }, 400);
+
+      document
+        .querySelector('#contact-form')
+        ?.addEventListener('input', () => debouncedSyncContactEmail());
+
+      // The contact form is a child component, so it is only ready on the next tick.
+      (this as unknown as AlpineContext).$nextTick(() => {
+        const contactForm = getContactForm();
+        if (contactForm && !contactForm.values.customer_email && this.cartData?.customer_email) {
+          contactForm.setValue('customer_email', this.cartData.customer_email);
+        }
+      });
+    },
+
+    hasUnsyncedContactEmail(): boolean {
+      const email = getValidContactEmail();
+      return email !== null && email !== this.cartData?.customer_email;
     },
 
     // ── Address State Setters & Helpers ───────────────────────────────────
@@ -338,7 +377,9 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
 
     async updateCart() {
       try {
+        const customerEmail = getValidContactEmail();
         const cartData = {
+          ...(customerEmail ? { customer_email: customerEmail } : {}),
           shipping_address: formatAddressPayload(this.shippingAddress),
           is_billing_same_as_shipping: this.billingSameAsShipping,
           shipping_method: this.selectedShippingMethod,
@@ -387,6 +428,12 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
       this.error = null;
 
       try {
+        // Coupons limited by buyer are checked against the cart's email, so save
+        // a contact email the debounced sync has not sent yet.
+        if (this.hasUnsyncedContactEmail()) {
+          await this.updateCart();
+        }
+
         const response = await cartApi.applyCoupon(this.couponCode);
         this.cartData = response.data;
         const coupons = response.data.pricing?.coupons ?? [];
@@ -545,11 +592,8 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
         // Start loading after validation passes
         this.loading = true;
 
-        const contactForm: AlpineFormData | null = contactFormElement
-          ? window.Alpine.$data(contactFormElement)
-          : null;
-        const customerEmail = contactForm
-          ? String(contactForm.values.customer_email || '').trim()
+        const customerEmail = contactFormElement
+          ? (getValidContactEmail() ?? '')
           : (config.current_user?.email ?? '');
 
         const shippingFields = toShippingOrderFields(this.shippingAddress);

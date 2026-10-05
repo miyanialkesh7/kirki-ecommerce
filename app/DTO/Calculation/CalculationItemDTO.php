@@ -4,6 +4,11 @@ namespace Kirki\Ecommerce\App\DTO\Calculation;
 
 use Kirki\Ecommerce\Framework\DTO;
 
+/**
+ * A line item passed through price calculation, carrying its base-currency subtotal, tax and discount amounts.
+ *
+ * @since 1.0.0
+ */
 class CalculationItemDTO extends DTO
 {
     /** @var int */
@@ -38,4 +43,8 @@ class CalculationItemDTO extends DTO
     public $base_total = 0;
     /** @var int */
     public $base_product_total = 0;
+    /** @var int */
+    public $base_regular_unit_price = 0;
+    /** @var int */
+    public $base_regular_tax_amount = 0;
 }
