@@ -33,7 +33,6 @@ import { useConfirmDelete } from '@/hooks';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';
-import { dispatchToastMessage } from '@/utils/common';
 import { __ } from '@/wpi18n';
 
 type PaymentMethodsProps = {
@@ -90,21 +89,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
       return;
     }
 
-    confirmDelete(
-      {
-        title: __('Delete payment gateway?', 'kirki-ecommerce'),
-        description: __(
-          'This gateway will be removed from your store and can no longer process payments. This cannot be undone.',
-          'kirki-ecommerce',
-        ),
-      },
-      () => {
-        dispatchToastMessage('delete', {
-          title: __('Payment gateway deleted', 'kirki-ecommerce'),
-          duration: 5000,
-        });
-      },
-    );
+    // @todo: there is no endpoint for deleting online payment methods
   };
 
   const handleEdit = async (method: PaymentMethod) => {
@@ -181,7 +166,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
                       {__('Add', 'kirki-ecommerce')}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" cssOverride={{ width: 'max-content' }}>
                     <DropdownMenuItem onSelect={() => setIsOnlineInstallDialogOpen(true)}>
                       {__('Payment Gateways', 'kirki-ecommerce')}
                     </DropdownMenuItem>
@@ -234,7 +219,9 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
                             dropdownStyle={{ width: '120px' }}
                             options={[
                               { title: __('Edit', 'kirki-ecommerce'), value: 'edit' },
-                              { title: __('Delete', 'kirki-ecommerce'), value: 'delete' },
+                              ...(method.is_offline
+                                ? [{ title: __('Delete', 'kirki-ecommerce'), value: 'delete' }]
+                                : []),
                             ]}
                             onOptionSelect={(action) => handleAction(action, method)}
                           />
