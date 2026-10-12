@@ -8,7 +8,7 @@ return [
     'before_each' => function () {
         migrator()->run();
     },
-    '1.0.0-beta.1' => function () {
+    '1.0.0' => function () {
         // Nothing to do here
         // We need to keep it for running the migrator
     }

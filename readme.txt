@@ -4,7 +4,7 @@ Tags: ecommerce, online store, shopping cart, checkout, payments
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.0-beta.1
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -291,7 +291,7 @@ The plugin can also connect to a currency exchange rate service to convert displ
 
 == Changelog ==
 
-= 1.0.0-beta.1 =
+= 1.0.0 =
 
 * Initial release
 * Adds Product catalog with variations, variant matrices, categories, tags, brands, and collections

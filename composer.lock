@@ -122,16 +122,16 @@
         },
         {
             "name": "themeum/framework",
-            "version": "3.2.2",
+            "version": "3.2.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/themeum/framework.git",
-                "reference": "5de40d9ff1b880b0a3a0a0d078de1d568214cac3"
+                "reference": "edabcb7dfdeb196c1111d1ea254cd010f1209a95"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/themeum/framework/zipball/5de40d9ff1b880b0a3a0a0d078de1d568214cac3",
-                "reference": "5de40d9ff1b880b0a3a0a0d078de1d568214cac3",
+                "url": "https://api.github.com/repos/themeum/framework/zipball/edabcb7dfdeb196c1111d1ea254cd010f1209a95",
+                "reference": "edabcb7dfdeb196c1111d1ea254cd010f1209a95",
                 "shasum": ""
             },
             "require": {
@@ -218,10 +218,10 @@
                 "wordpress"
             ],
             "support": {
-                "source": "https://github.com/themeum/framework/tree/v3.2.2",
+                "source": "https://github.com/themeum/framework/tree/v3.2.3",
                 "issues": "https://github.com/themeum/framework/issues"
             },
-            "time": "2026-09-29T10:20:43+00:00"
+            "time": "2026-10-12T13:46:50+00:00"
         }
     ],
     "packages-dev": [

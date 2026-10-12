@@ -117,7 +117,7 @@ type RibbonPreviewBadgeProps = {
  */
 const RibbonPreviewBadge = ({ text, color }: RibbonPreviewBadgeProps) => (
   <span style={{ ['--ribbon-preview-color' as string]: color }} css={scopedMerge(styles.preview)}>
-    {text ? text.toUpperCase() : __('Preview', 'kirki-ecommerce')}
+    {text || __('Preview', 'kirki-ecommerce')}
   </span>
 );
 

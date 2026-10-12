@@ -24,7 +24,7 @@ const App = () => {
           <Toaster
             richColors
             closeButton
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
               classNames: {
                 closeButton: TOAST_CLOSE_BUTTON_CLASS,

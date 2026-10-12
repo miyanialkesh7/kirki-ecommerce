@@ -35,7 +35,7 @@ type PreviewSectionProps = {
 
 const PreviewSection = ({ title, lines }: PreviewSectionProps) => (
   <Flex direction="column" gap={1}>
-    <Text variant="small" color="secondary" weight="semibold">
+    <Text variant="small" color="primary" weight="semibold">
       {title}
     </Text>
     {lines && lines.length > 0 ? (

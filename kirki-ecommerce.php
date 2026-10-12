@@ -4,7 +4,7 @@
  * Plugin Name:       Kirki eCommerce
  * Plugin URI:        https://kirki.com
  * Description:       Kirki eCommerce is an all-in-one solution that empowers users to build and run professional online stores with an intuitive UX, modern UI, and lightning-fast performance.
- * Version:           1.0.0-beta.1
+ * Version:           1.0.0
  * Author:            Kirki
  * Author URI:        https://kirki.com
  * Text Domain:       kirki-ecommerce
@@ -28,7 +28,7 @@ use Kirki\Ecommerce\App\KirkiEcommerce;
  * The kirki ecommerce plugin version
  * @var string
  */
-define('KIRKI_ECOMMERCE_VERSION', '1.0.0-beta.1');
+define('KIRKI_ECOMMERCE_VERSION', '1.0.0');
 
 /**
  * The kirki ecommerce plugin slug
