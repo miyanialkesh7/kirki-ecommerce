@@ -140,7 +140,7 @@ class UpdateOrderAction
 
             DB::commit();
 
-            return $order->fresh('items', 'order_coupons.order_item_coupons');
+            return $order->fresh('customer', 'items', 'order_coupons.order_item_coupons');
         } catch (Throwable $e) {
             DB::rollback();
             throw $e;

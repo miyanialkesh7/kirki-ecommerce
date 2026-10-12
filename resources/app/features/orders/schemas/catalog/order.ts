@@ -235,6 +235,7 @@ export const OrderSchema = z.object({
     email: z.string().nullish(),
     phone: z.string().nullish(),
   }),
+  is_guest: z.boolean().nullish(),
 
   status: OrderStatusSchema,
   fulfillment_status: FulfillmentStatusSchema,

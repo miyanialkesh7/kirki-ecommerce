@@ -212,7 +212,7 @@ class CreateOrderAction
                 $this->cart_service->empty_cart($empty_cart_dto);
             }
 
-            $order = $order->fresh('items', 'order_coupons.order_item_coupons');
+            $order = $order->fresh('customer', 'items', 'order_coupons.order_item_coupons');
 
             OrderActivity::log($order, OrderActivityType::ORDER_PLACED);
 

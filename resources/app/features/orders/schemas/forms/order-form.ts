@@ -16,7 +16,7 @@ import { __, sprintf } from '@/wpi18n';
 /**
  * The country's own term for its subdivision, e.g. Prefecture for Japan.
  */
-const stateRequiredMessage = (country: unknown) => {
+export const stateRequiredMessage = (country: unknown) => {
   return sprintf(
     /* translators: %s is the country's term for its subdivision, e.g. State, Prefecture, Emirate. */
     __('%s is required', 'kirki-ecommerce'),
@@ -125,6 +125,8 @@ const OrderFormShape = prepareFormSchema(
   }),
 );
 
+const blankToNull = (value?: string | null) => (isEmptyValue(value) ? null : (value ?? null));
+
 const buildBillingFields = (values: z.output<typeof OrderFormShape>) => {
   if (values.is_billing_same_as_shipping) {
     return {
@@ -133,8 +135,8 @@ const buildBillingFields = (values: z.output<typeof OrderFormShape>) => {
       billing_address_line1: values.shipping_address_line1 ?? null,
       billing_address_line2: values.shipping_address_line2 ?? null,
       billing_city: values.shipping_city ?? null,
-      billing_state: values.shipping_state ?? null,
-      billing_postal_code: values.shipping_postal_code ?? null,
+      billing_state: blankToNull(values.shipping_state),
+      billing_postal_code: blankToNull(values.shipping_postal_code),
       billing_country: values.shipping_country ?? null,
       billing_phone: values.shipping_phone ?? null,
       billing_email: values.shipping_email ?? null,
@@ -148,8 +150,8 @@ const buildBillingFields = (values: z.output<typeof OrderFormShape>) => {
     billing_address_line1: values.billing_address_line1 ?? null,
     billing_address_line2: values.billing_address_line2 ?? null,
     billing_city: values.billing_city ?? null,
-    billing_state: values.billing_state ?? null,
-    billing_postal_code: values.billing_postal_code ?? null,
+    billing_state: blankToNull(values.billing_state),
+    billing_postal_code: blankToNull(values.billing_postal_code),
     billing_country: values.billing_country ?? null,
     billing_phone: values.billing_phone ?? null,
     billing_email: values.billing_email ?? null,
@@ -180,8 +182,8 @@ const OrderFormSchema = OrderFormShape.transform((values) => ({
   shipping_address_line1: values.shipping_address_line1,
   shipping_address_line2: values.shipping_address_line2 ?? null,
   shipping_city: values.shipping_city,
-  shipping_state: values.shipping_state ?? null,
-  shipping_postal_code: values.shipping_postal_code ?? null,
+  shipping_state: blankToNull(values.shipping_state),
+  shipping_postal_code: blankToNull(values.shipping_postal_code),
   shipping_country: values.shipping_country,
   shipping_phone: values.shipping_phone ?? null,
   shipping_email: values.shipping_email ?? null,
@@ -206,33 +208,33 @@ const OrderCalculationRequestSchema = z
 
     payment_provider: values.payment_provider ?? null,
 
-    shipping_method: values.shipping_method ?? null,
-    shipping_first_name: values.shipping_first_name ?? null,
-    shipping_last_name: values.shipping_last_name ?? null,
-    shipping_address_line1: values.shipping_address_line1 ?? null,
+    shipping_method: blankToNull(values.shipping_method),
+    shipping_first_name: blankToNull(values.shipping_first_name),
+    shipping_last_name: blankToNull(values.shipping_last_name),
+    shipping_address_line1: blankToNull(values.shipping_address_line1),
     shipping_address_line2: values.shipping_address_line2 ?? null,
-    shipping_city: values.shipping_city ?? null,
-    shipping_state: values.shipping_state ?? null,
-    shipping_postal_code: values.shipping_postal_code ?? null,
-    shipping_country: values.shipping_country ?? null,
+    shipping_city: blankToNull(values.shipping_city),
+    shipping_state: blankToNull(values.shipping_state),
+    shipping_postal_code: blankToNull(values.shipping_postal_code),
+    shipping_country: blankToNull(values.shipping_country),
     shipping_phone: values.shipping_phone ?? null,
     shipping_email: values.shipping_email ?? null,
     shipping_company: values.shipping_company ?? null,
 
-    billing_first_name: values.billing_first_name ?? null,
-    billing_last_name: values.billing_last_name ?? null,
-    billing_address_line1: values.billing_address_line1 ?? null,
+    billing_first_name: blankToNull(values.billing_first_name),
+    billing_last_name: blankToNull(values.billing_last_name),
+    billing_address_line1: blankToNull(values.billing_address_line1),
     billing_address_line2: values.billing_address_line2 ?? null,
-    billing_city: values.billing_city ?? null,
-    billing_state: values.billing_state ?? null,
-    billing_postal_code: values.billing_postal_code ?? null,
-    billing_country: values.billing_country ?? null,
+    billing_city: blankToNull(values.billing_city),
+    billing_state: blankToNull(values.billing_state),
+    billing_postal_code: blankToNull(values.billing_postal_code),
+    billing_country: blankToNull(values.billing_country),
     billing_phone: values.billing_phone ?? null,
     billing_email: values.billing_email ?? null,
     billing_company: values.billing_company ?? null,
 
-    customer_first_name: values.customer_first_name ?? null,
-    customer_last_name: values.customer_last_name ?? null,
+    customer_first_name: blankToNull(values.customer_first_name),
+    customer_last_name: blankToNull(values.customer_last_name),
     customer_email: values.customer_email ?? null,
     customer_phone: values.customer_phone ?? null,
 

@@ -20,6 +20,7 @@ import Flex from '@/components/ui/flex';
 import Grid from '@/components/ui/grid';
 import type { Customer } from '@/features/customers';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 type AddressType = 'shipping' | 'billing';
@@ -28,7 +29,7 @@ type AddressDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   type: AddressType;
-  customer: Customer;
+  customer?: Customer;
   onSave?: () => void;
   isSaving?: boolean;
 };
@@ -102,33 +103,34 @@ const AddressDialog = ({
   const fields = FIELD_NAMES[type];
   const country = useWatch({ control: form.control, name: fields.country });
 
-  const addressOptions = useMemo(
-    () =>
-      (customer.addresses ?? []).map((address) => {
-        const name = [
-          address.first_name || customer.first_name,
-          address.last_name || customer.last_name,
-        ]
-          .filter(Boolean)
-          .join(' ');
+  const addressOptions = useMemo(() => {
+    if (!isDefined(customer)) {
+      return [];
+    }
+    return (customer.addresses ?? []).map((address) => {
+      const name = [
+        address.first_name || customer.first_name,
+        address.last_name || customer.last_name,
+      ]
+        .filter(Boolean)
+        .join(' ');
 
-        const addressLine = [address.address_line1, address.address_line2, address.city]
-          .filter(Boolean)
-          .join(', ');
+      const addressLine = [address.address_line1, address.address_line2, address.city]
+        .filter(Boolean)
+        .join(', ');
 
-        return {
-          value: String(address.id),
-          label: name,
-          description: addressLine || undefined,
-        };
-      }),
-    [customer.addresses, customer.first_name, customer.last_name],
-  );
+      return {
+        value: String(address.id),
+        label: name,
+        description: addressLine || undefined,
+      };
+    });
+  }, [customer]);
 
   const handleSelectAddress = (nextValue: string | string[]) => {
     const value = Array.isArray(nextValue) ? (nextValue[0] ?? '') : nextValue;
 
-    const address = (customer.addresses ?? []).find((item) => String(item.id) === value);
+    const address = (customer?.addresses ?? []).find((item) => String(item.id) === value);
     if (!address) {
       return;
     }
@@ -166,9 +168,9 @@ const AddressDialog = ({
   const handleSave = async () => {
     if (type === 'billing') {
       const shippingDefault =
-        (customer.addresses ?? []).find((address) => address.is_default_shipping) ?? null;
+        (customer?.addresses ?? []).find((address) => address.is_default_shipping) ?? null;
       const billingDefault =
-        (customer.addresses ?? []).find((address) => address.is_default_billing) ?? null;
+        (customer?.addresses ?? []).find((address) => address.is_default_billing) ?? null;
       const isSameDefaultAddress = Boolean(
         shippingDefault && billingDefault && shippingDefault.id === billingDefault.id,
       );
@@ -200,16 +202,18 @@ const AddressDialog = ({
         </DialogHeader>
         <DialogBody>
           <Flex direction="column" gap={4}>
-            <Field cssOverride={{ width: 'max-content' }}>
-              <FieldLabel>{__('Address', 'kirki-ecommerce')}</FieldLabel>
-              <Combobox
-                options={addressOptions}
-                value=""
-                onChange={handleSelectAddress}
-                placeholder={__('Select address', 'kirki-ecommerce')}
-                searchPlaceholder={__('Search addresses', 'kirki-ecommerce')}
-              />
-            </Field>
+            {addressOptions.length > 1 && (
+              <Field cssOverride={{ width: 'max-content' }}>
+                <FieldLabel>{__('Address', 'kirki-ecommerce')}</FieldLabel>
+                <Combobox
+                  options={addressOptions}
+                  value=""
+                  onChange={handleSelectAddress}
+                  placeholder={__('Select address', 'kirki-ecommerce')}
+                  searchPlaceholder={__('Search addresses', 'kirki-ecommerce')}
+                />
+              </Field>
+            )}
 
             <CountryField name={fields.country} />
 

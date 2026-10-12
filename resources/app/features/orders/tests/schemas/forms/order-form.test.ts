@@ -345,6 +345,60 @@ describe('OrderFormSchema', () => {
       expect(result.data.shipping_postal_code).toBeNull();
     });
 
+    it('sends null for a shipping state or postal code left as an empty string', () => {
+      const withoutState = OrderFormSchema.safeParse({
+        ...base,
+        shipping_country: 'SG',
+        shipping_state: '',
+      });
+      const withoutPostalCode = OrderFormSchema.safeParse({
+        ...base,
+        shipping_country: 'HK',
+        shipping_postal_code: '',
+      });
+
+      assert(withoutState.success);
+      assert(withoutPostalCode.success);
+      expect(withoutState.data.shipping_state).toBeNull();
+      expect(withoutPostalCode.data.shipping_postal_code).toBeNull();
+    });
+
+    it('sends null for a billing state or postal code left as an empty string', () => {
+      const withoutState = OrderFormSchema.safeParse({
+        ...separateBilling,
+        billing_country: 'SG',
+        billing_state: '',
+      });
+      const withoutPostalCode = OrderFormSchema.safeParse({
+        ...separateBilling,
+        billing_country: 'HK',
+        billing_postal_code: '',
+      });
+
+      assert(withoutState.success);
+      assert(withoutPostalCode.success);
+      expect(withoutState.data.billing_state).toBeNull();
+      expect(withoutPostalCode.data.billing_postal_code).toBeNull();
+    });
+
+    it('sends null for the billing state and postal code copied from a blank shipping value', () => {
+      const withoutState = OrderFormSchema.safeParse({
+        ...base,
+        shipping_country: 'SG',
+        shipping_state: '',
+      });
+      const withoutPostalCode = OrderFormSchema.safeParse({
+        ...base,
+        shipping_country: 'HK',
+        shipping_postal_code: '',
+      });
+
+      assert(withoutState.success);
+      assert(withoutPostalCode.success);
+      expect(withoutState.data.billing_state).toBeNull();
+      expect(withoutPostalCode.data.billing_postal_code).toBeNull();
+    });
+
     it('applies the billing country rules, not the shipping ones', () => {
       const withoutBillingState = {
         ...separateBilling,
@@ -429,6 +483,58 @@ describe('OrderCalculationRequestSchema', () => {
     const result = OrderCalculationRequestSchema.parse({ shipping_address_line2: '' });
 
     expect(result.shipping_address_line2).toBeNull();
+  });
+
+  it('sends null for a required field left as an empty string', () => {
+    const result = OrderCalculationRequestSchema.parse({
+      customer_first_name: '',
+      customer_last_name: '   ',
+      shipping_method: '',
+      shipping_first_name: '',
+      shipping_last_name: '',
+      shipping_address_line1: '',
+      shipping_city: '',
+      shipping_state: '',
+      shipping_postal_code: '',
+      shipping_country: '',
+      billing_first_name: '',
+      billing_last_name: '',
+      billing_address_line1: '',
+      billing_city: '',
+      billing_state: '',
+      billing_postal_code: '',
+      billing_country: '',
+    });
+
+    expect(result.customer_first_name).toBeNull();
+    expect(result.customer_last_name).toBeNull();
+    expect(result.shipping_method).toBeNull();
+    expect(result.shipping_first_name).toBeNull();
+    expect(result.shipping_last_name).toBeNull();
+    expect(result.shipping_address_line1).toBeNull();
+    expect(result.shipping_city).toBeNull();
+    expect(result.shipping_state).toBeNull();
+    expect(result.shipping_postal_code).toBeNull();
+    expect(result.shipping_country).toBeNull();
+    expect(result.billing_first_name).toBeNull();
+    expect(result.billing_last_name).toBeNull();
+    expect(result.billing_address_line1).toBeNull();
+    expect(result.billing_city).toBeNull();
+    expect(result.billing_state).toBeNull();
+    expect(result.billing_postal_code).toBeNull();
+    expect(result.billing_country).toBeNull();
+  });
+
+  it('keeps a filled required field as typed', () => {
+    const result = OrderCalculationRequestSchema.parse({
+      shipping_address_line1: '221B Baker Street',
+      shipping_city: 'London',
+      shipping_country: 'GB',
+    });
+
+    expect(result.shipping_address_line1).toBe('221B Baker Street');
+    expect(result.shipping_city).toBe('London');
+    expect(result.shipping_country).toBe('GB');
   });
 
   it('maps shipping_postal_code to shipping_postal_code and outputs trimmed coupon codes', () => {

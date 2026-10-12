@@ -38,7 +38,8 @@ import { __ } from '@/wpi18n';
 type CustomerCardProps = {
   onSave?: () => void;
   isSaving?: boolean;
-  readonly?: boolean;
+  isGuest?: boolean | null;
+  mode: 'create' | 'edit' | 'view';
 };
 
 const WATCHED_ADDRESS_FIELDS = [
@@ -61,64 +62,40 @@ const WATCHED_ADDRESS_FIELDS = [
   'billing_country',
 ] as const satisfies readonly (keyof OrderFormInput)[];
 
-const CONTACT_ERROR_FIELDS = [
-  'customer_first_name',
-  'customer_last_name',
-] as const satisfies readonly (keyof OrderFormInput)[];
-
-const SHIPPING_ERROR_FIELDS = [
-  'shipping_first_name',
-  'shipping_last_name',
-  'shipping_address_line1',
-  'shipping_city',
-  'shipping_state',
-  'shipping_postal_code',
-  'shipping_country',
-] as const satisfies readonly (keyof OrderFormInput)[];
-
-const BILLING_ERROR_FIELDS = [
-  'billing_first_name',
-  'billing_last_name',
-  'billing_address_line1',
-  'billing_city',
-  'billing_state',
-  'billing_postal_code',
-  'billing_country',
-] as const satisfies readonly (keyof OrderFormInput)[];
-
-const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps) => {
+const CustomerCard = ({ onSave, isSaving, isGuest, mode }: CustomerCardProps) => {
   const form = useFormContext<OrderFormInput>();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
   const [billingDialogOpen, setBillingDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const snapshot = useRef(form.getValues());
-  const shouldApplyCustomerAddress = useRef(false);
 
   const customerId = useWatch({ control: form.control, name: 'customer_id' });
-  const { data: customer } = useCustomerQuery(Number(customerId ?? 0), Boolean(customerId));
+  const isCustomerSelected = isDefined(customerId) && mode === 'create';
+  const { data: customer } = useCustomerQuery(
+    selectedCustomerId ?? 0,
+    isDefined(selectedCustomerId),
+  );
   const { data: countries = [] } = useCountriesQuery({ limit: -1 });
   const errors = form.formState.errors;
-  const customerError = errors.customer_id;
-  const hasContactError = CONTACT_ERROR_FIELDS.some((field) => Boolean(errors[field]));
-  const hasShippingError = SHIPPING_ERROR_FIELDS.some((field) => Boolean(errors[field]));
-  const hasBillingError = BILLING_ERROR_FIELDS.some((field) => Boolean(errors[field]));
-  const hasError =
-    Boolean(customerError) || Boolean(hasContactError) || hasShippingError || hasBillingError;
+  const hasError = isDefined(errors.customer_id);
 
   useEffect(() => {
-    if (!customer || !shouldApplyCustomerAddress.current) {
+    if (!customer || form.getValues('customer_id') === customer.id) {
       return;
     }
 
-    shouldApplyCustomerAddress.current = false;
-    form.reset({ ...form.getValues(), ...toOrderAddresses(customer) });
+    form.reset({
+      ...form.getValues(),
+      ...toOrderAddresses(customer),
+      customer_id: customer.id,
+    });
   }, [customer, form]);
 
   const handleSelectCustomer = (id: number) => {
-    shouldApplyCustomerAddress.current = true;
-    form.setValue('customer_id', id, { shouldValidate: true });
+    setSelectedCustomerId(id);
   };
 
   const handleRemove = () => {
@@ -127,6 +104,7 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
     const defaultAddresses = Object.fromEntries(
       WATCHED_ADDRESS_FIELDS.map((field) => [field, defaults[field]]),
     );
+    setSelectedCustomerId(null);
     form.reset({ ...form.getValues(), ...defaultAddresses, customer_id: null });
   };
 
@@ -170,6 +148,12 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
     billing_country,
   };
 
+  const shippingAddress = formatShippingAddress(values, countries);
+  const billingAddress = formatBillingAddress(values, countries);
+  const isAddressMissing =
+    mode === 'create' && !isDefined(shippingAddress) && !isDefined(billingAddress);
+  const isGuestCustomer = isGuest ?? (isDefined(customer) && !customer.user_id);
+
   return (
     <Card cssOverride={{ gap: theme.spacing[2], ...(hasError ? styles.cardInvalid : {}) }}>
       <CardHeader cssOverride={styles.headerRow}>
@@ -178,12 +162,10 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
             <Text variant="small" weight="medium">
               {__('Customer', 'kirki-ecommerce')}
             </Text>
-            {isDefined(customer) && !customer.user_id && (
-              <Badge variant="info">{__('Guest', 'kirki-ecommerce')}</Badge>
-            )}
+            {isGuestCustomer && <Badge variant="info">{__('Guest', 'kirki-ecommerce')}</Badge>}
           </Flex>
         </CardTitle>
-        {customer && !readonly && (
+        {(isCustomerSelected || mode === 'edit') && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -216,30 +198,19 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
         )}
       </CardHeader>
       <CardContent cssOverride={styles.cardContent} data-check="true">
-        {(hasContactError || hasShippingError || hasBillingError) && (
-          <Flex direction="column" gap={2}>
-            {hasContactError && (
-              <FieldError>{__('Customer information is incomplete', 'kirki-ecommerce')}</FieldError>
-            )}
-            {hasShippingError && (
-              <FieldError>{__('Shipping address is incomplete', 'kirki-ecommerce')}</FieldError>
-            )}
-            {hasBillingError && (
-              <FieldError>{__('Billing address is incomplete', 'kirki-ecommerce')}</FieldError>
-            )}
-          </Flex>
-        )}
-        {customer ? (
+        {isCustomerSelected || mode === 'edit' || mode === 'view' ? (
           <Flex direction="column" gap={3}>
             <CustomerSummary
-              name={[values.customer_first_name, values.customer_last_name]
-                .filter(Boolean)
-                .join(' ')}
+              firstName={values.customer_first_name ?? ''}
+              lastName={values.customer_last_name ?? ''}
               email={values.customer_email}
               phone={values.customer_phone}
-              photo={customer.photo}
-              billingAddress={formatBillingAddress(values, countries)}
-              shippingAddress={formatShippingAddress(values, countries)}
+              addresses={
+                isAddressMissing
+                  ? undefined
+                  : { shipping: shippingAddress, billing: billingAddress }
+              }
+              readonly={mode === 'view'}
             />
           </Flex>
         ) : (
@@ -251,12 +222,12 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
                 setAddDialogOpen(true);
               }}
             />
-            {isDefined(customerError) && <FieldError errors={[customerError]} />}
+            {isDefined(errors.customer_id) && <FieldError errors={[errors.customer_id]} />}
           </Flex>
         )}
       </CardContent>
 
-      {!readonly && addDialogOpen && (
+      {addDialogOpen && (
         <AddCustomerDialog
           open
           onOpenChange={setAddDialogOpen}
@@ -268,7 +239,7 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
         />
       )}
 
-      {!readonly && customer && contactDialogOpen && (
+      {contactDialogOpen && (
         <ContactInfoDialog
           open
           onOpenChange={setContactDialogOpen}
@@ -277,7 +248,7 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
         />
       )}
 
-      {!readonly && customer && shippingDialogOpen && (
+      {shippingDialogOpen && (
         <AddressDialog
           open
           onOpenChange={setShippingDialogOpen}
@@ -288,7 +259,7 @@ const CustomerCard = ({ onSave, isSaving, readonly = false }: CustomerCardProps)
         />
       )}
 
-      {!readonly && customer && billingDialogOpen && (
+      {billingDialogOpen && (
         <AddressDialog
           open
           onOpenChange={setBillingDialogOpen}
