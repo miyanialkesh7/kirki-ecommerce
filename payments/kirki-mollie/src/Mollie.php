@@ -232,6 +232,8 @@ class Mollie extends PaymentProvider
                 OrderManager::mark_payment_as_failed($order_id);
             } elseif ($payment['status'] === MollieConstant::PAYMENT_STATUS_PENDING) {
                 OrderManager::mark_payment_as_pending($order_id);
+            } else {
+                OrderManager::mark_payment_as_unpaid($order_id);
             }
 
             DB::commit();
