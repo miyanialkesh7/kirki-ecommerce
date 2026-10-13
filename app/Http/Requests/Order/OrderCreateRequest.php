@@ -8,6 +8,7 @@ use Kirki\Ecommerce\App\Concerns\ValidatesAddressFields;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Constants\ConsentLocations;
 use Kirki\Ecommerce\App\Services\LegalConsentService;
+use Kirki\Ecommerce\App\Supports\Utils;
 use Kirki\Ecommerce\Framework\Sanitizer;
 use Kirki\Ecommerce\Framework\Http\Request;
 
@@ -26,7 +27,7 @@ class OrderCreateRequest extends Request
     /**
      * Determine whether the current user may create this order.
      *
-     * Admins always may. Other users may not place an order for a different customer or create a manual order.
+     * Admins always may. Guests may only when guest checkout is enabled. Other users may not place an order for a different customer or create a manual order.
      *
      * @since 1.0.0
      *
@@ -36,6 +37,10 @@ class OrderCreateRequest extends Request
     {
         if (customer()->is_admin()) {
             return true;
+        }
+
+        if (!customer()->is_logged_in() && !Utils::guest_checkout_enabled()) {
+            return false;
         }
 
         if (!empty($this->input('customer_id')) && (int) $this->input('customer_id') !== customer()->get_customer_id()) {

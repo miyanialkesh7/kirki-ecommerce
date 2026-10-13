@@ -196,7 +196,6 @@ const LegalSettings = () => {
                             {locations.map((location) => (
                               <Badge
                                 key={location}
-                                variant="secondary"
                                 cssOverride={{ padding: `${theme.spacing[1]} ${theme.spacing[2]}` }}
                               >
                                 {locationLabels[location]}

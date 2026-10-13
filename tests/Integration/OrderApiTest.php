@@ -1486,6 +1486,100 @@ class OrderApiTest extends RestTestCase
     }
 
     /**
+     * Placing an order is rate limited, so the checkout cannot be used to spam orders.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_checkout_is_rate_limited(): void
+    {
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $response = $this->request('POST', 'checkout', []);
+            $this->assertNotEquals(429, $response->get_status());
+        }
+
+        $this->assert_api_error($this->request('POST', 'checkout', []), 429);
+    }
+
+    /**
+     * A guest checkout is rejected when the store does not allow guest checkout.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_checkout_rejects_guest_when_guest_checkout_disabled(): void
+    {
+        Settings::update('checkout.is_allowed_guest_checkout', false);
+        $this->logout();
+        $order_count_before = Order::count();
+
+        $response = $this->request('POST', 'checkout', $this->order_payload([
+            'is_manual' => false,
+            'payment_provider' => 'paypal',
+            'customer_email' => 'guest-' . wp_generate_password(8, false) . '@example.com',
+        ]));
+
+        $this->assert_api_error($response, 401);
+        $this->assertEquals($order_count_before, Order::count());
+    }
+
+    /**
+     * A guest checkout with the email of an existing account that has no
+     * customer record does not create a customer under that account.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_checkout_guest_with_existing_user_email_does_not_attach_to_user(): void
+    {
+        Settings::update('checkout.is_allowed_guest_checkout', true);
+        $email = 'account-owner-' . wp_generate_password(8, false) . '@example.com';
+        $user_id = $this->create_shopper_user(['user_email' => $email]);
+        $this->logout();
+
+        $response = $this->request('POST', 'checkout', $this->order_payload([
+            'is_manual' => false,
+            'customer_email' => $email,
+            'shipping_email' => $email,
+        ]));
+        $payload = $this->assert_api_success($response, 201);
+        $this->order_id = $payload['data']['id'];
+
+        $this->assertNull(Order::find($this->order_id)->customer_id);
+        $this->assertNull(Customer::where('user_id', $user_id)->first());
+        $this->assertCount(0, Customer::where('email', $email)->get());
+    }
+
+    /**
+     * A guest checkout with the email of an account that has a customer
+     * record succeeds like any other guest order, so the response does not
+     * reveal that the account exists, and the order is not linked to it.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_checkout_guest_with_existing_customer_email_does_not_reveal_account(): void
+    {
+        Settings::update('checkout.is_allowed_guest_checkout', true);
+        $user_id = $this->create_shopper_user();
+        $customer = $this->provision_customer_for_user($user_id);
+        $email = get_userdata($user_id)->user_email;
+        $orders_before = Order::where('customer_id', $customer->id)->count();
+        $this->logout();
+
+        $response = $this->request('POST', 'checkout', $this->order_payload([
+            'is_manual' => false,
+            'customer_email' => $email,
+            'shipping_email' => $email,
+        ]));
+        $payload = $this->assert_api_success($response, 201);
+        $this->order_id = $payload['data']['id'];
+
+        $this->assertNull(Order::find($this->order_id)->customer_id);
+        $this->assertEquals($orders_before, Order::where('customer_id', $customer->id)->count());
+    }
+
+    /**
      * A guest checkout that submits a distinct customer_email persists that
      * value on the order rather than falling back to billing_email, and
      * rejects the submission with a validation error when it's missing.
@@ -1494,6 +1588,7 @@ class OrderApiTest extends RestTestCase
      */
     public function test_checkout_guest_order_saves_submitted_customer_email(): void
     {
+        Settings::update('checkout.is_allowed_guest_checkout', true);
         $admin_id = get_current_user_id();
         $this->logout();
 
@@ -1524,6 +1619,7 @@ class OrderApiTest extends RestTestCase
      */
     public function test_checkout_guest_order_requires_customer_email(): void
     {
+        Settings::update('checkout.is_allowed_guest_checkout', true);
         $this->logout();
 
         $response = $this->request('POST', 'checkout', $this->order_payload([

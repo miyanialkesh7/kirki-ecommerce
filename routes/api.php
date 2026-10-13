@@ -262,8 +262,10 @@ Route::put('/cart/items/{id}', [CartController::class, 'update_item']);
 Route::delete('/cart/items/{id}', [CartController::class, 'remove_item']);
 Route::delete('/cart', [CartController::class, 'empty_cart']);
 Route::put('/cart', [CartController::class, 'update']);
-Route::post('/checkout', [CheckoutController::class, 'store']);
-Route::post('/cart/coupon', [CartController::class, 'apply_coupon']);
+Route::post('/checkout', [CheckoutController::class, 'store'])
+    ->throttle(10, 1);
+Route::post('/cart/coupon', [CartController::class, 'apply_coupon'])
+    ->throttle(10, 1);
 Route::delete('/cart/coupon', [CartController::class, 'remove_coupon']);
 
 // Account api endpoints (self-service, logged-in customer only).

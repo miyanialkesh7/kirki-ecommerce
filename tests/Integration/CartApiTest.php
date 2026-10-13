@@ -358,6 +358,23 @@ class CartApiTest extends RestTestCase
     }
 
     /**
+     * Applying a coupon is rate limited, so coupon codes cannot be brute forced.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_apply_coupon_is_rate_limited(): void
+    {
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $response = $this->request('POST', 'cart/coupon', ['code' => 'GUESS-' . $attempt], $this->cart_headers);
+            $this->assertNotEquals(429, $response->get_status());
+        }
+
+        $response = $this->request('POST', 'cart/coupon', ['code' => 'GUESS-11'], $this->cart_headers);
+        $this->assert_api_error($response, 429);
+    }
+
+    /**
      * Apply and remove coupon on cart.
      *
      * @return void
