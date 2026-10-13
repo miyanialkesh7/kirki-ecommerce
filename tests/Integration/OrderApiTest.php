@@ -1486,6 +1486,28 @@ class OrderApiTest extends RestTestCase
     }
 
     /**
+     * A guest checkout is rejected when the store does not allow guest checkout.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_checkout_rejects_guest_when_guest_checkout_disabled(): void
+    {
+        Settings::update('checkout.is_allowed_guest_checkout', false);
+        $this->logout();
+        $order_count_before = Order::count();
+
+        $response = $this->request('POST', 'checkout', $this->order_payload([
+            'is_manual' => false,
+            'payment_provider' => 'paypal',
+            'customer_email' => 'guest-' . wp_generate_password(8, false) . '@example.com',
+        ]));
+
+        $this->assert_api_error($response, 401);
+        $this->assertEquals($order_count_before, Order::count());
+    }
+
+    /**
      * A guest checkout that submits a distinct customer_email persists that
      * value on the order rather than falling back to billing_email, and
      * rejects the submission with a validation error when it's missing.
@@ -1494,6 +1516,7 @@ class OrderApiTest extends RestTestCase
      */
     public function test_checkout_guest_order_saves_submitted_customer_email(): void
     {
+        Settings::update('checkout.is_allowed_guest_checkout', true);
         $admin_id = get_current_user_id();
         $this->logout();
 
@@ -1524,6 +1547,7 @@ class OrderApiTest extends RestTestCase
      */
     public function test_checkout_guest_order_requires_customer_email(): void
     {
+        Settings::update('checkout.is_allowed_guest_checkout', true);
         $this->logout();
 
         $response = $this->request('POST', 'checkout', $this->order_payload([
