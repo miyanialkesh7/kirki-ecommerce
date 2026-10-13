@@ -14,7 +14,10 @@ import Grid from '@/components/ui/grid';
 import Input from '@/components/ui/input';
 import Text from '@/components/ui/text';
 import { useCategoriesQuery } from '@/features/categories';
-import { resolveDestinationRegion } from '@/features/settings/shipping/lib/shipping-rules/helper';
+import {
+  getDestinationLabel,
+  resolveDestinationRegion,
+} from '@/features/settings/shipping/lib/shipping-rules/helper';
 import {
   buildRuleDefaultValues,
   type ConditionDataMap,
@@ -45,6 +48,7 @@ import type { ErrorResponse } from '@/libs/api';
 import { applyServerErrors } from '@/libs/form-errors';
 import { queryClient } from '@/libs/query-client';
 import { settingsKeys } from '@/libs/query-keys';
+import { useCountriesQuery } from '@/services/country';
 import { getErrorMessage } from '@/services/helpers';
 import { updateSettings, useSettingsQuery } from '@/services/settings';
 import { theme } from '@/theme';
@@ -82,6 +86,7 @@ const ShippingRuleFormCard = ({
   const { data: categoryData } = useCategoriesQuery({
     limit: -1,
   });
+  const { data: countries } = useCountriesQuery({ limit: -1 });
 
   const [conditionData, setConditionData] = useState<ConditionDataMap>({
     product_categories: null,
@@ -118,10 +123,16 @@ const ShippingRuleFormCard = ({
     }
 
     const resolved = resolveDestinationSelection(selectedCountry, selectedRegion, mode);
+    const currentConditionValue = form.getValues(
+      'condition_value',
+    ) as DestinationConditionValue | null;
 
     form.setValue('selected_country', resolved.selectedCountry || null);
 
-    if (resolved.conditionValue) {
+    if (
+      resolved.conditionValue &&
+      currentConditionValue?.country !== resolved.conditionValue.country
+    ) {
       form.setValue('condition_value', resolved.conditionValue);
     }
   }, [selectedCountry, selectedRegion, selectedCondition, mode, form]);
@@ -237,7 +248,11 @@ const ShippingRuleFormCard = ({
 
   return (
     <>
-      <Card data-search-skip="true" cssOverride={mergeCss(cardStyles.formCard, styles.dashedCard)}>
+      <Card
+        data-search-skip="true"
+        cssOverride={mergeCss(cardStyles.formCard, styles.dashedCard)}
+        noShadow
+      >
         <CardContent>
           <Form {...form}>
             <Flex direction="column" gap={4}>
@@ -269,8 +284,8 @@ const ShippingRuleFormCard = ({
                   )}
 
                   {selectedCondition === 'destination_region' ? (
-                    <TextField
-                      name="selected_country"
+                    <Input
+                      value={getDestinationLabel(selectedConditionValue, countries ?? [])}
                       readOnly
                       onClick={() => setOpenDestinationPopup(true)}
                     />
@@ -287,6 +302,7 @@ const ShippingRuleFormCard = ({
                     <SelectField
                       name="condition_value"
                       options={getConditionValueOptions(selectedCondition, conditionData)}
+                      placeholder={__('Select value', 'kirki-ecommerce')}
                     />
                   )}
                 </Grid>
@@ -298,6 +314,7 @@ const ShippingRuleFormCard = ({
                     name="action"
                     options={actionSelectOptions}
                     onValueChange={() => form.setValue('action_value', '')}
+                    placeholder={__('Select action', 'kirki-ecommerce')}
                   />
                   {VALUE_ACTIONS.includes(selectedAction ?? '') && (
                     <TextField
@@ -362,7 +379,6 @@ export default ShippingRuleFormCard;
 
 const styles = defineStyles({
   dashedCard: {
-    borderStyle: 'dashed',
-    borderColor: theme.colors.border.default,
+    border: `1px dashed ${theme.colors.border.default}`,
   },
 });

@@ -148,7 +148,7 @@ const ConditionRow = (props: ConditionRowProps) => {
         {row.condition === 'destination_region' ? (
           <Input
             readOnly
-            value={getDestinationDisplayValue(row?.value)}
+            value={getDestinationDisplayValue(row?.value, states)}
             onClick={() => setShowStatesPopup(true)}
             placeholder={__('Value', 'kirki-ecommerce')}
           />

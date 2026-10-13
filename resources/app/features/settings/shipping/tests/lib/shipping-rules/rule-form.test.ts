@@ -12,10 +12,10 @@ import type { ShippingRuleFormPayload } from '@/features/settings/shipping/schem
 import type { ShippingRegion, ShippingRule } from '@/features/settings/shipping/types';
 
 describe('buildRuleDefaultValues', () => {
-  it('falls back to schema defaults when there is no initial rule', () => {
+  it('defaults to the shipping_profile condition when there is no initial rule', () => {
     const result = buildRuleDefaultValues();
 
-    expect(result.condition).toBe('');
+    expect(result.condition).toBe('shipping_profile');
     expect(result.action).toBe('');
   });
 
@@ -158,7 +158,7 @@ describe('resolveDestinationSelection', () => {
   it('falls back to the first region when no country is selected', () => {
     expect(resolveDestinationSelection(null, regions, 'add')).toEqual({
       selectedCountry: 'US',
-      conditionValue: { country: 'US', states: ['CA', 'NY'] },
+      conditionValue: { country: 'US', states: [] },
     });
   });
 

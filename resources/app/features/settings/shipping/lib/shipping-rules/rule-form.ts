@@ -16,11 +16,12 @@ export type ConditionDataMap = Record<
 /**
  * Hydrates the rule form from an existing rule for edit mode, unpacking the
  * `destination_region` condition's `{country, states}` shape into the two
- * form fields it's split across.
+ * form fields it's split across. A new rule starts on the shipping profile
+ * condition.
  */
 export const buildRuleDefaultValues = (initialRule?: ShippingRule): ShippingRuleFormInput => {
   if (!initialRule) {
-    return getDefaults(ShippingRuleFormSchema);
+    return { ...getDefaults(ShippingRuleFormSchema), condition: 'shipping_profile' };
   }
 
   const condition = initialRule.conditions?.[0];
@@ -101,7 +102,9 @@ export type DestinationSelection = {
  * Resolves which country/region a `destination_region` condition should
  * hold: the explicitly picked country if there is one, otherwise the first
  * region on record. `condition_value` is only (re)written outside edit
- * mode, so opening an existing rule for editing doesn't clobber it.
+ * mode, so opening an existing rule for editing doesn't clobber it. A new
+ * rule starts as the whole country; states are chosen in the destination
+ * dialog.
  */
 export const resolveDestinationSelection = (
   selectedCountry: string | null | undefined,
@@ -109,13 +112,9 @@ export const resolveDestinationSelection = (
   mode: 'add' | 'edit',
 ): DestinationSelection => {
   const country = selectedCountry || selectedRegion[0]?.country || '';
-  const regionForCountry = selectedRegion.find((region) => region.country === country);
 
   return {
     selectedCountry: country,
-    conditionValue:
-      country && mode !== 'edit'
-        ? { country, states: regionForCountry?.states ?? [] }
-        : null,
+    conditionValue: country && mode !== 'edit' ? { country, states: [] } : null,
   };
 };
