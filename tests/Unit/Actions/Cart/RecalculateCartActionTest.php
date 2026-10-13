@@ -127,36 +127,133 @@ class RecalculateCartActionTest extends TestCase
 
     /**
      * A fully-discounted item under tax-inclusive pricing has a zero
-     * taxable base - the tax-fraction extraction must not divide by zero.
-     * With nothing to derive a rate from, the subtotal and unit prices are
-     * left as their raw catalog values rather than erroring.
+     * taxable base, but the tax is still excluded from its subtotal and
+     * unit prices: the tax before any discount is the base, not the
+     * (zero) tax after it.
      *
      * @return void
      */
-    public function test_fully_discounted_item_under_inclusive_tax_does_not_error(): void
+    public function test_fully_discounted_item_under_inclusive_tax_still_excludes_tax(): void
     {
-        $this->bind_default_region(15, 0, true);
+        $this->bind_default_region(10, 0, true);
 
-        $context = $this->make_context([$this->make_item(1, 10000)], [
+        $context = $this->make_context([$this->make_item(1, 11000)], [
             'shipping_address' => ['country' => 'BD'],
         ]);
 
         $discount_service = $this->createMock(DiscountService::class);
-        $discount_service->method('calculate')->willReturn($this->make_discount_result(0, [1 => 10000]));
+        $discount_service->method('calculate')->willReturn($this->make_discount_result(0, [1 => 11000]));
 
         $result = $this->make_action(['discount_service' => $discount_service])->execute($context);
         $item = $result->items[1];
 
-        $this->assertSame(10000, $item->base_discount_amount);
+        $this->assertSame(11000, $item->base_discount_amount);
         $this->assertSame(0, $item->base_tax_amount);
         $this->assertSame(0, $item->base_total);
         $this->assertSame(10000, $item->base_subtotal);
         $this->assertSame(10000, $item->base_unit_price);
         $this->assertSame(10000, $item->base_regular_unit_price);
-        // The regular-price total isn't itself discounted, so its own tax
-        // is still computed normally (1500), unlike the current-price tax
-        // (0, since the current price was fully discounted away).
-        $this->assertSame(1500, $item->base_regular_tax_amount);
+        $this->assertSame(1000, $item->base_regular_tax_amount);
+        $this->assertSame(1000, $item->base_discount_tax_amount);
+    }
+
+    /**
+     * An order-wide coupon under tax-inclusive pricing lowers the tax, but
+     * not the item's catalog figures: those stay as the catalog had them.
+     *
+     * @return void
+     */
+    public function test_order_coupon_under_inclusive_tax_keeps_catalog_figures(): void
+    {
+        $this->bind_default_region(10, 0, true);
+
+        $context = $this->make_context([$this->make_item(1, 11000)], [
+            'shipping_address' => ['country' => 'BD'],
+        ]);
+
+        $result = $this->make_action(['discount_service' => $this->make_discount_service($this->make_discount_result(0, [1 => 5500]))])->execute($context);
+        $item = $result->items[1];
+
+        $this->assertSame(500, $item->base_tax_amount);
+        $this->assertSame(5500, $item->base_total);
+        $this->assertSame(10000, $item->base_subtotal);
+        $this->assertSame(500, $item->base_discount_tax_amount);
+        $this->assertSame(11000, $item->base_catalog_regular_price);
+        $this->assertSame(11000, $item->base_catalog_sale_price);
+        $this->assertSame(11000, $item->base_catalog_product_coupon_discounted_subtotal);
+    }
+
+    /**
+     * Only product-scoped coupons reduce the catalog product-coupon-discounted
+     * subtotal; the order-wide coupon's share still lowers the tax.
+     *
+     * @return void
+     */
+    public function test_product_and_order_coupons_split_under_inclusive_tax(): void
+    {
+        $this->bind_default_region(10, 0, true);
+
+        $context = $this->make_context([$this->make_item(1, 5500, 2)], [
+            'shipping_address' => ['country' => 'BD'],
+        ]);
+
+        // 1100 from a product coupon, 990 from an order-wide coupon.
+        $discount_result = $this->make_discount_result(0, [1 => 2090]);
+        $discount_result->product_item_discounts = [1 => 1100];
+
+        $result = $this->make_action(['discount_service' => $this->make_discount_service($discount_result)])->execute($context);
+        $item = $result->items[1];
+
+        $this->assertSame(9900, $item->base_catalog_product_coupon_discounted_subtotal);
+        $this->assertSame(810, $item->base_tax_amount);
+        $this->assertSame(190, $item->base_discount_tax_amount);
+        $this->assertSame(8910, $item->base_total);
+    }
+
+    /**
+     * A sale item records both catalog unit prices exactly as the variant had them.
+     *
+     * @return void
+     */
+    public function test_sale_item_records_catalog_regular_and_sale_prices(): void
+    {
+        $this->bind_default_region(10, 0, true);
+
+        $context = $this->make_context([$this->make_item(1, 9900, 2, ['base_product_total' => 12100])], [
+            'shipping_address' => ['country' => 'BD'],
+        ]);
+
+        $result = $this->make_action()->execute($context);
+        $item = $result->items[1];
+
+        $this->assertSame(12100, $item->base_catalog_regular_price);
+        $this->assertSame(9900, $item->base_catalog_sale_price);
+        $this->assertSame(19800, $item->base_catalog_product_coupon_discounted_subtotal);
+        $this->assertSame(0, $item->base_discount_tax_amount);
+    }
+
+    /**
+     * Under tax-exclusive pricing the catalog figures are already net, and
+     * the discount tax is the tax the discount removed from on top.
+     *
+     * @return void
+     */
+    public function test_catalog_figures_under_exclusive_tax(): void
+    {
+        $this->bind_default_region(15, 0, false);
+
+        $context = $this->make_context([$this->make_item(1, 10000)], [
+            'shipping_address' => ['country' => 'BD'],
+        ]);
+
+        $result = $this->make_action(['discount_service' => $this->make_discount_service($this->make_discount_result(0, [1 => 2000]))])->execute($context);
+        $item = $result->items[1];
+
+        $this->assertSame(10000, $item->base_subtotal);
+        $this->assertSame(10000, $item->base_catalog_sale_price);
+        $this->assertSame(10000, $item->base_catalog_product_coupon_discounted_subtotal);
+        $this->assertSame(1200, $item->base_tax_amount);
+        $this->assertSame(300, $item->base_discount_tax_amount);
     }
 
     /**
@@ -721,6 +818,17 @@ class RecalculateCartActionTest extends TestCase
         $result->item_discounts = $item_discounts;
 
         return $result;
+    }
+
+    /**
+     * @return DiscountService&\PHPUnit\Framework\MockObject\MockObject
+     */
+    protected function make_discount_service(DiscountCalculationResultDTO $discount_result)
+    {
+        $discount_service = $this->createMock(DiscountService::class);
+        $discount_service->method('calculate')->willReturn($discount_result);
+
+        return $discount_service;
     }
 
     /**

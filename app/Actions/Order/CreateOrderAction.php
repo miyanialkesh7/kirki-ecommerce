@@ -772,6 +772,18 @@ class CreateOrderAction
         $item_dto->invoiced_regular_tax_total = $this->convert_amount($calculated_item->base_regular_tax_amount, $currency_code, $exchange_rate);
         $item_dto->base_regular_tax_total = $calculated_item->base_regular_tax_amount;
 
+        $item_dto->invoiced_catalog_regular_price = $this->convert_amount($calculated_item->base_catalog_regular_price, $currency_code, $exchange_rate);
+        $item_dto->base_catalog_regular_price = $calculated_item->base_catalog_regular_price;
+
+        $item_dto->invoiced_catalog_sale_price = $this->convert_amount($calculated_item->base_catalog_sale_price, $currency_code, $exchange_rate);
+        $item_dto->base_catalog_sale_price = $calculated_item->base_catalog_sale_price;
+
+        $item_dto->invoiced_catalog_product_coupon_discounted_subtotal = $this->convert_amount($calculated_item->base_catalog_product_coupon_discounted_subtotal, $currency_code, $exchange_rate);
+        $item_dto->base_catalog_product_coupon_discounted_subtotal = $calculated_item->base_catalog_product_coupon_discounted_subtotal;
+
+        $item_dto->invoiced_discount_tax_total = $this->convert_amount($calculated_item->base_discount_tax_amount, $currency_code, $exchange_rate);
+        $item_dto->base_discount_tax_total = $calculated_item->base_discount_tax_amount;
+
         $item_dto->quantity = $calculated_item->quantity;
 
         $item_dto->invoiced_subtotal = $this->convert_amount($calculated_item->base_subtotal, $currency_code, $exchange_rate);

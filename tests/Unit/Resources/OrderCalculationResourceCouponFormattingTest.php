@@ -3,6 +3,8 @@
 namespace Kirki\Ecommerce\Tests\Unit\Resources;
 
 use Kirki\Ecommerce\App\Constants\Coupon\DiscountTarget;
+use Kirki\Ecommerce\App\DTO\Calculation\CalculationItemDTO;
+use Kirki\Ecommerce\App\DTO\Calculation\CalculationResultDTO;
 use Kirki\Ecommerce\App\DTO\Discount\CouponDiscountResultDTO;
 use Kirki\Ecommerce\App\DTO\Tax\TaxLineDTO;
 use Kirki\Ecommerce\App\Managers\MoneyManager;
@@ -59,66 +61,6 @@ class OrderCalculationResourceCouponFormattingTest extends TestCase
         $method_reflection->setAccessible(true);
 
         return $method_reflection->invoke($this->resource, ...$arguments);
-    }
-
-    // get_product_coupon_discount_for_item
-
-    public function test_sums_only_product_scoped_coupon_discounts_for_the_item(): void
-    {
-        $product_coupon = $this->make_coupon('PRODUCT10', DiscountTarget::PRODUCTS);
-        $order_coupon = $this->make_coupon('ORDER10', DiscountTarget::ORDER);
-
-        $coupon_results = [
-            $this->make_coupon_result($product_coupon, [101 => 500]),
-            $this->make_coupon_result($order_coupon, [101 => 300]),
-        ];
-
-        $this->assertSame(500, $this->call('get_product_coupon_discount_for_item', $coupon_results, 101));
-    }
-
-    public function test_sums_multiple_stacked_product_coupons_on_the_same_item(): void
-    {
-        $coupon_a = $this->make_coupon('A', DiscountTarget::PRODUCTS);
-        $coupon_b = $this->make_coupon('B', DiscountTarget::PRODUCTS);
-
-        $coupon_results = [
-            $this->make_coupon_result($coupon_a, [101 => 200]),
-            $this->make_coupon_result($coupon_b, [101 => 150]),
-        ];
-
-        $this->assertSame(350, $this->call('get_product_coupon_discount_for_item', $coupon_results, 101));
-    }
-
-    public function test_returns_zero_when_only_an_order_scoped_coupon_discounts_the_item(): void
-    {
-        $order_coupon = $this->make_coupon('ORDER10', DiscountTarget::ORDER);
-        $coupon_results = [$this->make_coupon_result($order_coupon, [101 => 300])];
-
-        $this->assertSame(0, $this->call('get_product_coupon_discount_for_item', $coupon_results, 101));
-    }
-
-    public function test_returns_zero_when_item_has_no_discount_at_all(): void
-    {
-        $product_coupon = $this->make_coupon('PRODUCT10', DiscountTarget::PRODUCTS);
-        $coupon_results = [$this->make_coupon_result($product_coupon, [999 => 500])];
-
-        $this->assertSame(0, $this->call('get_product_coupon_discount_for_item', $coupon_results, 101));
-    }
-
-    public function test_ignores_free_shipping_coupon_results_which_carry_no_item_discounts(): void
-    {
-        $free_shipping = $this->make_coupon('FREESHIP', DiscountTarget::ORDER);
-        $result = new CouponDiscountResultDTO();
-        $result->coupon = $free_shipping;
-        $result->shipping_discount = 500;
-        $result->total_discount = 500;
-
-        $this->assertSame(0, $this->call('get_product_coupon_discount_for_item', [$result], 101));
-    }
-
-    public function test_returns_zero_for_an_empty_coupon_results_list(): void
-    {
-        $this->assertSame(0, $this->call('get_product_coupon_discount_for_item', [], 101));
     }
 
     // get_applied_product_coupons_for_item
@@ -240,167 +182,85 @@ class OrderCalculationResourceCouponFormattingTest extends TestCase
         $this->assertArrayNotHasKey('display_discount_amount_fixed_money_object', $results[0]);
     }
 
-    // prepare_strikethrough_price / derive_inclusive_amount / derive_inclusive_amount_at_rate / get_items_tax_total
+    // prepare_items: line, strikethrough and per-unit figures read the catalog figures
 
-    protected function make_calculated_item(int $base_subtotal, int $base_product_total, int $base_tax_amount = 0, int $base_regular_tax_amount = 0): object
+    protected function make_calculated_item(int $catalog_regular_price, int $catalog_sale_price, int $catalog_product_coupon_discounted_subtotal): CalculationItemDTO
     {
-        $item = new \Kirki\Ecommerce\App\DTO\Calculation\CalculationItemDTO();
-        $item->base_subtotal = $base_subtotal;
-        $item->base_product_total = $base_product_total;
-        $item->base_tax_amount = $base_tax_amount;
-        $item->base_regular_tax_amount = $base_regular_tax_amount;
+        $calculated_item = new CalculationItemDTO();
+        $calculated_item->base_catalog_regular_price = $catalog_regular_price;
+        $calculated_item->base_catalog_sale_price = $catalog_sale_price;
+        $calculated_item->base_catalog_product_coupon_discounted_subtotal = $catalog_product_coupon_discounted_subtotal;
 
-        return $item;
+        return $calculated_item;
     }
 
-    public function test_strikethrough_is_the_regular_price_total_when_only_a_sale_applied(): void
-    {
-        // No discount: current-price exclusive is the subtotal (4500), taxed at 450 (10%).
-        // Regular tax amount (600) is consistent with that same 10% rate applied to the regular total (6000).
-        $calculated_item = $this->make_calculated_item(4500, 6000, 450, 600);
-
-        $strikethrough = $this->call('prepare_strikethrough_price', $calculated_item, 0, 4500);
-
-        $this->assertSame(60.0, $strikethrough['exclusive']->raw);
-        // Direct addition of the stored regular tax amount: 6000 + 600 = 6600.
-        $this->assertSame(66.0, $strikethrough['inclusive']->raw);
-    }
-
-    public function test_strikethrough_on_sale_uses_the_stored_regular_tax_amount_directly_not_rate_derivation(): void
-    {
-        // base_regular_tax_amount (900) is deliberately different from what
-        // rate-derivation against the current price's 10% rate would give
-        // (600), to prove the fast path (direct addition) is used.
-        $calculated_item = $this->make_calculated_item(4500, 6000, 450, 900);
-
-        $strikethrough = $this->call('prepare_strikethrough_price', $calculated_item, 0, 4500);
-
-        $this->assertSame(60.0, $strikethrough['exclusive']->raw);
-        // 6000 + 900 = 6900, not 6000 * (1 + 450/4500) = 6600.
-        $this->assertSame(69.0, $strikethrough['inclusive']->raw);
-    }
-
-    public function test_strikethrough_coupon_with_no_sale_uses_the_stored_regular_tax_amount_directly(): void
-    {
-        // Not on sale (base_product_total equals base_subtotal before the
-        // coupon), so the pre-coupon subtotal (2000) equals the
-        // regular-price total (2000) exactly - the fast path applies.
-        $calculated_item = $this->make_calculated_item(2000, 2000, 200, 1000);
-
-        // The item's own current-price exclusive subtotal is post-discount (2000 - 500 = 1500).
-        $strikethrough = $this->call('prepare_strikethrough_price', $calculated_item, 500, 1500);
-
-        $this->assertSame(20.0, $strikethrough['exclusive']->raw);
-        // Direct addition: 2000 + 1000 = 3000 - not the rate-derived
-        // 2000 * (1 + 200/1500) = 2266.67 a pre-fast-path implementation would have produced.
-        $this->assertSame(30.0, $strikethrough['inclusive']->raw);
-    }
-
-    public function test_strikethrough_uses_rate_derivation_when_coupon_and_sale_compound(): void
-    {
-        // On sale (base_product_total 2500 > base_subtotal 2000) AND a
-        // coupon discount applied: the coupon branch wins, so the
-        // strikethrough amount is the pre-coupon subtotal (2000), not the
-        // regular total (2500) - the one case the stored regular tax
-        // amount doesn't cover. The stored value (999) is deliberately
-        // wrong to prove it's ignored in this branch.
-        $calculated_item = $this->make_calculated_item(2000, 2500, 200, 999);
-
-        $strikethrough = $this->call('prepare_strikethrough_price', $calculated_item, 500, 1500);
-
-        $this->assertSame(20.0, $strikethrough['exclusive']->raw);
-        // Rate = 200/1500; scaled onto the pre-coupon 2000 baseline: 2000 * (1 + 200/1500) = 2266.67.
-        $this->assertEqualsWithDelta(22.6667, $strikethrough['inclusive']->raw, 0.01);
-    }
-
-    public function test_strikethrough_is_null_when_there_is_no_sale_and_no_product_coupon(): void
-    {
-        $calculated_item = $this->make_calculated_item(4000, 4000);
-
-        $strikethrough = $this->call('prepare_strikethrough_price', $calculated_item, 0, 4000);
-
-        $this->assertNull($strikethrough['exclusive']);
-        $this->assertNull($strikethrough['inclusive']);
-    }
-
-    public function test_derive_inclusive_amount_adds_the_tax_directly(): void
-    {
-        $this->assertSame(1200, $this->call('derive_inclusive_amount', 1000, 200));
-    }
-
-    public function test_derive_inclusive_amount_at_rate_scales_by_the_current_price_rate(): void
-    {
-        $this->assertSame(5500, $this->call('derive_inclusive_amount_at_rate', 5000, 1000, 100));
-    }
-
-    public function test_get_items_tax_total_sums_every_items_own_tax(): void
-    {
-        $items = [
-            101 => $this->make_calculated_item(4500, 6000, 450),
-            102 => $this->make_calculated_item(1000, 1000, 100),
-        ];
-
-        $this->assertSame(550, $this->call('get_items_tax_total', $items));
-    }
-
-    // prepare_items: per-unit price and per-unit strikethrough price
-
-    /**
-     * @param CouponDiscountResultDTO[] $coupon_results
-     */
-    protected function prepare_single_item(object $calculated_item, int $quantity, array $coupon_results = []): array
+    protected function prepare_single_item(CalculationItemDTO $calculated_item, int $quantity): array
     {
         $calculated_item->id = 1;
         $calculated_item->variant_id = 101;
         $calculated_item->quantity = $quantity;
 
-        $result = new \Kirki\Ecommerce\App\DTO\Calculation\CalculationResultDTO();
+        $result = new CalculationResultDTO();
         $result->items = [101 => $calculated_item];
-        $result->coupon_results = $coupon_results;
 
         return $this->call('prepare_items', $result->items, $result)[0];
     }
 
+    public function test_order_coupon_under_tax_inclusive_pricing_does_not_change_the_item_subtotal(): void
+    {
+        // 110.00 including 10% tax with a 50% order-wide coupon: the engine
+        // lowers the tax to 5.00, but the item's catalog figures stay 110.00.
+        $calculated_item = $this->make_calculated_item(11000, 11000, 11000);
+        $calculated_item->base_subtotal = 10000;
+        $calculated_item->base_tax_amount = 500;
+
+        $prepared = $this->prepare_single_item($calculated_item, 1);
+        $coupon_results = [$this->make_coupon_result($this->make_coupon('HALF', DiscountTarget::ORDER), [101 => 5500])];
+
+        $this->assertSame(110.0, $prepared['base_subtotal_money_object']->raw);
+        $this->assertNull($prepared['base_strikethrough_price_money_object']);
+        $this->assertSame(11000, $this->call('get_items_subtotal', [101 => $calculated_item]));
+        $this->assertSame(5500, $this->call('get_order_coupon_discount', $coupon_results));
+    }
+
     public function test_unit_price_divides_the_line_subtotal_evenly(): void
     {
-        $prepared = $this->prepare_single_item($this->make_calculated_item(7000, 7000, 700), 2);
+        $prepared = $this->prepare_single_item($this->make_calculated_item(3850, 3850, 7700), 2);
 
-        $this->assertSame(35.0, $prepared['base_unit_price_exclusive_money_object']->raw);
-        $this->assertSame(38.5, $prepared['base_unit_price_inclusive_money_object']->raw);
+        $this->assertSame(38.5, $prepared['base_unit_price_money_object']->raw);
     }
 
     public function test_unit_price_rounds_up_when_the_line_subtotal_does_not_divide_evenly(): void
     {
-        $prepared = $this->prepare_single_item($this->make_calculated_item(1000, 1000), 3);
+        $prepared = $this->prepare_single_item($this->make_calculated_item(334, 334, 1000), 3);
 
-        $this->assertSame(3.34, $prepared['base_unit_price_exclusive_money_object']->raw);
-        $this->assertSame(10.0, $prepared['base_subtotal_exclusive_money_object']->raw);
+        $this->assertSame(3.34, $prepared['base_unit_price_money_object']->raw);
+        $this->assertSame(10.0, $prepared['base_subtotal_money_object']->raw);
     }
 
-    public function test_unit_price_is_net_of_the_product_coupon_discount(): void
+    public function test_product_coupon_strikes_through_the_sale_total(): void
     {
-        $coupon_result = $this->make_coupon_result($this->make_coupon('ITEM10', DiscountTarget::PRODUCTS), [101 => 1000]);
+        $prepared = $this->prepare_single_item($this->make_calculated_item(4000, 4000, 7000), 2);
 
-        $prepared = $this->prepare_single_item($this->make_calculated_item(8000, 8000), 2, [$coupon_result]);
-
-        $this->assertSame(35.0, $prepared['base_unit_price_exclusive_money_object']->raw);
-        $this->assertSame(40.0, $prepared['base_unit_strikethrough_price_exclusive_money_object']->raw);
+        $this->assertSame(70.0, $prepared['base_subtotal_money_object']->raw);
+        $this->assertSame(35.0, $prepared['base_unit_price_money_object']->raw);
+        $this->assertSame(80.0, $prepared['base_strikethrough_price_money_object']->raw);
+        $this->assertSame(40.0, $prepared['base_unit_strikethrough_price_money_object']->raw);
     }
 
-    public function test_unit_strikethrough_is_the_regular_price_total_divided_by_quantity_when_on_sale(): void
+    public function test_unit_strikethrough_is_the_regular_price_when_on_sale(): void
     {
-        $prepared = $this->prepare_single_item($this->make_calculated_item(9000, 10000, 900, 1000), 2);
+        $prepared = $this->prepare_single_item($this->make_calculated_item(5000, 4500, 9000), 2);
 
-        $this->assertSame(50.0, $prepared['base_unit_strikethrough_price_exclusive_money_object']->raw);
-        $this->assertSame(55.0, $prepared['base_unit_strikethrough_price_inclusive_money_object']->raw);
+        $this->assertSame(100.0, $prepared['base_strikethrough_price_money_object']->raw);
+        $this->assertSame(50.0, $prepared['base_unit_strikethrough_price_money_object']->raw);
     }
 
     public function test_unit_strikethrough_is_null_when_the_line_strikethrough_is_null(): void
     {
-        $prepared = $this->prepare_single_item($this->make_calculated_item(4000, 4000, 400), 2);
+        $prepared = $this->prepare_single_item($this->make_calculated_item(2000, 2000, 4000), 2);
 
-        $this->assertNull($prepared['base_strikethrough_price_exclusive_money_object']);
-        $this->assertNull($prepared['base_unit_strikethrough_price_exclusive_money_object']);
-        $this->assertNull($prepared['base_unit_strikethrough_price_inclusive_money_object']);
+        $this->assertNull($prepared['base_strikethrough_price_money_object']);
+        $this->assertNull($prepared['base_unit_strikethrough_price_money_object']);
     }
 }
