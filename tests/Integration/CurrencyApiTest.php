@@ -5,6 +5,7 @@ namespace Kirki\Ecommerce\Tests\Integration;
 use Kirki\Ecommerce\App\Constants\BulkActions;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Managers\MoneyManager;
+use Kirki\Ecommerce\App\Models\Currency;
 use Kirki\Ecommerce\Tests\Support\CreatesTestProducts;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 
@@ -421,6 +422,85 @@ class CurrencyApiTest extends RestTestCase
     }
 
     /**
+     * Setting a new base recalculates every rate against it and fixes the new base at 1.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_setting_new_base_recalculates_exchange_rates(): void
+    {
+        $old_base = $this->create_currency(['name' => 'Old Base', 'is_base' => true]);
+        $new_base = $this->create_currency(['name' => 'New Base', 'exchange_rate' => 0.5]);
+        $other = $this->create_currency(['name' => 'Other', 'exchange_rate' => 0.25]);
+
+        $response = $this->request('PUT', 'currencies', [
+            'items' => [$this->currency_row($new_base, true)],
+        ]);
+
+        $this->assert_api_success($response, 201);
+        $this->assertSame([$new_base['id']], $this->base_currency_ids());
+        $this->assertEquals(1.0, $this->stored_exchange_rate($new_base['id']));
+        $this->assertEquals(2.0, $this->stored_exchange_rate($old_base['id']));
+        $this->assertEquals(0.5, $this->stored_exchange_rate($other['id']));
+    }
+
+    /**
+     * Updating the base with a rate other than 1 still stores 1 and leaves the other rates.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_updating_the_base_keeps_its_rate_at_one(): void
+    {
+        $base = $this->create_currency(['name' => 'Base', 'is_base' => true]);
+        $other = $this->create_currency(['name' => 'Other', 'exchange_rate' => 0.5]);
+
+        $response = $this->request('PUT', 'currencies', [
+            'items' => [array_merge($this->currency_row($base, true), ['exchange_rate' => 3.0])],
+        ]);
+
+        $payload = $this->assert_api_success($response, 201);
+        $this->assertEquals(1.0, (float) $payload['data'][0]['exchange_rate']);
+        $this->assertEquals(1.0, $this->stored_exchange_rate($base['id']));
+        $this->assertEquals(0.5, $this->stored_exchange_rate($other['id']));
+    }
+
+    /**
+     * Creating a currency as base recalculates the stored rates against it.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_creating_a_currency_as_base_recalculates_exchange_rates(): void
+    {
+        $old_base = $this->create_currency(['name' => 'Old Base', 'is_base' => true]);
+        $other = $this->create_currency(['name' => 'Other', 'exchange_rate' => 0.5]);
+
+        $new_base = $this->create_currency(['name' => 'New Base', 'is_base' => true, 'exchange_rate' => 0.25]);
+
+        $this->assertSame([$new_base['id']], $this->base_currency_ids());
+        $this->assertEquals(1.0, $this->stored_exchange_rate($new_base['id']));
+        $this->assertEquals(4.0, $this->stored_exchange_rate($old_base['id']));
+        $this->assertEquals(2.0, $this->stored_exchange_rate($other['id']));
+    }
+
+    /**
+     * Creating a base currency when the store has no base stores it at rate 1.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_creating_the_first_base_currency_stores_rate_one(): void
+    {
+        Currency::base()->update(['is_base' => 0]);
+
+        $base = $this->create_currency(['name' => 'First Base', 'is_base' => true, 'exchange_rate' => 3.0]);
+
+        $this->assertSame([$base['id']], $this->base_currency_ids());
+        $this->assertEquals(1.0, $this->stored_exchange_rate($base['id']));
+    }
+
+    /**
      * Create currency.
      * @param array $overrides Overrides.
      *
@@ -503,6 +583,19 @@ class CurrencyApiTest extends RestTestCase
         }
 
         return $ids;
+    }
+
+    /**
+     * Stored exchange rate of a currency.
+     *
+     * @param int $id Currency ID.
+     *
+     * @return float
+     * @since 1.0.0
+     */
+    protected function stored_exchange_rate(int $id): float
+    {
+        return (float) Currency::find($id)->exchange_rate;
     }
 
     /**

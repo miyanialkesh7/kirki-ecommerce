@@ -59,20 +59,11 @@ describe('buildCurrencyUpdatePayload', () => {
     });
   });
 
-  it('reassigns is_base across the whole list, unsetting the previous base', () => {
+  it('sends only the new base row so the server recalculates the other rates', () => {
     const payload = buildCurrencyUpdatePayload(list, list[1], 'is_base');
 
     expect(payload).toEqual({
       items: [
-        {
-          id: 1,
-          name: 'US Dollar',
-          code: 'USD',
-          symbol: '$',
-          exchange_rate: 1,
-          is_base: false,
-          is_active: true,
-        },
         {
           id: 2,
           name: 'US Dollar',
@@ -90,5 +81,6 @@ describe('buildCurrencyUpdatePayload', () => {
     const missing: CurrencyListItem = { ...buildCurrency({ id: 999 }) };
 
     expect(buildCurrencyUpdatePayload(list, missing, 'is_active')).toBeNull();
+    expect(buildCurrencyUpdatePayload(list, missing, 'is_base')).toBeNull();
   });
 });

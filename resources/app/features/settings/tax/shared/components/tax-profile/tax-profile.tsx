@@ -113,7 +113,7 @@ const TaxProfile = () => {
                           {item.name}
                         </Text>
                         {item.is_default && (
-                          <Badge variant="secondary">{__('Default', 'kirki-ecommerce')}</Badge>
+                          <Badge>{__('Default', 'kirki-ecommerce')}</Badge>
                         )}
                       </StackedItemTitle>
                     </StackedItemContent>

@@ -271,6 +271,40 @@ class OnboardingApiTest extends RestTestCase
     }
 
     /**
+     * Promoting a stored currency recalculates the other rates against it.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_existing_currency_becoming_the_base_recalculates_rates(): void
+    {
+        Currency::create(['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$', 'exchange_rate' => 1, 'is_base' => 1, 'is_active' => 1]);
+        Currency::create(['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€', 'exchange_rate' => 0.5, 'is_base' => 0, 'is_active' => 1]);
+
+        $this->assert_api_success($this->request('POST', 'onboarding', $this->payload(['currency' => 'EUR'])));
+
+        $this->assertEquals(1, Currency::query()->where('code', 'EUR')->first()->exchange_rate);
+        $this->assertEquals(2, Currency::query()->where('code', 'USD')->first()->exchange_rate);
+    }
+
+    /**
+     * A currency created by setup has no previous rate, so the other rates stay unchanged.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_new_currency_becoming_the_base_keeps_other_rates(): void
+    {
+        Currency::create(['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$', 'exchange_rate' => 1, 'is_base' => 1, 'is_active' => 1]);
+
+        $this->assert_api_success($this->request('POST', 'onboarding', $this->payload(['currency' => 'BDT'])));
+
+        $this->assertTrue((bool) Currency::query()->where('code', 'BDT')->first()->is_base);
+        $this->assertEquals(1, Currency::query()->where('code', 'BDT')->first()->exchange_rate);
+        $this->assertEquals(1, Currency::query()->where('code', 'USD')->first()->exchange_rate);
+    }
+
+    /**
      * Setup after a partial earlier run creates no duplicates.
      *
      * @return void

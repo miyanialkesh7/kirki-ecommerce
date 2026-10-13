@@ -204,7 +204,7 @@ const TaxRegions = (props: TaxRegionsProps) => {
                             {region.name}
                           </Text>
                           {resolveRegionBadges(item).map((badge) => (
-                            <Badge key={badge.label} variant="info">
+                            <Badge key={badge.label} variant="secondary">
                               {badge.label}
                             </Badge>
                           ))}
