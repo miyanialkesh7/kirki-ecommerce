@@ -29,6 +29,12 @@ const getPaymentMethods = () => {
     .then((response) => parseData(ResourceCollectionSchema(PaymentMethodSchema), response));
 };
 
+const reorderPaymentMethods = (ids: PaymentMethod['id'][]) => {
+  return apiClient
+    .put(endpoints.PAYMENT_METHODS_ORDER, { ids })
+    .then((response) => parseResponse(ResourceCollectionSchema(PaymentMethodSchema), response));
+};
+
 const getInstallableOnlinePayments = () => {
   return apiClient
     .get(endpoints.ONLINE_PAYMENTS_INSTALLABLE)
@@ -144,6 +150,11 @@ const setMethodEnabled = (id: string | number, isEnabled: boolean) => {
     methods.map((method) => (method.id === id ? { ...method, is_enabled: isEnabled } : method));
 };
 
+const sortMethodsByIds = (ids: PaymentMethod['id'][]) => {
+  return (methods: PaymentMethod[]) =>
+    [...methods].sort((first, second) => ids.indexOf(first.id) - ids.indexOf(second.id));
+};
+
 const usePaymentMethodsQuery = () => {
   return useQuery({
     queryKey: paymentKeys.methods.all,
@@ -234,6 +245,25 @@ const useSetEnabledOnlinePaymentMutation = () => {
   });
 };
 
+const useReorderPaymentMethodsMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: reorderPaymentMethods,
+    onMutate(ids) {
+      return updatePaymentMethodsCache(queryClient, sortMethodsByIds(ids));
+    },
+    onSuccess(response) {
+      queryClient.setQueryData<PaymentMethod[]>(paymentKeys.methods.all, response.data);
+      void queryClient.invalidateQueries({ queryKey: paymentKeys.online.all });
+      void queryClient.invalidateQueries({ queryKey: paymentKeys.offline.all });
+    },
+    onError(error, _variables, context) {
+      restorePaymentMethodsCache(queryClient, context?.previous);
+      toastMutationError(error);
+    },
+  });
+};
+
 const useCreateOfflinePaymentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -311,6 +341,7 @@ export {
   getOnlinePayments,
   getPaymentMethods,
   installOnlinePayment,
+  reorderPaymentMethods,
   setEnabledOfflinePayment,
   setEnabledOnlinePayment,
   updateOfflinePayment,
@@ -323,6 +354,7 @@ export {
   useOnlinePaymentQuery,
   useOnlinePaymentsQuery,
   usePaymentMethodsQuery,
+  useReorderPaymentMethodsMutation,
   useSetEnabledOfflinePaymentMutation,
   useSetEnabledOnlinePaymentMutation,
   useUpdateOfflinePaymentMutation,

@@ -1,7 +1,27 @@
-import { CardSimIcon, LandmarkIcon, Map, PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  KeyboardSensor,
+  type Modifier,
+  PointerSensor,
+  type UniqueIdentifier,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { Map, PlusIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
-import DropdownButton from '@/components/dropdown-button';
 import ActionGroup from '@/components/ui/action-group';
 import Button from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,12 +32,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Flex from '@/components/ui/flex';
-import Image from '@/components/ui/image';
-import Switch from '@/components/ui/switch';
+import { StackedItems } from '@/components/ui/stacked-items';
 import Text from '@/components/ui/text';
 import OfflinePaymentPopup from '@/features/settings/payment/components/dialogs/offline-payment-dialog';
 import OnlinePaymentPopup from '@/features/settings/payment/components/dialogs/online-payment-dialog';
 import OnlinePaymentEditPopup from '@/features/settings/payment/components/dialogs/online-payment-edit-dialog';
+import PaymentMethodDragOverlay from '@/features/settings/payment/components/list/payment-method-drag-overlay';
+import SortablePaymentMethod from '@/features/settings/payment/components/list/sortable-payment-method';
 import type {
   OfflinePayment,
   OnlinePayment,
@@ -26,10 +47,12 @@ import type {
 import {
   getOnlinePayment,
   useDeleteOfflinePaymentMutation,
+  useReorderPaymentMethodsMutation,
   useSetEnabledOfflinePaymentMutation,
   useSetEnabledOnlinePaymentMutation,
 } from '@/features/settings/payment/services/payment';
 import { useConfirmDelete } from '@/hooks';
+import { getPortalContainer } from '@/libs/portal-container';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';
@@ -37,14 +60,6 @@ import { __ } from '@/wpi18n';
 
 type PaymentMethodsProps = {
   paymentMethods: PaymentMethod[];
-};
-
-const getIconUrl = (icon: PaymentMethod['icon']) => {
-  if (typeof icon !== 'string') {
-    return null;
-  }
-
-  return /^(https?:)?\/\//.test(icon) || icon.startsWith('/') ? icon : null;
 };
 
 const PaymentMethods = (props: PaymentMethodsProps) => {
@@ -59,7 +74,33 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
   const { mutate: setEnabledOfflinePayment } = useSetEnabledOfflinePaymentMutation();
   const { mutate: deleteOfflinePayment } = useDeleteOfflinePaymentMutation();
   const { mutate: setEnabledOnlinePayment } = useSetEnabledOnlinePaymentMutation();
+  const { mutate: reorderPaymentMethods } = useReorderPaymentMethodsMutation();
   const { confirmDelete, deleteConfirmation } = useConfirmDelete();
+
+  const [orderedMethods, setOrderedMethods] = useState<PaymentMethod[]>(paymentMethods);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [draggingId, setDraggingId] = useState<UniqueIdentifier | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  useEffect(() => {
+    setOrderedMethods(paymentMethods);
+  }, [paymentMethods]);
+
+  const restrictToList: Modifier = ({ transform, draggingNodeRect }) => {
+    const listRect = listRef.current?.getBoundingClientRect();
+
+    if (!listRect || !draggingNodeRect) {
+      return transform;
+    }
+
+    const minY = listRect.top - draggingNodeRect.top;
+    const maxY = listRect.bottom - draggingNodeRect.bottom;
+
+    return { ...transform, y: Math.min(Math.max(transform.y, minY), maxY) };
+  };
 
   const handleToggle = (method: PaymentMethod) => {
     const isEnabled = Boolean(method.is_enabled);
@@ -107,38 +148,34 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
     }
   };
 
-  const handleAction = (action: string | number | (string | number)[], method: PaymentMethod) => {
-    if (action === 'edit') {
-      void handleEdit(method);
-    }
+  const handleDragStart = (event: DragStartEvent) => {
+    setDraggingId(event.active.id);
 
-    if (action === 'delete') {
-      handleDelete(method);
+    if (
+      !(event.activatorEvent instanceof KeyboardEvent) &&
+      document.activeElement instanceof HTMLElement
+    ) {
+      document.activeElement.blur();
     }
   };
 
-  const renderIcon = (method: PaymentMethod) => {
-    const iconUrl = getIconUrl(method.icon);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggingId(null);
 
-    if (iconUrl) {
-      return (
-        <Image
-          src={iconUrl}
-          alt={__('Logo', 'kirki-ecommerce')}
-          height={20}
-          width={20}
-          fit="contain"
-          cssOverride={styles.icon}
-        />
-      );
+    if (!over || active.id === over.id) {
+      return;
     }
 
-    return method.is_offline ? (
-      <LandmarkIcon size={20} color={theme.colors.icon.secondary} />
-    ) : (
-      <CardSimIcon size={20} color={theme.colors.icon.secondary} />
-    );
+    const oldIndex = orderedMethods.findIndex((method) => method.id === active.id);
+    const newIndex = orderedMethods.findIndex((method) => method.id === over.id);
+    const reordered = arrayMove(orderedMethods, oldIndex, newIndex);
+
+    setOrderedMethods(reordered);
+    reorderPaymentMethods(reordered.map((method) => method.id));
   };
+
+  const draggingMethod = orderedMethods.find((method) => method.id === draggingId);
 
   return (
     <>
@@ -161,7 +198,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
               <ActionGroup>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="primary" size="sm">
+                    <Button variant="secondary" size="sm">
                       <PlusIcon />
                       {__('Add', 'kirki-ecommerce')}
                     </Button>
@@ -183,7 +220,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
               </ActionGroup>
             </Flex>
 
-            {paymentMethods.length === 0 ? (
+            {orderedMethods.length === 0 ? (
               <Card cssOverride={cardStyles.innerDarkCard}>
                 <CardContent
                   cssOverride={mergeCss(cardStyles.innerDarkContent, styles.emptyStateContent)}
@@ -195,42 +232,37 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
                 </CardContent>
               </Card>
             ) : (
-              <Flex direction="column" gap={2}>
-                {paymentMethods.map((method) => (
-                  <Card
-                    key={method.id}
-                    cssOverride={mergeCss(cardStyles.innerCard, styles.methodCard)}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToVerticalAxis, restrictToList]}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={() => setDraggingId(null)}
+              >
+                <StackedItems ref={listRef}>
+                  <SortableContext
+                    items={orderedMethods.map((method) => method.id)}
+                    strategy={verticalListSortingStrategy}
                   >
-                    <CardContent cssOverride={mergeCss(cardStyles.innerContent, styles.methodRow)}>
-                      <Flex align="center">
-                        <Flex gap={2} align="center">
-                          {renderIcon(method)}
-                          <Text weight="medium" color="primary">
-                            {method.name}
-                          </Text>
-                        </Flex>
-
-                        <ActionGroup data-row-actions>
-                          <Switch
-                            checked={Boolean(method.is_enabled)}
-                            onCheckedChange={() => handleToggle(method)}
-                          />
-                          <DropdownButton
-                            dropdownStyle={{ width: '120px' }}
-                            options={[
-                              { title: __('Edit', 'kirki-ecommerce'), value: 'edit' },
-                              ...(method.is_offline
-                                ? [{ title: __('Delete', 'kirki-ecommerce'), value: 'delete' }]
-                                : []),
-                            ]}
-                            onOptionSelect={(action) => handleAction(action, method)}
-                          />
-                        </ActionGroup>
-                      </Flex>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Flex>
+                    {orderedMethods.map((method) => (
+                      <SortablePaymentMethod
+                        key={method.id}
+                        method={method}
+                        onEdit={(editedMethod) => void handleEdit(editedMethod)}
+                        onDelete={handleDelete}
+                        onToggle={handleToggle}
+                      />
+                    ))}
+                  </SortableContext>
+                </StackedItems>
+                {createPortal(
+                  <DragOverlay>
+                    {draggingMethod && <PaymentMethodDragOverlay method={draggingMethod} />}
+                  </DragOverlay>,
+                  getPortalContainer(),
+                )}
+              </DndContext>
             )}
           </Flex>
         </CardContent>
@@ -265,31 +297,7 @@ PaymentMethods.displayName = 'PaymentMethods';
 export default PaymentMethods;
 
 const styles = defineStyles({
-  methodCard: {
-    borderRadius: theme.radius.xl,
-    '& [data-row-actions]': {
-      visibility: 'hidden',
-    },
-    '&:hover [data-row-actions], &:focus-within [data-row-actions], &:has([aria-expanded="true"]) [data-row-actions]':
-      {
-        visibility: 'visible',
-      },
-    '@media (hover: none)': {
-      '& [data-row-actions]': {
-        visibility: 'visible',
-      },
-    },
-  },
-  methodRow: {
-    padding: `${theme.spacing[3]} ${theme.spacing[4]}`,
-  },
   emptyStateContent: {
     paddingBlock: theme.spacing[9],
-  },
-  icon: {
-    width: 'auto',
-    border: 'none',
-    borderRadius: theme.radius.none,
-    backgroundColor: 'transparent',
   },
 });

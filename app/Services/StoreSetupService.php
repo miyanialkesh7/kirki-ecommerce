@@ -105,6 +105,7 @@ class StoreSetupService
 
         Settings::get(OptionKeys::GENERAL_SETTINGS)->refresh()->set([
             'store_name' => $data->store_name,
+            'store_email' => get_option('admin_email', ''),
             'industry' => $data->industry,
             'store_tax_id' => $data->is_tax_collected ? $data->store_tax_id : null,
             'store_address' => [

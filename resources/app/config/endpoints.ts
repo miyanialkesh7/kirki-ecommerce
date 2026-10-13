@@ -89,6 +89,7 @@ export const endpoints = {
   TAX_PROFILE: (id: string | number) => `/tax-profiles/${id}`,
 
   PAYMENT_METHODS: '/payment-methods',
+  PAYMENT_METHODS_ORDER: '/payment-methods/order',
   ONLINE_PAYMENTS: '/online-payments',
   ONLINE_PAYMENT: (id: string | number) => `/online-payments/${id}`,
   ONLINE_PAYMENTS_INSTALLABLE: '/online-payments/installable',
