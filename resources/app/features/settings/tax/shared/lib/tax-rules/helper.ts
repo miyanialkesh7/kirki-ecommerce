@@ -1,5 +1,11 @@
-import { taxRuleConditionOptions } from '@/features/settings/tax/shared/lib/utils';
-import type { TaxProfile, TaxRuleCondition } from '@/features/settings/tax/shared/schemas/catalog/tax';
+import {
+  type TaxRegionState,
+  taxRuleConditionOptions,
+} from '@/features/settings/tax/shared/lib/utils';
+import type {
+  TaxProfile,
+  TaxRuleCondition,
+} from '@/features/settings/tax/shared/schemas/catalog/tax';
 import { __ } from '@/wpi18n';
 
 /**
@@ -27,18 +33,27 @@ export const resolveSelectedDestinations = (value: unknown): (string | number)[]
   return [];
 };
 
-export const getDestinationDisplayValue = (value: unknown): string => {
-  const list = resolveSelectedDestinations(value);
+export const resolveDestinationLabels = (
+  value: unknown,
+  destinations: TaxRegionState[],
+): string[] =>
+  resolveSelectedDestinations(value).map((id) => {
+    const match = destinations.find((item) => String(item.id) === String(id));
+
+    return match?.name ?? match?.title ?? String(id);
+  });
+
+export const getDestinationDisplayValue = (
+  value: unknown,
+  destinations: TaxRegionState[] = [],
+): string => {
+  const list = resolveDestinationLabels(value, destinations);
 
   if (list.length === 0) {
-    return __('Select regions', 'kirki-ecommerce');
+    return __('Select destinations', 'kirki-ecommerce');
   }
 
-  if (list.length === 1) {
-    return String(list[0]);
-  }
-
-  return `${list[0]} +${list.length - 1}…`;
+  return `${list[0]}, +${list.length - 1}`;
 };
 
 /**

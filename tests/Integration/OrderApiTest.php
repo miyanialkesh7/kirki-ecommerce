@@ -785,6 +785,94 @@ class OrderApiTest extends RestTestCase
     }
 
     /**
+     * Under tax-inclusive pricing, an item bought on sale with a product
+     * coupon and an order-wide coupon records its catalog prices exactly as
+     * the variant had them (tax included), its total after the product
+     * coupon only, and the tax both coupons removed.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_create_order_records_catalog_prices_under_inclusive_pricing(): void
+    {
+        $this->enable_us_inclusive_tax(20);
+
+        $regular_price = Variant::find($this->variant_id)->base_price;
+        Variant::find($this->variant_id)->update(['base_sale_price' => 2400]);
+
+        $product_coupon = Coupon::create([
+            'title' => 'Product Coupon',
+            'code' => 'CATPROD' . wp_generate_password(6, false),
+            'discount_type' => DiscountType::AMOUNT_OFF,
+            'discount_target' => DiscountTarget::PRODUCTS,
+            'discount_value_type' => DiscountValueType::FIXED,
+            'base_discount_amount_fixed' => 400,
+            'eligible_item_type' => EligibleItemType::ALL_PRODUCTS,
+            'is_active' => true,
+        ]);
+
+        $order_coupon = Coupon::create([
+            'title' => 'Order Coupon',
+            'code' => 'CATORD' . wp_generate_password(6, false),
+            'discount_type' => DiscountType::AMOUNT_OFF,
+            'discount_target' => DiscountTarget::ORDER,
+            'discount_value_type' => DiscountValueType::PERCENTAGE,
+            'discount_amount_percentage' => 10,
+            'is_active' => true,
+        ]);
+
+        $order = $this->create_order([
+            'is_manual' => false,
+            'coupon_codes' => [$product_coupon->code, $order_coupon->code],
+        ]);
+        $this->order_id = $order['id'];
+
+        $item = OrderItem::find($order['items'][0]['id']);
+
+        $this->assertSame($regular_price, $item->base_catalog_regular_price);
+        $this->assertSame(2400, $item->base_catalog_sale_price);
+        $this->assertSame(2000, $item->base_catalog_product_coupon_discounted_subtotal);
+        // Tax before any discount on 2400 at 20% inclusive is 400.
+        $this->assertLessThan(400, (int) $item->base_tax_total);
+        $this->assertSame(400 - (int) $item->base_tax_total, $item->base_discount_tax_total);
+
+        $this->assertSame($item->base_catalog_regular_price, $item->invoiced_catalog_regular_price);
+        $this->assertSame($item->base_catalog_sale_price, $item->invoiced_catalog_sale_price);
+        $this->assertSame($item->base_catalog_product_coupon_discounted_subtotal, $item->invoiced_catalog_product_coupon_discounted_subtotal);
+        $this->assertSame($item->base_discount_tax_total, $item->invoiced_discount_tax_total);
+    }
+
+    /**
+     * Editing an order's quantity refreshes the item's catalog figures from
+     * the same recalculation as its other totals.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_update_order_refreshes_catalog_prices_from_the_recalculation(): void
+    {
+        $catalog_price = Variant::find($this->variant_id)->base_price;
+
+        $order = $this->create_order();
+        $this->order_id = $order['id'];
+        $existing_item_id = $order['items'][0]['id'];
+
+        $this->assert_api_success($this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'items' => [
+                ['id' => $existing_item_id, 'variant_id' => $this->variant_id, 'quantity' => 3],
+            ],
+        ])));
+
+        $item = OrderItem::find($existing_item_id);
+
+        $this->assertSame($catalog_price, $item->base_catalog_regular_price);
+        $this->assertSame($catalog_price, $item->base_catalog_sale_price);
+        $this->assertSame($catalog_price * 3, $item->base_catalog_product_coupon_discounted_subtotal);
+        $this->assertSame(0, $item->base_discount_tax_total);
+    }
+
+    /**
      * Editing an order keeps an existing item's recorded regular price when
      * its quantity changes or the variant is repriced, and records the
      * current regular price for an item added in the edit.

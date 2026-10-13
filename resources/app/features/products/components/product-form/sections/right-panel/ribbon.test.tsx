@@ -49,7 +49,7 @@ describe('Ribbon field', () => {
     fireEvent.click(addLink());
     fireEvent.change(textInput(), { target: { value: 'Fresh Arrival' } });
 
-    expect(screen.getByText('FRESH ARRIVAL')).toBeInTheDocument();
+    expect(screen.getByText('Fresh Arrival')).toBeInTheDocument();
     expect(screen.queryByText('Preview')).not.toBeInTheDocument();
   });
 

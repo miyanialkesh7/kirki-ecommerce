@@ -81,25 +81,45 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
     name: 'items',
   });
 
-  const reconciledPayloadRef = useRef<OrderCalculationRequestPayload | null>(null);
+  const isApplyingCorrectionRef = useRef(false);
   const pendingCouponCorrectionRef = useRef<string[] | null>(null);
   const [rejectedCouponCodes, setRejectedCouponCodes] = useState<string[]>([]);
 
-  const watchedValues = useWatch({ control: form.control });
-  const debouncedValues = useDebounce(watchedValues, CALCULATION_DEBOUNCE_DELAY);
-  const calculationPayload = useMemo(
-    () => OrderCalculationRequestSchema.parse(debouncedValues),
-    [debouncedValues],
-  );
-  const isReconciledPayload = useMemo(
-    () => JSON.stringify(calculationPayload) === JSON.stringify(reconciledPayloadRef.current),
-    [calculationPayload],
+  const values = useWatch({
+    control: form.control,
+  });
+
+  const calculationPayload = useMemo(() => OrderCalculationRequestSchema.parse(values), [values]);
+  const [calculationRequest, setCalculationRequest] =
+    useState<OrderCalculationRequestPayload | null>(null);
+
+  useEffect(
+    () =>
+      form.subscribe({
+        formState: { values: true },
+        callback: ({ name, values }) => {
+          if (!isDefined(name) || isApplyingCorrectionRef.current) {
+            return;
+          }
+
+          setCalculationRequest(OrderCalculationRequestSchema.parse(values));
+        },
+      }),
+    [form],
   );
 
+  const debouncedCalculationRequest = useDebounce(calculationRequest, CALCULATION_DEBOUNCE_DELAY);
+
   const { data: calculation, isFetching: isCalculating } = useOrderCalculationQuery(
-    calculationPayload,
-    !isReconciledPayload,
+    debouncedCalculationRequest ?? calculationPayload,
+    isDefined(debouncedCalculationRequest),
   );
+
+  const applyCorrection = (correct: () => void) => {
+    isApplyingCorrectionRef.current = true;
+    correct();
+    isApplyingCorrectionRef.current = false;
+  };
 
   const calculationItemById = useMemo(
     () => new Map((calculation?.items ?? []).map((item) => [item.id, item])),
@@ -111,17 +131,16 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
       return;
     }
 
-    let didCorrect = false;
-
     pickedItems.forEach((pickedItem, index) => {
       const calculationItem = calculationItemById.get(index);
 
       if (calculationItem && calculationItem.quantity !== pickedItem.quantity) {
-        form.setValue(`items.${index}.quantity`, calculationItem.quantity, {
-          shouldValidate: false,
-          shouldDirty: false,
-        });
-        didCorrect = true;
+        applyCorrection(() =>
+          form.setValue(`items.${index}.quantity`, calculationItem.quantity, {
+            shouldValidate: false,
+            shouldDirty: false,
+          }),
+        );
       }
     });
 
@@ -147,10 +166,12 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
           (coupon) => !rejectedCodes.includes(coupon.code ?? ''),
         );
 
-        form.setValue('coupon_codes', correctedCoupons, {
-          shouldValidate: false,
-          shouldDirty: false,
-        });
+        applyCorrection(() =>
+          form.setValue('coupon_codes', correctedCoupons, {
+            shouldValidate: false,
+            shouldDirty: false,
+          }),
+        );
         setRejectedCouponCodes(rejectedCodes);
         toast.error(
           sprintf(
@@ -166,7 +187,6 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
         pendingCouponCorrectionRef.current = correctedCoupons
           .map((coupon) => coupon.code)
           .filter((code): code is string => isDefined(code));
-        didCorrect = true;
       } else {
         setRejectedCouponCodes([]);
         pendingCouponCorrectionRef.current = null;
@@ -179,15 +199,12 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
       isDefined(calculation.shipping_method) &&
       String(calculation.shipping_method) !== submittedShippingMethod
     ) {
-      form.setValue('shipping_method', String(calculation.shipping_method), {
-        shouldValidate: false,
-        shouldDirty: false,
-      });
-      didCorrect = true;
-    }
-
-    if (didCorrect) {
-      reconciledPayloadRef.current = OrderCalculationRequestSchema.parse(form.getValues());
+      applyCorrection(() =>
+        form.setValue('shipping_method', String(calculation.shipping_method), {
+          shouldValidate: false,
+          shouldDirty: false,
+        }),
+      );
     }
     // Reconciliation must run only when a new calculation result arrives, reading the
     // current form state fresh each time - re-running it for every keystroke that

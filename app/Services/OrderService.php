@@ -291,7 +291,7 @@ class OrderService
      */
     public function find_order($id)
     {
-        return Order::with('items.taxes', 'refunds', 'order_coupons.order_item_coupons', 'shipping_taxes')->find($id);
+        return Order::with('customer', 'items.taxes', 'refunds', 'order_coupons.order_item_coupons', 'shipping_taxes')->find($id);
     }
 
     /**

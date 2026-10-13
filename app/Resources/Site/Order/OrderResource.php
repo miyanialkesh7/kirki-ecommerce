@@ -4,8 +4,8 @@ namespace Kirki\Ecommerce\App\Resources\Site\Order;
 
 defined('ABSPATH') || exit;
 
-use Brick\Math\RoundingMode;
 use Exception;
+use Kirki\Ecommerce\App\Concerns\ResolvesLineItemPricing;
 use Kirki\Ecommerce\App\Constants\Coupon\DiscountTarget;
 use Kirki\Ecommerce\App\Constants\Order\FulfillmentStatus;
 use Kirki\Ecommerce\App\Constants\Order\PaymentStatus;
@@ -29,6 +29,8 @@ use function Kirki\Ecommerce\Framework\collection;
  */
 class OrderResource extends Resource
 {
+    use ResolvesLineItemPricing;
+
     /**
      * Convert the order resource to an array.
      *
@@ -42,22 +44,12 @@ class OrderResource extends Resource
     {
         $items = $this->items;
         $order_coupons = $this->order_coupons ?: collection();
-        $is_inclusive_tax = (bool) $this->is_tax_inclusive;
 
-        $invoiced_items_subtotal = $this->get_items_subtotal($items, $order_coupons);
-        $invoiced_items_tax_total = $this->get_items_tax_total($items);
+        $invoiced_items_subtotal = $this->get_items_subtotal($items);
         $invoiced_order_discount = $this->get_order_coupon_discount($order_coupons);
         $invoiced_shipping_discount = $this->get_shipping_coupon_discount($order_coupons);
         $invoiced_shipping_amount = $this->invoiced_shipping_total - $this->invoiced_shipping_tax_amount;
         $invoiced_shipping_strikethrough = $invoiced_shipping_amount + $invoiced_shipping_discount;
-
-        // Every item's own invoiced_subtotal is always net of tax as of
-        // item-pricing-tax-exclusivity; this resource's output must not
-        // change, so under tax-inclusive pricing the items-only tax is
-        // added back to reconstruct the same figure this rendered before -
-        // exact, since both are computed against the same (post-discount)
-        // taxable base.
-        $invoiced_items_subtotal_display = $is_inclusive_tax ? $invoiced_items_subtotal + $invoiced_items_tax_total : $invoiced_items_subtotal;
 
         return [
             'id' => $this->id,
@@ -70,12 +62,12 @@ class OrderResource extends Resource
             'is_refund_initiated' => $this->is_refund_initiated,
             'is_manual' => $this->is_manual,
             'currency_code' => $this->currency_code,
-            'is_inclusive_tax' => $is_inclusive_tax,
+            'is_inclusive_tax' => (bool) $this->is_tax_inclusive,
 
             'pricing' => [
-                'invoiced_items_subtotal_money_object' => Money::prepare_amount_object_from_minor($invoiced_items_subtotal_display, $this->currency_code),
+                'invoiced_items_subtotal_money_object' => Money::prepare_amount_object_from_minor($invoiced_items_subtotal, $this->currency_code),
                 'invoiced_order_discount_money_object' => Money::prepare_amount_object_from_minor($invoiced_order_discount, $this->currency_code),
-                'invoiced_order_total_money_object' => Money::prepare_amount_object_from_minor($invoiced_items_subtotal_display - $invoiced_order_discount, $this->currency_code),
+                'invoiced_order_total_money_object' => Money::prepare_amount_object_from_minor($invoiced_items_subtotal - $invoiced_order_discount, $this->currency_code),
                 'invoiced_tax_total_money_object' => Money::prepare_amount_object_from_minor($this->invoiced_tax_total, $this->currency_code),
                 'coupons' => $this->format_coupon_results($order_coupons),
                 'invoiced_shipping_amount_money_object' => Money::prepare_amount_object_from_minor($invoiced_shipping_amount, $this->currency_code),
@@ -87,7 +79,7 @@ class OrderResource extends Resource
             ],
 
             'items_count' => $this->items_count,
-            'items' => $this->prepare_items($items, $order_coupons, $is_inclusive_tax),
+            'items' => $this->prepare_items($items, $order_coupons),
 
             'shipping_address' => [
                 'first_name' => $this->shipping_first_name,
@@ -161,29 +153,25 @@ class OrderResource extends Resource
     }
 
     /**
-     * Build the customer-facing line items with net subtotals, tax lines and applied product coupons.
+     * Build the customer-facing line items with subtotals, tax lines and applied product coupons.
+     *
+     * Subtotals and strikethrough prices are the item's recorded catalog
+     * figures, so they include tax exactly when the order was priced
+     * inclusive of tax.
      *
      * @since 1.0.0
      *
-     * @param \Kirki\Ecommerce\App\Models\OrderItem[]   $items            Items of the order.
-     * @param \Kirki\Ecommerce\App\Models\OrderCoupon[] $order_coupons    Coupons applied to the order.
-     * @param bool                                      $is_inclusive_tax Whether the store prices items inclusive of tax.
+     * @param \Kirki\Ecommerce\App\Models\OrderItem[]   $items         Items of the order.
+     * @param \Kirki\Ecommerce\App\Models\OrderCoupon[] $order_coupons Coupons applied to the order.
      * @return array<int, array<string, mixed>> Line item data.
      */
-    protected function prepare_items($items, $order_coupons, $is_inclusive_tax)
+    protected function prepare_items($items, $order_coupons)
     {
         $order_items = [];
 
         foreach ($items as $item) {
             $item_discounts = $this->find_product_coupon_discounts_for_item($order_coupons, $item->id);
-            $invoiced_product_coupon_discount = $this->sum_product_coupon_discounts($item_discounts);
-
-            // The item's own invoiced_subtotal is always net of tax as of
-            // this fix; under tax-inclusive pricing, add the item's own tax
-            // back to reconstruct the same figure this rendered before
-            // (exact - same base as invoiced_tax_total).
-            $invoiced_subtotal_exclusive = $item->invoiced_subtotal - $invoiced_product_coupon_discount;
-            $invoiced_subtotal_display = $is_inclusive_tax ? $invoiced_subtotal_exclusive + $item->invoiced_tax_total : $invoiced_subtotal_exclusive;
+            $invoiced_strikethrough = $this->get_order_item_strikethrough_amounts($item)['invoiced'];
 
             $order_items[] = [
                 'id' => $item->id,
@@ -194,8 +182,8 @@ class OrderResource extends Resource
                 'sku' => $item->sku,
                 'image' => MediaAttachment::make($item->product_image),
                 'quantity' => $item->quantity,
-                'invoiced_subtotal_money_object' => Money::prepare_amount_object_from_minor($invoiced_subtotal_display, $this->currency_code),
-                'invoiced_strikethrough_price_money_object' => $this->prepare_strikethrough_price($item, $invoiced_product_coupon_discount, $invoiced_subtotal_exclusive, $is_inclusive_tax),
+                'invoiced_subtotal_money_object' => Money::prepare_amount_object_from_minor($item->invoiced_catalog_product_coupon_discounted_subtotal, $this->currency_code),
+                'invoiced_strikethrough_price_money_object' => $invoiced_strikethrough === null ? null : Money::prepare_amount_object_from_minor($invoiced_strikethrough, $this->currency_code),
                 'invoiced_tax_total_money_object' => Money::prepare_amount_object_from_minor($item->invoiced_tax_total, $this->currency_code),
                 'tax_lines' => $this->format_tax_breakdown(($item->taxes ?: collection())->all()),
                 'applied_product_coupons' => $this->format_applied_product_coupons($item_discounts),
@@ -203,56 +191,6 @@ class OrderResource extends Resource
         }
 
         return $order_items;
-    }
-
-    /**
-     * The line item's "was" price before its current invoiced subtotal - the
-     * sale-adjusted subtotal if a product coupon further discounted it,
-     * otherwise the regular price total if it was bought on sale. Null when
-     * neither applies, so nothing should render as struck through. The sale
-     * check compares the base amounts so currency conversion rounding can't
-     * make an item that wasn't on sale look discounted; an item with no
-     * recorded regular price is never treated as on sale.
-     *
-     * Both figures are always net of tax as of this fix; under
-     * tax-inclusive pricing the result is scaled back up to reconstruct the
-     * same figure this rendered before. When the strikethrough amount is the
-     * item's regular-price total (`invoiced_regular_price * quantity`) -
-     * either because it's on sale with no item-level coupon, or because a
-     * coupon applies while it isn't on sale (its pre-coupon subtotal then
-     * equals its regular-price total) - that's a flat addition of the
-     * item's own `invoiced_regular_tax_total`, since the two share that base
-     * exactly. Only when neither holds (an item-level coupon applied while
-     * the item is simultaneously on sale) is it instead scaled by the
-     * item's effective tax rate.
-     *
-     * @since 1.0.0
-     *
-     * @param \Kirki\Ecommerce\App\Models\OrderItem $item                             Order item to price.
-     * @param int                                   $invoiced_product_coupon_discount Discount from item-scoped coupons, in minor units.
-     * @param int                                   $invoiced_subtotal_exclusive      The item's current-price exclusive subtotal, in minor units.
-     * @param bool                                  $is_inclusive_tax                 Whether the store prices items inclusive of tax.
-     * @return \Kirki\Ecommerce\App\DTO\MoneyDTO|null Null when nothing should be struck through.
-     */
-    protected function prepare_strikethrough_price($item, $invoiced_product_coupon_discount, $invoiced_subtotal_exclusive, $is_inclusive_tax)
-    {
-        if ($invoiced_product_coupon_discount > 0) {
-            $strikethrough_amount = $item->invoiced_subtotal;
-        } elseif ($item->base_regular_price > $item->base_price) {
-            $strikethrough_amount = $item->invoiced_regular_price * $item->quantity;
-        } else {
-            return null;
-        }
-
-        if ($is_inclusive_tax) {
-            $regular_total = $item->invoiced_regular_price * $item->quantity;
-
-            $strikethrough_amount = $strikethrough_amount === $regular_total
-                ? $strikethrough_amount + $item->invoiced_regular_tax_total
-                : $this->derive_inclusive_amount_at_rate($strikethrough_amount, $invoiced_subtotal_exclusive, $item->invoiced_tax_total);
-        }
-
-        return Money::prepare_amount_object_from_minor($strikethrough_amount, $this->currency_code);
     }
 
     /**
@@ -351,48 +289,9 @@ class OrderResource extends Resource
     }
 
     /**
-     * Sum how much of an item's discount came from item-scoped ("product")
-     * coupons only - order-wide coupons are excluded so a line item's
-     * subtotal never reflects an order-wide discount.
-     *
-     * @since 1.0.0
-     *
-     * @param \Kirki\Ecommerce\App\Models\OrderCoupon[] $order_coupons Coupons applied to the order.
-     * @param int                                       $order_item_id Order item ID.
-     * @return int Discount in minor units.
-     */
-    protected function get_product_coupon_discount_for_item($order_coupons, $order_item_id)
-    {
-        return $this->sum_product_coupon_discounts($this->find_product_coupon_discounts_for_item($order_coupons, $order_item_id));
-    }
-
-    /**
-     * Sum a list of per-item product-coupon discounts (as returned by
-     * `find_product_coupon_discounts_for_item()`) into the item's total
-     * product-scoped discount.
-     *
-     * @since 1.0.0
-     *
-     * @param array<int, array{0: \Kirki\Ecommerce\App\Models\OrderCoupon, 1: \Kirki\Ecommerce\App\Models\OrderItemCoupon}> $item_discounts Coupon and discount row pairs for one item.
-     * @return int Discount in minor units.
-     */
-    protected function sum_product_coupon_discounts($item_discounts)
-    {
-        $invoiced_discount = 0;
-
-        foreach ($item_discounts as [, $item_discount]) {
-            $invoiced_discount += $item_discount->invoiced_discount_amount;
-        }
-
-        return $invoiced_discount;
-    }
-
-    /**
      * Find how much each item-scoped ("product") coupon discounted this
-     * specific item, paired with the coupon that granted it - shared by
-     * `get_product_coupon_discount_for_item()` (which sums the amounts) and
-     * `format_applied_product_coupons()` (which formats each pair for
-     * display), so the PRODUCTS-scope/item-id filter lives in one place.
+     * specific item, paired with the coupon that granted it, for
+     * `format_applied_product_coupons()` to format each pair for display.
      *
      * Each entry is `[OrderCoupon $coupon, OrderItemCoupon $item_discount]`
      * - the coupon and the discount row it recorded for this item.
@@ -423,75 +322,25 @@ class OrderResource extends Resource
     }
 
     /**
-     * Sum every item's own invoiced subtotal, net of only that item's
-     * product-scoped coupon share - an order-wide coupon's allocation is
+     * Sum every item's own invoiced subtotal - its recorded catalog total
+     * after product-scoped coupons only. An order-wide coupon's allocation is
      * excluded so the root items subtotal matches the sum of what each
      * item's own subtotal shows.
      *
      * @since 1.0.0
      *
-     * @param \Kirki\Ecommerce\App\Models\OrderItem[]   $items         Items of the order.
-     * @param \Kirki\Ecommerce\App\Models\OrderCoupon[] $order_coupons Coupons applied to the order.
+     * @param \Kirki\Ecommerce\App\Models\OrderItem[] $items Items of the order.
      * @return int Subtotal in minor units.
      */
-    protected function get_items_subtotal($items, $order_coupons)
+    protected function get_items_subtotal($items)
     {
         $invoiced_subtotal = 0;
 
         foreach ($items as $item) {
-            $invoiced_subtotal += $item->invoiced_subtotal - $this->get_product_coupon_discount_for_item($order_coupons, $item->id);
+            $invoiced_subtotal += $item->invoiced_catalog_product_coupon_discounted_subtotal;
         }
 
         return $invoiced_subtotal;
-    }
-
-    /**
-     * Sum every item's own recorded tax - used to reconstruct the pre-fix
-     * root subtotal figure under tax-inclusive pricing (see to_array()).
-     * Deliberately not the order's own `invoiced_tax_total` model field,
-     * which also includes shipping tax and would overstate the
-     * reconstructed items subtotal.
-     *
-     * @since 1.0.0
-     *
-     * @param \Kirki\Ecommerce\App\Models\OrderItem[] $items Items of the order.
-     * @return int Tax in minor units.
-     */
-    protected function get_items_tax_total($items)
-    {
-        $tax_total = 0;
-
-        foreach ($items as $item) {
-            $tax_total += $item->invoiced_tax_total;
-        }
-
-        return $tax_total;
-    }
-
-    /**
-     * Derive a tax-inclusive figure for an amount that does not share the
-     * taxed base (a strikethrough/regular-price figure) - scales by the
-     * item's effective tax rate, reconstructed from its current-price
-     * exclusive amount and tax, rather than adding that tax directly.
-     *
-     * @since 1.0.0
-     *
-     * @param int $exclusive_amount        Tax-exclusive amount to convert, in minor units.
-     * @param int $current_price_exclusive The item's own current-price exclusive amount, in minor units.
-     * @param int $current_price_tax       That current price's own tax, in minor units.
-     * @return int Tax-inclusive amount, in minor units.
-     */
-    protected function derive_inclusive_amount_at_rate($exclusive_amount, $current_price_exclusive, $current_price_tax)
-    {
-        if ($current_price_exclusive <= 0) {
-            return $exclusive_amount;
-        }
-
-        $rate_fraction = $current_price_tax / $current_price_exclusive;
-
-        return Money::of_minor($exclusive_amount)
-            ->plus(Money::of_minor($exclusive_amount)->multipliedBy($rate_fraction, RoundingMode::HALF_UP))
-            ->getMinorAmount()->toInt();
     }
 
     /**

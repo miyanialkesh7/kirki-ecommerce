@@ -2,8 +2,13 @@
 
 namespace Kirki\Ecommerce\Tests\Unit\Services;
 
+use Kirki\Ecommerce\App\Constants\Coupon\DiscountTarget;
 use Kirki\Ecommerce\App\Constants\Coupon\DiscountType;
+use Kirki\Ecommerce\App\Constants\Coupon\DiscountValueType;
+use Kirki\Ecommerce\App\Constants\Coupon\EligibleItemType;
 use Kirki\Ecommerce\App\DTO\Calculation\CalculationContextDTO;
+use Kirki\Ecommerce\App\DTO\Calculation\CalculationItemDTO;
+use Kirki\Ecommerce\App\Managers\MoneyManager;
 use Kirki\Ecommerce\App\Models\Coupon;
 use Kirki\Ecommerce\App\Services\DiscountService;
 use Kirki\Ecommerce\App\Services\OrderService;
@@ -11,6 +16,7 @@ use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Tests\Unit\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
+use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\collection;
 
 class DiscountServiceTest extends TestCase
@@ -44,6 +50,34 @@ class DiscountServiceTest extends TestCase
         $this->assertCount(1, $result->coupon_results);
         $this->assertEquals(1500, $result->coupon_results[0]->shipping_discount);
         $this->assertEquals(1500, $result->coupon_results[0]->total_discount);
+    }
+
+    public function test_calculate_reports_the_product_coupon_share_of_each_item_discount(): void
+    {
+        $context = $this->make_amount_off_context(11000);
+
+        $result = $this->service->calculate($context, [
+            $this->make_amount_off_coupon('ITEM', DiscountTarget::PRODUCTS, DiscountValueType::FIXED, 1100),
+            $this->make_amount_off_coupon('ORDER', DiscountTarget::ORDER, DiscountValueType::PERCENTAGE, 10),
+        ]);
+
+        // The order coupon applies to what the product coupon left: 10% of 9900 = 990.
+        $this->assertSame([1 => 2090], $result->item_discounts);
+        $this->assertSame([1 => 1100], $result->product_item_discounts);
+    }
+
+    public function test_calculate_reports_the_clamped_product_coupon_share(): void
+    {
+        $context = $this->make_amount_off_context(1000);
+
+        $result = $this->service->calculate($context, [
+            $this->make_amount_off_coupon('FIRST', DiscountTarget::PRODUCTS, DiscountValueType::FIXED, 700),
+            $this->make_amount_off_coupon('SECOND', DiscountTarget::PRODUCTS, DiscountValueType::FIXED, 600),
+        ]);
+
+        // 700 + 600 exceeds the 1000 item total, so the second coupon is clamped to 300.
+        $this->assertSame([1 => 1000], $result->item_discounts);
+        $this->assertSame([1 => 1000], $result->product_item_discounts);
     }
 
     public function test_validate_coupon_rejects_free_shipping_when_shipping_subtotal_is_zero(): void
@@ -201,6 +235,43 @@ class DiscountServiceTest extends TestCase
         $coupon->has_customer_limit = true;
         $coupon->customer_limit = $limit;
         $coupon->set_relation('customers', collection());
+
+        return $coupon;
+    }
+
+    protected function make_amount_off_context(int $base_unit_price): CalculationContextDTO
+    {
+        $this->bind_money_dependencies();
+        app()->alias('money', MoneyManager::class);
+
+        $item = new CalculationItemDTO();
+        $item->variant_id = 1;
+        $item->product_id = 1;
+        $item->quantity = 1;
+        $item->base_unit_price = $base_unit_price;
+
+        $context = new CalculationContextDTO();
+        $context->items = collection([$item]);
+        $context->shipping_subtotal = 0;
+
+        return $context;
+    }
+
+    protected function make_amount_off_coupon(string $code, string $discount_target, string $discount_value_type, int $amount): Coupon
+    {
+        $coupon = new Coupon();
+        $coupon->code = $code;
+        $coupon->is_active = true;
+        $coupon->discount_type = DiscountType::AMOUNT_OFF;
+        $coupon->discount_target = $discount_target;
+        $coupon->discount_value_type = $discount_value_type;
+        $coupon->eligible_item_type = EligibleItemType::ALL_PRODUCTS;
+
+        if ($discount_value_type === DiscountValueType::FIXED) {
+            $coupon->base_discount_amount_fixed = $amount;
+        } else {
+            $coupon->discount_amount_percentage = $amount;
+        }
 
         return $coupon;
     }

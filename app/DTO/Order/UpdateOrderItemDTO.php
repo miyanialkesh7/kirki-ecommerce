@@ -59,6 +59,30 @@ class UpdateOrderItemDTO extends DTO
     public $base_regular_tax_total;
 
     /** @var int */
+    public $invoiced_catalog_regular_price;
+
+    /** @var int */
+    public $base_catalog_regular_price;
+
+    /** @var int */
+    public $invoiced_catalog_sale_price;
+
+    /** @var int */
+    public $base_catalog_sale_price;
+
+    /** @var int */
+    public $invoiced_catalog_product_coupon_discounted_subtotal;
+
+    /** @var int */
+    public $base_catalog_product_coupon_discounted_subtotal;
+
+    /** @var int */
+    public $invoiced_discount_tax_total;
+
+    /** @var int */
+    public $base_discount_tax_total;
+
+    /** @var int */
     public $quantity;
 
     /** @var float */

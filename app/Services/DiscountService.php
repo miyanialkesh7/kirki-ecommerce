@@ -407,8 +407,37 @@ class DiscountService
         }
 
         $this->clamp_item_discounts($context, $result);
+        $result->product_item_discounts = $this->sum_product_item_discounts($result->coupon_results);
 
         return $result;
+    }
+
+    /**
+     * Sum each item's discount from product-scoped coupons only.
+     *
+     * Runs after clamp_item_discounts(), so it reads the clamped amounts and
+     * never exceeds the item's total discount.
+     *
+     * @since 1.0.0
+     *
+     * @param CouponDiscountResultDTO[] $coupon_results Applied coupon results.
+     * @return array<int, int> Discount in minor units, keyed by variant ID.
+     */
+    protected function sum_product_item_discounts(array $coupon_results)
+    {
+        $product_item_discounts = [];
+
+        foreach ($coupon_results as $coupon_result) {
+            if ($coupon_result->coupon->discount_target !== DiscountTarget::PRODUCTS) {
+                continue;
+            }
+
+            foreach ($coupon_result->item_discounts as $variant_id => $amount) {
+                $product_item_discounts[$variant_id] = ($product_item_discounts[$variant_id] ?? 0) + $amount;
+            }
+        }
+
+        return $product_item_discounts;
     }
 
     /**

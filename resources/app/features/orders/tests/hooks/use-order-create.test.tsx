@@ -128,24 +128,49 @@ const renderUseOrderCreate = () => {
 };
 
 describe('useOrderCreate debounce -> payload -> query wiring', () => {
-  it('settles with no items even though the calculation query fires on mount', async () => {
-    server.use(
-      http.post(`${window.kirki_ecommerce.rest_url_base}${endpoints.CALCULATE_ORDER}`, () =>
-        HttpResponse.json({
-          success: true,
-          message: '',
-          data: buildCalculationResponse(0),
-        }),
-      ),
-    );
+  it('does not fire the calculation query on mount', async () => {
+    const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
 
     const { result } = renderUseOrderCreate();
 
     expect(result.current.rows).toEqual([]);
 
-    await waitFor(() => expect(result.current.isCalculating).toBe(false), { timeout: 2000 });
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    expect(result.current.calculation?.items_count).toBe(0);
+    expect(getRequestCount()).toBe(0);
+    expect(result.current.isCalculating).toBe(false);
+    expect(result.current.calculation).toBeUndefined();
+  });
+
+  it('does not fire the calculation query when the form is reset', async () => {
+    const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
+
+    const { result } = renderUseOrderCreate();
+
+    act(() => {
+      result.current.form.reset({ ...result.current.form.getValues(), customer_id: 7 });
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    expect(result.current.form.getValues('customer_id')).toBe(7);
+    expect(getRequestCount()).toBe(0);
+  });
+
+  it('fires the calculation query for a change made after a reset', async () => {
+    const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
+
+    const { result } = renderUseOrderCreate();
+
+    act(() => {
+      result.current.form.reset({ ...result.current.form.getValues(), customer_id: 7 });
+    });
+
+    act(() => {
+      result.current.form.setValue('customer_id', 8);
+    });
+
+    await waitFor(() => expect(getRequestCount()).toBe(1), { timeout: 2000 });
   });
 
   it('fires the calculation query, debounced, once an item is picked', async () => {
@@ -250,11 +275,21 @@ describe('useOrderCreate calculation reconciliation', () => {
   });
 
   it('does not fire a redundant calculation request solely from reconciling the form', async () => {
-    const { getRequestCount } = mockCalculationResponse(() =>
-      buildCalculationResponse(1, {
-        items: [{ id: 0, quantity: 1, base_subtotal_exclusive_money_object: money(0), base_subtotal_inclusive_money_object: money(0), base_unit_price_exclusive_money_object: money(0), base_unit_price_inclusive_money_object: money(0), applied_product_coupons: [] }],
-      }),
-    );
+    const { getRequestCount } = mockCalculationResponse((body) => {
+      const items = (body.items as { variant_id: number; quantity: number }[]) ?? [];
+
+      return buildCalculationResponse(items.length, {
+        items: items.map((_item, index) => ({
+          id: index,
+          quantity: 1,
+          base_subtotal_exclusive_money_object: money(0),
+          base_subtotal_inclusive_money_object: money(0),
+          base_unit_price_exclusive_money_object: money(0),
+          base_unit_price_inclusive_money_object: money(0),
+          applied_product_coupons: [],
+        })),
+      });
+    });
 
     const { result } = renderUseOrderCreate();
 
@@ -271,8 +306,7 @@ describe('useOrderCreate calculation reconciliation', () => {
       timeout: 2000,
     });
 
-    // The calculation query also fires once on mount with an empty cart,
-    // so the settled count here isn't pinned to a fixed number - only that
+    // The settled count here isn't pinned to a fixed number - only that
     // no further request follows it.
     const settledRequestCount = getRequestCount();
 
@@ -335,8 +369,7 @@ describe('useOrderCreate calculation reconciliation', () => {
       timeout: 2000,
     });
 
-    // The calculation query also fires once on mount with an empty cart,
-    // so the settled count here isn't pinned to a fixed number - only that
+    // The settled count here isn't pinned to a fixed number - only that
     // removing an item triggers exactly one more request.
     const settledRequestCount = getRequestCount();
 
