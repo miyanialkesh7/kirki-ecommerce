@@ -1486,6 +1486,22 @@ class OrderApiTest extends RestTestCase
     }
 
     /**
+     * Placing an order is rate limited, so the checkout cannot be used to spam orders.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_checkout_is_rate_limited(): void
+    {
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $response = $this->request('POST', 'checkout', []);
+            $this->assertNotEquals(429, $response->get_status());
+        }
+
+        $this->assert_api_error($this->request('POST', 'checkout', []), 429);
+    }
+
+    /**
      * A guest checkout is rejected when the store does not allow guest checkout.
      *
      * @return void
