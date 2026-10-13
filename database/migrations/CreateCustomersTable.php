@@ -48,7 +48,7 @@ class CreateCustomersTable implements Migration
             $table->foreign('user_id', 'fk_kecom_customers_user_id')
                 ->on('users')
                 ->references('ID')
-                ->cascade_on_delete();
+                ->null_on_delete();
         });
     }
 

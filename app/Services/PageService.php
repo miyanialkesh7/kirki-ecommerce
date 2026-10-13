@@ -24,7 +24,7 @@ class PageService
      * @param PageFilterDTO|null $filters Filters whose status is a comma-separated list of post statuses.
      * @return Collection Collection of Page.
      */
-    public function get(PageFilterDTO $filters = null)
+    public function get(?PageFilterDTO $filters = null)
     {
         $query = Page::query()->where('post_type', 'page')->order_by('id', 'desc');
 
