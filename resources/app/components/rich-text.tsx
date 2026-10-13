@@ -384,7 +384,8 @@ const setupShortcodeAutocomplete = (
     const panelWidth = panel.offsetWidth;
 
     const fitsBelow = caretBottom + panelHeight <= containerRect.height;
-    panel.style.top = fitsBelow ? `${caretBottom + 20}px` : `${caretTop - panelHeight - 20}px`;
+    const top = fitsBelow ? caretBottom + 20 : caretTop - panelHeight - 20;
+    panel.style.top = `${top < 0 ? 0 : top}px`;
 
     const maxLeft = containerRect.width - panelWidth;
     panel.style.left = `${Math.max(0, Math.min(caretLeft, maxLeft)) + 20}px`;
