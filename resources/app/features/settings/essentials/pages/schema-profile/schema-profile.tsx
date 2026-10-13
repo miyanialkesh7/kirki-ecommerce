@@ -28,12 +28,16 @@ import { BoxOpenIcon, EditPenIcon, TrashIcon } from '@/icons';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
-import { __ } from '@/wpi18n';
+import { __, sprintf } from '@/wpi18n';
 
 type SchemaListItem = SchemaProfile & {
   badge1?: string;
   icon?: ReactNode;
 };
+
+const countSchemaProperties = (schema: SchemaListItem) => {
+  return Object.values(schema.schema).reduce((total, item) => total + item.length, 0) ?? 0;
+}
 
 const SchemaProfileComponent = () => {
   const [showPopup, setShowPopup] = useState(false);
@@ -120,8 +124,11 @@ const SchemaProfileComponent = () => {
                       <Text variant="small" weight="medium">
                         {item.name}
                       </Text>
+                      {countSchemaProperties(item) > 0 && (
+                        <Badge>{sprintf(__('%d Properties', 'kirki-ecommerce'), countSchemaProperties(item))}</Badge>
+                      )}
                       {item.is_default && (
-                        <Badge variant="secondary">{__('Default', 'kirki-ecommerce')}</Badge>
+                        <Badge>{__('Default', 'kirki-ecommerce')}</Badge>
                       )}
                     </StackedItemTitle>
                   </StackedItemContent>

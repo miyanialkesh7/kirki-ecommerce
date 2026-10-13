@@ -41,20 +41,18 @@ export const buildCurrencyUpdatePayload = (
   item: CurrencyListItem,
   key: keyof CurrencyRateItem,
 ): CurrencyBulkPayload | null => {
-  if (key !== 'is_base') {
-    const selectedCurrency = currencyList.find((currency) => currency?.id === item?.id);
-    if (!selectedCurrency) {
-      return null;
-    }
+  const selectedCurrency = currencyList.find((currency) => currency?.id === item?.id);
+  if (!selectedCurrency) {
+    return null;
+  }
 
+  if (key === 'is_base') {
     return {
-      items: [toCurrencyDraft({ ...selectedCurrency, [key]: !selectedCurrency[key] })],
+      items: [toCurrencyDraft({ ...selectedCurrency, is_base: true })],
     };
   }
 
   return {
-    items: currencyList.map((currency) =>
-      toCurrencyDraft({ ...currency, is_base: currency?.id === item?.id }),
-    ),
+    items: [toCurrencyDraft({ ...selectedCurrency, [key]: !selectedCurrency[key] })],
   };
 };

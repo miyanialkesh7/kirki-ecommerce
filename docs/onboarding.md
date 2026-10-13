@@ -81,7 +81,9 @@ order:
 3. **Tax settings.** Prices are tax-inclusive only for *Including tax*.
 4. **Base currency.** The selected currency is created from the bundled currency
    list if it isn't stored yet, then made the only base currency (active, exchange
-   rate 1).
+   rate 1). If it was already stored, the other currencies' rates are recalculated
+   against it; if it was just created, they are left unchanged (see
+   [`docs/currencies.md`](currencies.md#3-changing-the-base-currency)).
 5. **Storefront pages.** Shop, Cart, Checkout and Account are created and published,
    or reused if already assigned in **Settings → Advanced**.
 6. **Presets.** The industry and location presets are applied (see

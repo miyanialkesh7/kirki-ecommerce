@@ -43,7 +43,7 @@ Badge.displayName = 'Badge';
 
 const badgeVariantStyles = defineStyles({
   default: {
-    backgroundColor: theme.colors.background.surfaceTertiary,
+    backgroundColor: theme.colors.background.surfaceAlt,
     color: theme.colors.text.secondary,
     'a&:hover': {
       backgroundColor: theme.colors.background.fillHover,

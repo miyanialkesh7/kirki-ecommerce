@@ -225,7 +225,7 @@ export const AvailableCurrencyList = () => {
                       {item.name}
                     </Text>
                     {item.is_base && (
-                      <Badge variant="secondary">{__('Base currency', 'kirki-ecommerce')}</Badge>
+                      <Badge>{__('Base currency', 'kirki-ecommerce')}</Badge>
                     )}
                     {isActive === false && (
                       <Badge variant="destructive">{__('Inactive', 'kirki-ecommerce')}</Badge>

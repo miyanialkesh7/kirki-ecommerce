@@ -84,11 +84,15 @@ class CurrencyService
     /**
      * Make the currency with the given code the base currency.
      *
+     * The other stored rates are recalculated against the new base, and the new base gets a rate of 1, in the same
+     * transaction.
+     *
      * @since 1.0.0
      *
      * @param string $code Currency code.
      * @return bool True when the currency is the base after the call.
      * @throws NotFoundException When no currency has that code.
+     * @throws Exception When the transaction fails; it is rolled back first.
      */
     public function set_base(string $code)
     {
@@ -100,16 +104,18 @@ class CurrencyService
             return true;
         }
 
-        Currency::base()->update(['is_base' => 0]);
-
-        return (bool) Currency::where('code', $code)->update(['is_base' => 1]);
+        return $this->with_demoted_bases(function () use ($code) {
+            return (bool) Currency::where('code', $code)->update(['is_base' => 1, 'exchange_rate' => 1]);
+        }, $currency->exchange_rate);
     }
 
     /**
      * Make the currency with the given code the store's only base currency, creating it when it is not stored yet.
      *
      * A missing currency is created from its bundled definition. Either way the currency ends up active with an
-     * exchange rate of 1, and every other base currency is demoted in the same transaction.
+     * exchange rate of 1, and every other base currency is demoted in the same transaction. When the currency was
+     * already stored, the other stored rates are recalculated against it; a newly created currency has no previous
+     * rate, so the other rates stay unchanged.
      *
      * @since 1.0.0
      *
@@ -124,6 +130,8 @@ class CurrencyService
         $definition = $this->find_definition($code);
 
         throw_if(empty($definition), __('Currency not found.', 'kirki-ecommerce'), NotFoundException::class, Response::NOT_FOUND);
+
+        $existing_currency = Currency::where('code', $code)->first();
 
         $this->with_demoted_bases(function () use ($code, $definition) {
             $attributes = [
@@ -144,7 +152,7 @@ class CurrencyService
                 'name' => $definition['name'],
                 'symbol' => $definition['symbol'],
             ]));
-        });
+        }, $existing_currency->exchange_rate ?? null);
 
         return Currency::where('code', $code)->first();
     }
@@ -243,7 +251,9 @@ class CurrencyService
     /**
      * Insert several currencies in a single query.
      *
-     * When any of the items is flagged as base, the existing base currency is demoted in the same transaction.
+     * When any of the items is flagged as base, the existing base currency is demoted in the same transaction, the
+     * stored rates are recalculated against the item's rate, and the item is inserted with a rate of 1. The other
+     * items are inserted with the rates they carry.
      *
      * @since 1.0.0
      *
@@ -254,22 +264,25 @@ class CurrencyService
     public function insert(array $items)
     {
         $items_array = collection($items)->map(fn($item) => $item instanceof Arrayable ? $item->to_array() : $item)->all();
+        $base_index = array_key_first(array_filter($items_array, fn($item) => !empty($item['is_base'])));
 
-        $insert = function () use ($items_array) {
+        if (is_null($base_index)) {
             return Currency::insert($items_array);
-        };
-
-        if (empty(array_filter(array_column($items_array, 'is_base')))) {
-            return $insert();
         }
 
-        return $this->with_demoted_bases($insert);
+        $previous_rate = $items_array[$base_index]['exchange_rate'] ?? null;
+        $items_array[$base_index]['exchange_rate'] = 1;
+
+        return $this->with_demoted_bases(function () use ($items_array) {
+            return Currency::insert($items_array);
+        }, $previous_rate);
     }
 
     /**
      * Create a new currency.
      *
-     * When the currency is flagged as base, the existing base currency is demoted in the same transaction.
+     * When the currency is flagged as base, the existing base currency is demoted in the same transaction, the
+     * stored rates are recalculated against the currency's rate, and the currency is created with a rate of 1.
      *
      * @since 1.0.0
      *
@@ -279,15 +292,16 @@ class CurrencyService
      */
     public function create(CreateCurrencyDTO $data)
     {
-        $create = function () use ($data) {
-            return Currency::create($data->to_array());
-        };
-
         if (!$data->is_base) {
-            return $create();
+            return Currency::create($data->to_array());
         }
 
-        return $this->with_demoted_bases($create);
+        $previous_rate = $data->exchange_rate;
+        $data->exchange_rate = 1;
+
+        return $this->with_demoted_bases(function () use ($data) {
+            return Currency::create($data->to_array());
+        }, $previous_rate);
     }
 
     /**
@@ -318,6 +332,10 @@ class CurrencyService
             $attributes['is_base'] = true;
         }
 
+        if ($was_base || $data->is_base) {
+            $attributes['exchange_rate'] = 1;
+        }
+
         $update = function () use ($currency, $attributes) {
             $is_updated = (bool) $currency->update($attributes);
 
@@ -325,7 +343,7 @@ class CurrencyService
         };
 
         if (!$was_base && $data->is_base) {
-            $this->with_demoted_bases($update);
+            $this->with_demoted_bases($update, $currency->exchange_rate);
         } else {
             $update();
         }
@@ -385,17 +403,26 @@ class CurrencyService
     /**
      * Demote every base currency, then run the save that makes another currency the base, in one transaction.
      *
+     * When a base exists and the new base's previous rate against it is positive, every stored rate is first
+     * divided by that rate, so the stored rates are relative to the new base. The save must write the new base
+     * with a rate of 1.
+     *
      * @since 1.0.0
      *
-     * @param callable $save Saves the new base currency.
+     * @param callable   $save          Saves the new base currency.
+     * @param float|null $previous_rate Rate of the new base against the current base; null when it is not known.
      * @return mixed Whatever the callback returns.
      * @throws Exception When the demotion or the callback fails; the transaction is rolled back first.
      */
-    protected function with_demoted_bases(callable $save)
+    protected function with_demoted_bases(callable $save, $previous_rate = null)
     {
         DB::begin_transaction();
 
         try {
+            if ($previous_rate > 0 && $this->get_base_currency()) {
+                $this->rebase_exchange_rates((float) $previous_rate);
+            }
+
             Currency::base()->update(['is_base' => 0]);
 
             $result = $save();
@@ -406,6 +433,23 @@ class CurrencyService
         } catch (Exception $e) {
             DB::rollback();
             throw $e;
+        }
+    }
+
+    /**
+     * Divide every stored exchange rate by the new base's previous rate.
+     *
+     * @since 1.0.0
+     *
+     * @param float $previous_rate Rate of the new base against the current base; must be positive.
+     * @return void
+     */
+    protected function rebase_exchange_rates(float $previous_rate)
+    {
+        foreach (Currency::query()->get() as $currency) {
+            Currency::where('id', $currency->id)->update([
+                'exchange_rate' => round($currency->exchange_rate / $previous_rate, 6),
+            ]);
         }
     }
 

@@ -44,7 +44,7 @@ const TaxStateRows = ({ code, stateNameById }: TaxStateRowsProps) => {
   if (!fields.length) {
     return (
       <>
-        <Card data-search-skip="true" cssOverride={cardStyles.innerDarkCard}>
+        <Card data-search-skip="true" cssOverride={cardStyles.innerDarkCard} noShadow>
           <CardContent cssOverride={mergeCss(cardStyles.innerDarkContent, styles.emptyContent)}>
             <Flex direction="column" gap={2} align="center">
               <PaymentIcon />

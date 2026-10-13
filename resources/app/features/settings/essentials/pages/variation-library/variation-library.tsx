@@ -136,7 +136,7 @@ const VariationList = () => {
                             {item.name}
                           </Text>
                         </Link>
-                        <Badge variant="secondary">
+                        <Badge>
                           {sprintf(
                             _n(
                               '%d value',
