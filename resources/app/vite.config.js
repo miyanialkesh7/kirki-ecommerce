@@ -85,7 +85,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, '../../assets'),
     emptyOutDir: false,
-    manifest: true,
+    // Not the default .vite/manifest.json: wordpress.org does not allow hidden
+    // files or directories in the plugin package.
+    manifest: 'manifest.json',
     // Keep the i18n calls readable for `wp i18n make-pot`, which
     // translate.wordpress.org runs over the shipped files: never rename the
     // i18n functions, never merge `c ? __('A') : __('B')` into `__(c ? 'A' : 'B')`,

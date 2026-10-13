@@ -14,7 +14,7 @@ WordPress eCommerce plugin for running a complete online store, products, orders
 
 Kirki eCommerce is a lightweight, fully featured eCommerce plugin for WordPress. It gives you everything you need to create and run an online store, products, inventory, orders, checkout, payments, tax, and shipping, without depending on any other third-party plugin.
 
-We're building Kirki eCommerce in the open on GitHub, so it can be tested widely and shaped by real feedback before a stable release.
+Kirki eCommerce is open source and developed in the open on GitHub.
 
 👉 Source Code: [GitHub Repository](https://github.com/themeum/kirki-ecommerce)
 👉 Feedback: [Feedback Form](https://docs.google.com/forms/d/e/1FAIpQLSef9owKHWm9e5N761rET0G14Y_Pjsih_BDzBR89aGVYyvkHow/viewform)
@@ -215,13 +215,10 @@ The result is a complete eCommerce foundation that can work on its own while rem
 * Stores that need flexible payment options, from major gateways to offline methods like Cash on Delivery and Bank Transfer
 * Anyone replacing a heavier eCommerce setup with something simpler to manage
 * Developers and agencies building client stores who want a REST API and extension hooks to customize
-* Early adopters and testers who want to help shape a new eCommerce plugin before its stable release
 
-== Help Shape What Ships Next ==
+== Feedback & Support ==
 
-Kirki eCommerce is still an early release. We're continuing to build it in the open, gather feedback, and fix what needs fixing before a stable release.
-
-If something breaks, doesn't work as expected, or is missing, we want to hear about it.
+If something doesn't work as expected, or a feature you need is missing, we want to hear about it.
 
 * Share feedback or feature ideas in the [feedback form](https://docs.google.com/forms/d/e/1FAIpQLSef9owKHWm9e5N761rET0G14Y_Pjsih_BDzBR89aGVYyvkHow/viewform) or join the [Kirki eCommerce Facebook community](https://www.facebook.com/groups/557837446451017).
 * Report a bug on [GitHub Issues](https://github.com/themeum/kirki-ecommerce/issues).
@@ -232,12 +229,13 @@ Kirki eCommerce is open source. Find the full source code on [GitHub](https://gi
 
 == Installation ==
 
-1. Download the latest release from the [GitHub Releases page](https://github.com/themeum/kirki-ecommerce/releases), or install directly via Plugins → Add New once listed on WordPress.org.
-2. In your WordPress dashboard, go to Plugins → Add New Plugin → Upload Plugin.
-3. Upload the Kirki eCommerce ZIP file.
-4. Install and activate the plugin.
-5. Go to Kirki eCommerce → Settings to configure your store and payment gateway.
-6. Create your first product and start testing.
+1. In your WordPress dashboard, go to Plugins → Add New Plugin.
+2. Search for "Kirki eCommerce".
+3. Click Install Now, then Activate.
+4. Go to Kirki eCommerce → Settings to configure your store and payment gateway.
+5. Create your first product and start selling.
+
+To install manually, download the plugin ZIP file, go to Plugins → Add New Plugin → Upload Plugin, upload the file, then install and activate it.
 
 == Frequently Asked Questions ==
 
@@ -267,9 +265,15 @@ Fill out the [feedback form](https://docs.google.com/forms/d/e/1FAIpQLSef9owKHWm
 
 == External Services ==
 
-This plugin connects to third-party payment gateway services depending on which payment method a store owner configures. Data is only transmitted for customers who complete a purchase using a given gateway, and only after a store owner has actively set it up.
+This plugin connects to third-party payment gateway services depending on which payment method a store owner configures. Data is only sent after a store owner has set up a gateway, and only for customers who choose that gateway at checkout.
 
-**PayPal** ships with the core plugin. It processes payments by sending order details, including product ID, amount, currency, and transaction ID, to PayPal's API.
+**PayPal** ([paypal.com](https://www.paypal.com/)) ships with the core plugin. It is used only after the store owner enters PayPal API credentials in the payment settings.
+
+* When a customer pays with PayPal at checkout, the plugin creates a PayPal order. It sends the item names, a description of each item (price, quantity, subtotal, discount and tax), the order number and internal order ID, the order total, item total and shipping total, the currency, the store name (site title), and the return and cancel URLs for the checkout success and failure pages.
+* To get an access token for each request, the plugin sends the store owner's PayPal client ID and client secret.
+* When the customer approves the payment, the plugin asks PayPal to capture it.
+* When the store owner refunds a PayPal order, the plugin sends the refund amount, the currency, the refund reason, and the internal refund ID.
+* When PayPal sends a webhook to the store, the plugin sends the webhook event, its signature headers, and the store's webhook ID back to PayPal to verify it.
 
 - **PayPal:** [Terms](https://www.paypal.com/us/legalhub/paypal/useragreement-full) | [Privacy](https://www.paypal.com/us/legalhub/paypal/privacy-full)
 

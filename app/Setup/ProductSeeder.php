@@ -41,13 +41,6 @@ class ProductSeeder extends Seeder
     protected $attachments = [];
 
     /**
-     * Whether every image resolved to an attachment during this run.
-     *
-     * @var bool
-     */
-    protected $media_complete = true;
-
-    /**
      * Seed the starter products and import their imagery.
      *
      * @since 1.0.0
@@ -73,8 +66,6 @@ class ProductSeeder extends Seeder
         }
 
         Log::info('OnBoarding ProductSeeder created the starter products');
-
-        $this->cleanup_bundled_images();
     }
 
     /**
@@ -294,10 +285,6 @@ class ProductSeeder extends Seeder
             $this->attachments[$filename] = $this->importer->import($this->bundled_images_path() . '/' . $filename);
         }
 
-        if (empty($this->attachments[$filename])) {
-            $this->media_complete = false;
-        }
-
         return $this->attachments[$filename];
     }
 
@@ -311,51 +298,5 @@ class ProductSeeder extends Seeder
     protected function bundled_images_path()
     {
         return KIRKI_ECOMMERCE_ASSETS_PATH . '/images/products';
-    }
-
-    /**
-     * Reclaim the bundled product images once they live in the media library.
-     *
-     * Only on an installed production plugin: in development the plugin directory
-     * is the repository working tree, and the images are the source of truth
-     * there. Skipped when anything failed to import, so a later run can still
-     * read the source files.
-     *
-     * @since 1.0.0
-     *
-     * @return void
-     */
-    protected function cleanup_bundled_images()
-    {
-        if (!$this->media_complete) {
-            return;
-        }
-
-        if (!defined('KIRKI_ECOMMERCE_MODE') || 'production' !== KIRKI_ECOMMERCE_MODE) {
-            return;
-        }
-
-        $directory = $this->bundled_images_path();
-
-        if (!is_dir($directory)) {
-            return;
-        }
-
-        foreach (glob($directory . '/*') ?: [] as $file) {
-            if (is_file($file)) {
-                wp_delete_file($file);
-            }
-        }
-
-        global $wp_filesystem;
-
-        if (empty($wp_filesystem)) {
-            require_once ABSPATH . '/wp-admin/includes/file.php';
-            WP_Filesystem();
-        }
-
-        $wp_filesystem->rmdir($directory);
-
-        Log::info('OnBoarding ProductSeeder removed the bundled product images');
     }
 }

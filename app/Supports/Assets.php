@@ -64,7 +64,7 @@ class Assets
             return $manifest;
         }
 
-        $manifest_path = static::get_path('.vite/manifest.json');
+        $manifest_path = static::get_path('manifest.json');
 
         if (!file_exists($manifest_path)) {
             return $manifest = [];

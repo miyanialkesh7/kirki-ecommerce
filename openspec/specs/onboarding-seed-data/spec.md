@@ -196,29 +196,13 @@ store's base currency.
 - **WHEN** sample data is loaded on a store that already has at least one product
 - **THEN** no demo products are created
 
-### Requirement: Bundled product images are reclaimed after a successful install
+### Requirement: Bundled product images stay in the plugin
 
-Once sample data loading has imported every bundled product image successfully, the
-plugin SHALL remove the bundled product image directory from an installed production
-plugin. It SHALL leave the directory in place otherwise, including when sample data
-has never been loaded.
+The plugin SHALL NOT delete or change the bundled product images in its own
+directory, including after sample data loading imports them into the media library.
+WordPress.org does not allow a plugin to delete files from its own folder.
 
-#### Scenario: Successful production seed
+#### Scenario: Successful seed
 
-- **WHEN** sample data loading imports every bundled product image on a production install
-- **THEN** the bundled product image directory is removed from the plugin
-
-#### Scenario: Development install
-
-- **WHEN** sample data loading completes on a development install
-- **THEN** the bundled product image directory is left in place
-
-#### Scenario: An image failed to import
-
-- **WHEN** at least one bundled product image could not be imported
-- **THEN** the bundled product image directory is left in place so a later run can still read it
-
-#### Scenario: Sample data never loaded
-
-- **WHEN** the merchant completes onboarding without loading sample data
-- **THEN** the bundled product image directory is left in place
+- **WHEN** sample data loading imports every bundled product image
+- **THEN** the bundled product image directory stays in the plugin

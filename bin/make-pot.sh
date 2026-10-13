@@ -13,7 +13,7 @@ POT_FILE="languages/$PLUGIN_SLUG.pot"
 # which `wp i18n make-json` needs. The Vite configs keep the i18n calls readable
 # there; see docs/translations.md.
 REQUIRED_BUILD_FILES=(
-  "assets/.vite/manifest.json"
+  "assets/manifest.json"
   "assets/js/site.js"
 )
 

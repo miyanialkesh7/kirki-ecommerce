@@ -80,7 +80,7 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$STAGE_DIR"
 
 echo "==> Cleaning generated assets"
-rm -rf "$ROOT_DIR/assets/js" "$ROOT_DIR/assets/css"
+rm -rf "$ROOT_DIR/assets/js" "$ROOT_DIR/assets/css" "$ROOT_DIR/assets/manifest.json" "$ROOT_DIR/assets/.vite"
 
 build_frontend "resources/app"
 build_frontend "resources/site"
@@ -151,9 +151,16 @@ fi
 
 echo "==> Removing hidden files (not allowed by wordpress.org)"
 find "$STAGE_DIR" -name ".*" -type f -delete
+find "$STAGE_DIR" -depth -name ".*" -type d -exec rm -rf {} +
 
-echo "==> Removing excluded vendor paths"
-rm -rf "$STAGE_DIR/vendor/brick/money/.github"
+echo "==> Removing OS, editor and development files"
+find "$STAGE_DIR" -depth \( -name "__MACOSX" -o -iname "Thumbs.db" -o -iname "desktop.ini" \
+  -o -name "*.swp" -o -name "*~" -o -name "*.bak" -o -name "*.orig" -o -name "*.log" \
+  -o -iname "README.md" -o -iname "CHANGELOG.md" \) -exec rm -rf {} +
+rm -f "$STAGE_DIR/payments/package.json" "$STAGE_DIR"/payments/*/composer.lock
+# Defines ABSPATH for the test suite only; it is in autoload-dev, which the
+# --no-dev install leaves out of the autoloader.
+rm -f "$STAGE_DIR/bootstrap/abspath.php"
 
 # listeners.cache.php / policies.cache.php are regenerated on every request
 # by CoreServiceProvider::boot() - keep the package to schema-only config.

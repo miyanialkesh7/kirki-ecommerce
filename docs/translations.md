@@ -24,7 +24,7 @@ npm run make:pot
 ```
 
 This writes `languages/kirki-ecommerce.pot`. The file is gitignored, so there is
-nothing to commit. The command stops with an error when `assets/.vite/manifest.json`
+nothing to commit. The command stops with an error when `assets/manifest.json`
 or `assets/js/site.js` is missing. In that case, build the frontend first
 (`npm run build` in `resources/app` and in `resources/site`).
 

@@ -43,6 +43,7 @@ temp/
 # Vite build output (resources/app npm run build)
 assets/css
 assets/js
+assets/manifest.json
 
 # Settings search index (resources/app npm run search:index)
 resources/app/features/settings/search/settings-search-index.json
