@@ -127,7 +127,7 @@ class Assets
 
         return sprintf(
             'window.kirki_ecommerce = %s;',
-            Arr::json_encode($config_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            Arr::json_encode($config_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG)
         );
     }
 }
