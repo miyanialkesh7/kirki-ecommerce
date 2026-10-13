@@ -233,6 +233,7 @@ Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], 
 
     // Payment Methods
     Route::get('/payment-methods', [PaymentMethodController::class, 'get']);
+    Route::put('/payment-methods/order', [PaymentMethodController::class, 'reorder']);
 
     // Online Payments
     Route::get('/online-payments/installable', [OnlinePaymentController::class, 'all']);

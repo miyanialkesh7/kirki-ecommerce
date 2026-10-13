@@ -3,10 +3,12 @@
 namespace Kirki\Ecommerce\App\Payment;
 
 use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
+use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\DTO\Payment\PaymentActionDTO;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Payment\Providers\PayPal;
 
+use function Kirki\Ecommerce\App\settings;
 use function Kirki\Ecommerce\Framework\collection;
 
 defined('ABSPATH') || exit;
@@ -68,7 +70,52 @@ class PaymentManager
      */
     public function get_all_providers()
     {
-        return array_values($this->providers_registry);
+        return $this->ordered_providers()->all();
+    }
+
+    /**
+     * Sort providers by the merchant-defined order.
+     *
+     * Providers listed in the stored `methods_order` come first, in that order.
+     * The rest follow in their given order. Stored IDs that match no provider
+     * are ignored.
+     *
+     * @since 1.0.0
+     *
+     * @param PaymentProvider[] $providers Providers to sort.
+     * @return PaymentProvider[]
+     */
+    public function order_providers(array $providers)
+    {
+        $providers_by_id = [];
+
+        foreach ($providers as $provider) {
+            $providers_by_id[$provider->id()] = $provider;
+        }
+
+        $stored_order = settings(OptionKeys::PAYMENT_SETTINGS)->get('methods_order');
+        $stored_order = is_array($stored_order) ? array_values($stored_order) : [];
+        $ordered = [];
+
+        foreach ($stored_order as $id) {
+            if (is_string($id) && isset($providers_by_id[$id])) {
+                $ordered[$id] = $providers_by_id[$id];
+            }
+        }
+
+        return array_values($ordered + array_diff_key($providers_by_id, $ordered));
+    }
+
+    /**
+     * Get the registry sorted by the merchant-defined order.
+     *
+     * @since 1.0.0
+     *
+     * @return \Kirki\Ecommerce\Framework\Collections\Collection Collection of PaymentProvider.
+     */
+    protected function ordered_providers()
+    {
+        return collection($this->order_providers($this->providers_registry));
     }
 
     /**
@@ -80,7 +127,7 @@ class PaymentManager
      */
     public function get_online_providers()
     {
-        return collection($this->providers_registry)->reject(fn($provider) => $provider->is_offline())->values()->all();
+        return $this->ordered_providers()->reject(fn($provider) => $provider->is_offline())->values()->all();
     }
 
     /**
@@ -92,7 +139,7 @@ class PaymentManager
      */
     public function get_offline_providers()
     {
-        return collection($this->providers_registry)->filter(fn($provider) => $provider->is_offline())->values()->all();
+        return $this->ordered_providers()->filter(fn($provider) => $provider->is_offline())->values()->all();
     }
 
     /**
@@ -104,7 +151,7 @@ class PaymentManager
      */
     public function get_available_providers()
     {
-        return collection($this->providers_registry)->filter(fn($provider) => $provider->enabled())->values()->all();
+        return $this->ordered_providers()->filter(fn($provider) => $provider->enabled())->values()->all();
     }
 
     /**
@@ -116,7 +163,7 @@ class PaymentManager
      */
     public function get_available_online_providers()
     {
-        return collection($this->providers_registry)->filter(fn($provider) => $provider->enabled() && !$provider->is_offline())->values()->all();
+        return $this->ordered_providers()->filter(fn($provider) => $provider->enabled() && !$provider->is_offline())->values()->all();
     }
 
     /**
@@ -128,7 +175,7 @@ class PaymentManager
      */
     public function get_available_offline_providers()
     {
-        return collection($this->providers_registry)->filter(fn($provider) => $provider->enabled() && $provider->is_offline())->values()->to_array();
+        return $this->ordered_providers()->filter(fn($provider) => $provider->enabled() && $provider->is_offline())->values()->to_array();
     }
 
     /**

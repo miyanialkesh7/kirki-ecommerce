@@ -83,10 +83,13 @@ An endpoint SHALL only return providers of its own kind: `/online-payments`
 SHALL NOT return offline providers, and `/offline-payments` SHALL NOT return
 online providers.
 
-The system SHALL additionally serve a read-only combined listing at
-`/payment-methods` that returns providers of both kinds. `/payment-methods`
-SHALL support listing only; reading, creating, updating, deleting, enabling and
-installing SHALL remain on the per-kind endpoints.
+The system SHALL additionally serve a combined listing at `/payment-methods`
+that returns providers of both kinds in the stored provider order. The
+`/payment-methods` path itself SHALL support listing only. The combined surface
+SHALL additionally accept a provider order write at `/payment-methods/order`
+(see the `payment-method-order` capability). Reading, creating, updating,
+deleting, enabling and installing a provider SHALL remain on the per-kind
+endpoints.
 
 #### Scenario: Listing online providers
 
@@ -114,14 +117,21 @@ installing SHALL remain on the per-kind endpoints.
 - **WHEN** a client requests `GET /payment-methods`
 - **THEN** the response contains every registered provider, both those whose
   `is_offline` is `false` and those whose `is_offline` is `true`
+- **AND** the providers are in the stored provider order
 - **AND** each item includes `id`, `name`, `icon`, `icon_media`, `is_enabled`,
   `is_offline` and `description`
 
-#### Scenario: Combined listing is read-only
+#### Scenario: Combined listing path is read-only
 
 - **WHEN** a client sends `POST`, `PUT`, `PATCH` or `DELETE` to
   `/payment-methods`
 - **THEN** no route matches the request
+
+#### Scenario: Writing the provider order
+
+- **WHEN** an administrator sends `PUT /payment-methods/order` with a valid
+  list of provider IDs
+- **THEN** the request is handled and the stored provider order changes
 
 #### Scenario: Disabling an offline provider
 

@@ -8,7 +8,6 @@
       "Kirki\\Ecommerce\\Database\\Migrations\\": "database/migrations/"
     },
     "files": [
-      "bootstrap/abspath.php",
       "vendor/libraries/framework/src/helpers.php",
       "vendor/libraries/framework/src/Polyfill/Polyfill.php",
       "app/helpers.php"
@@ -18,7 +17,10 @@
     "psr-4": {
       "Kirki\\Ecommerce\\Tests\\": "tests/",
       "Kirki\\Ecommerce\\Database\\Seeders\\": "database/seeders/"
-    }
+    },
+    "files": [
+      "bootstrap/abspath.php"
+    ]
   },
   "authors": [
     {

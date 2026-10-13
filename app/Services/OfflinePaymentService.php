@@ -10,6 +10,7 @@ use Kirki\Ecommerce\App\DTO\OfflinePayment\CreateOfflinePaymentDTO;
 use Kirki\Ecommerce\App\DTO\OfflinePayment\UpdateOfflinePaymentDTO;
 use Kirki\Ecommerce\Framework\Exceptions\NotFoundException;
 use Kirki\Ecommerce\Framework\Http\Response;
+use Kirki\Ecommerce\App\Payment\Facades\Payment;
 use Kirki\Ecommerce\App\Payment\PaymentProvider;
 use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\Framework\Supports\Str;
@@ -47,9 +48,12 @@ class OfflinePaymentService
      */
     public function get()
     {
-        return collection($this->offline_payments())
+        $providers = collection($this->offline_payments())
             ->map(fn($offline_payment) => PaymentProvider::from_offline($offline_payment))
-            ->values();
+            ->values()
+            ->all();
+
+        return collection(Payment::order_providers($providers));
     }
 
     /**

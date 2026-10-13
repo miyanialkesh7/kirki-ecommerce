@@ -2,9 +2,11 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { endpoints } from '@/config/endpoints';
+import type { PaymentMethod } from '@/features/settings/payment/schemas/catalog/payment';
 import {
   getOnlinePayments,
   getPaymentMethods,
+  reorderPaymentMethods,
   setEnabledOfflinePayment,
 } from '@/features/settings/payment/services/payment';
 import { server } from '@/tests/msw/server';
@@ -122,5 +124,35 @@ describe('setEnabledOfflinePayment', () => {
 
     expect(received).toEqual({ is_enabled: false });
     expect(result.data).toBe(true);
+  });
+});
+
+describe('reorderPaymentMethods', () => {
+  const orderUrl = `${window.kirki_ecommerce.rest_url_base}${endpoints.PAYMENT_METHODS_ORDER}`;
+  const methods: PaymentMethod[] = [
+    { id: 'cod', name: 'Cash on Delivery', is_enabled: true, is_offline: true, icon_media: null },
+    { id: 'bank', name: 'Bank Transfer', is_enabled: true, is_offline: true, icon_media: null },
+    { id: 'paypal', name: 'PayPal', is_enabled: false, is_offline: false, icon_media: null },
+  ];
+
+  it('puts the full id list to the order endpoint and returns the ordered methods', async () => {
+    let received: unknown = null;
+
+    server.use(
+      http.put(orderUrl, async ({ request }) => {
+        received = await request.json();
+
+        return HttpResponse.json({
+          success: true,
+          message: 'Payment methods reordered.',
+          data: [methods[2], methods[0], methods[1]],
+        });
+      }),
+    );
+
+    const result = await reorderPaymentMethods(['paypal', 'cod', 'bank']);
+
+    expect(received).toEqual({ ids: ['paypal', 'cod', 'bank'] });
+    expect(result.data.map((method) => method.id)).toEqual(['paypal', 'cod', 'bank']);
   });
 });

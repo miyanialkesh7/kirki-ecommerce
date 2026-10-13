@@ -14,8 +14,6 @@ WordPress eCommerce plugin for running a complete online store, products, orders
 
 Kirki eCommerce is a lightweight, fully featured eCommerce plugin for WordPress. It gives you everything you need to create and run an online store, products, inventory, orders, checkout, payments, tax, and shipping, without depending on any other third-party plugin.
 
-**Kirki eCommerce is currently a Beta release. Some features may be incomplete or not work as expected. Please do not use it on live sites.**
-
 We're building Kirki eCommerce in the open on GitHub, so it can be tested widely and shaped by real feedback before a stable release.
 
 👉 Source Code: [GitHub Repository](https://github.com/themeum/kirki-ecommerce)
@@ -259,10 +257,6 @@ No. Kirki eCommerce includes its own storefront styling and doesn't depend on yo
 
 PayPal ships with the core plugin. Offline options include Cash on Delivery, Bank Transfer, and custom manual payment methods.
 
-= Is this plugin production-ready? =
-
-No. Kirki eCommerce is currently a Beta release. Some features may be incomplete or not work as expected. Please do not use it on live sites.
-
 = How do I report a bug? =
 
 Open an issue on the [GitHub repository](https://github.com/themeum/kirki-ecommerce/issues) with steps to reproduce, expected vs. actual behavior, and screenshots if relevant.
@@ -307,7 +301,6 @@ The plugin can also connect to a currency exchange rate service to convert displ
 * Adds Full-fledged coupon system: free shipping, targeting by country, region, customer, and product, with usage limits
 * Adds Customer Dashboard: order history, order details, saved addresses, account management
 * Adds Search and filtering across all product listings
-* Adds Klarna and Square payment gateways
 * Adds Cart syncing between guest and logged-in sessions (backend only, frontend pending)
 * Adds Bulk Inventory Edit
 * Adds Low Stock Threshold (global, product, variant)
@@ -318,8 +311,6 @@ The plugin can also connect to a currency exchange rate service to convert displ
 * Adds Cart Product Quantity Limits
 * Adds Order Timeline
 * Adds Order Activity Log
-* Adds QuickPay integration
-* Adds PayStack integration
 * Adds Shop Search
 * Adds Product Trash Management
 * Adds Email Verification

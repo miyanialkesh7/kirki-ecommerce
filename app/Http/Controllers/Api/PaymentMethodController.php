@@ -4,6 +4,7 @@ namespace Kirki\Ecommerce\App\Http\Controllers\Api;
 
 defined('ABSPATH') || exit;
 
+use Kirki\Ecommerce\App\Http\Requests\PaymentMethod\PaymentMethodOrderRequest;
 use Kirki\Ecommerce\App\Resources\PaymentMethod\PaymentMethodListResource;
 use Kirki\Ecommerce\App\Services\PaymentMethodService;
 use Kirki\Ecommerce\Framework\Contracts\Request;
@@ -47,6 +48,24 @@ class PaymentMethodController
         return response()->json([
             'data' => PaymentMethodListResource::collection($data),
             'message' => __('Payment methods retrieved successfully.', 'kirki-ecommerce'),
+        ]);
+    }
+
+    /**
+     * Save the order of the payment methods.
+     *
+     * @since 1.0.0
+     *
+     * @param PaymentMethodOrderRequest $request
+     * @return \Kirki\Ecommerce\Framework\Http\JsonResponse Payment method collection in the new order with a success message.
+     */
+    public function reorder(PaymentMethodOrderRequest $request)
+    {
+        $data = $this->service->reorder($request->array('ids'));
+
+        return response()->json([
+            'data' => PaymentMethodListResource::collection($data),
+            'message' => __('Payment methods reordered.', 'kirki-ecommerce'),
         ]);
     }
 }
