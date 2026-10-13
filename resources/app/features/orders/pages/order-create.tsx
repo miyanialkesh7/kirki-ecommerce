@@ -91,7 +91,7 @@ const OrderCreateContent = () => {
                 alignSelf: 'flex-start',
               }}
             >
-              <CustomerCard />
+              <CustomerCard mode="create" />
               <NotesCard />
             </Flex>
           </Flex>

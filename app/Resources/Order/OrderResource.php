@@ -59,6 +59,7 @@ class OrderResource extends Resource
                 'email' => $this->customer_email,
                 'phone' => $this->customer_phone,
             ],
+            'is_guest' => empty($this->customer) || empty($this->customer->user_id),
 
             'status' => $this->order_status,
             'fulfillment_status' => $this->fulfillment_status,

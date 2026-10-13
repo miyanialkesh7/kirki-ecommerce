@@ -200,7 +200,12 @@ const OrderDetails = () => {
                 isPerforming={isActionPending}
               />
 
-              <CustomerCard onSave={handleSaveOrder} isSaving={isSaving} readonly />
+              <CustomerCard
+                onSave={handleSaveOrder}
+                isSaving={isSaving}
+                isGuest={order.is_guest}
+                mode="view"
+              />
 
               <FlagCard onSave={handleSaveOrder} />
 
