@@ -1,4 +1,3 @@
-import { LightningBoltIcon } from '@radix-ui/react-icons';
 import { Edit3, Trash2 } from 'lucide-react';
 import { memo, useState } from 'react';
 
@@ -7,11 +6,11 @@ import {
   RuleItem,
   RuleItemAction,
   RuleItemActions,
-  RuleItemBadge,
   RuleItemCondition,
   RuleItemConditions,
   RuleItemContent,
   RuleItems,
+  RuleItemValues,
 } from '@/components/shared/rule-items';
 import ActionGroup from '@/components/ui/action-group';
 import Button from '@/components/ui/button';
@@ -21,10 +20,10 @@ import Text from '@/components/ui/text';
 import { useCategoriesQuery } from '@/features/categories';
 import TaxRuleFormCard from '@/features/settings/tax/shared/components/tax-rules/tax-rule-form-card';
 import {
-  getDestinationDisplayValue,
   resolveActionLabel,
   resolveConditionDisplayValue,
   resolveConditionTypeLabel,
+  resolveDestinationLabels,
   resolveOperatorLabel,
 } from '@/features/settings/tax/shared/lib/tax-rules/helper';
 import type { TaxRegionState, TaxRule } from '@/features/settings/tax/shared/lib/utils';
@@ -34,6 +33,9 @@ import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __, sprintf } from '@/wpi18n';
+
+const toSentenceCase = (text: string): string =>
+  text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
 
 type TaxRulesProps = {
   /**
@@ -115,53 +117,46 @@ const TaxRules = (props: TaxRulesProps) => {
                     ) : (
                       <RuleItem key={index} id={String(index)}>
                         <RuleItemContent>
-                          <RuleItemBadge>
-                            <LightningBoltIcon width={12} height={12} />
-                            <Text variant="small">
-                              {sprintf(__('Rule %d', 'kirki-ecommerce'), index + 1)}
-                            </Text>
-                          </RuleItemBadge>
                           <RuleItemConditions>
                             {(item?.conditions ?? []).map((condition, conditionIndex) => (
                               <RuleItemCondition key={conditionIndex}>
                                 <Text variant="small" weight="medium">
                                   {conditionIndex === 0
-                                    ? sprintf(
-                                        __('IF %1$s %2$s', 'kirki-ecommerce'),
-                                        resolveConditionTypeLabel(condition?.type),
-                                        resolveOperatorLabel(condition?.operator),
-                                      )
-                                    : sprintf(
-                                        __('AND IF %1$s %2$s', 'kirki-ecommerce'),
-                                        resolveConditionTypeLabel(condition?.type),
-                                        resolveOperatorLabel(condition?.operator),
-                                      )}
+                                    ? __('IF', 'kirki-ecommerce')
+                                    : __('AND IF', 'kirki-ecommerce')}
                                 </Text>
-                                <Text
-                                  variant="small"
-                                  weight="medium"
-                                  cssOverride={styles.conditionValue}
-                                >
-                                  {condition?.type === 'destination_region'
-                                    ? __(
-                                        getDestinationDisplayValue(condition?.value),
-                                        'kirki-ecommerce',
-                                      )
-                                    : resolveConditionDisplayValue(
-                                        condition,
-                                        taxProfiles,
-                                        categoryData?.results,
-                                      )}
+                                <Text variant="small" color="secondary">
+                                  {sprintf(
+                                    __('%1$s %2$s', 'kirki-ecommerce'),
+                                    toSentenceCase(resolveConditionTypeLabel(condition?.type)),
+                                    resolveOperatorLabel(condition?.operator),
+                                  )}
+                                </Text>
+                                <RuleItemValues
+                                  values={
+                                    condition?.type === 'destination_region'
+                                      ? resolveDestinationLabels(condition?.value, states)
+                                      : [
+                                          resolveConditionDisplayValue(
+                                            condition,
+                                            taxProfiles,
+                                            categoryData?.results,
+                                          ),
+                                        ]
+                                  }
+                                />
+                                <Text variant="small" weight="medium">
+                                  ,
                                 </Text>
                               </RuleItemCondition>
                             ))}
                           </RuleItemConditions>
                           <RuleItemAction>
                             <Text variant="small" weight="medium">
-                              {sprintf(
-                                __('Then %s', 'kirki-ecommerce'),
-                                resolveActionLabel(item?.action?.type),
-                              )}
+                              {__('Then', 'kirki-ecommerce')}
+                            </Text>
+                            <Text variant="small" color="secondary">
+                              {resolveActionLabel(item?.action?.type)}
                             </Text>
                             {RATE_ACTIONS.includes(item?.action?.type ?? '') && (
                               <Text
