@@ -20,7 +20,6 @@ $exceptions_color = $default_template['colors']['typography']['exceptions'] ?? E
 $divider_color = $default_template['colors']['background']['divider'] ?? EmailDefaultTemplate::BACKGROUND_COLOR_DIVIDER;
 
 $is_tax_inclusive = !empty($order['is_tax_inclusive']);
-$price_variant = $is_tax_inclusive ? 'inclusive' : 'exclusive';
 $tax_lines = $order['tax_lines'] ?? [];
 $tax_total = $totals['invoiced_tax_total_money_object'] ?? null;
 $order_discount = $totals['invoiced_order_discount_money_object'] ?? null;
@@ -73,8 +72,8 @@ $order_discount = $totals['invoiced_order_discount_money_object'] ?? null;
                         </td>
                         <td style="padding-left: 16px; padding-bottom: 16px; vertical-align: center; text-align: right; white-space: nowrap;">
                             <?php
-                            $item_total_display = $item['invoiced_subtotal_' . $price_variant . '_money_object']->display ?? '';
-                            $item_price_display = $item['invoiced_strikethrough_price_' . $price_variant . '_money_object']->display ?? '';
+                            $item_total_display = $item['invoiced_subtotal_money_object']->display ?? '';
+                            $item_price_display = $item['invoiced_strikethrough_price_money_object']->display ?? '';
                             ?>
                             <p data-email-part="colors.typography.body" style="margin: 0; font-size: 13px; font-weight: 500; color: <?php echo esc_attr($body_color); ?>;">
                                 <?php echo esc_html($item_total_display); ?>
@@ -95,7 +94,7 @@ $order_discount = $totals['invoiced_order_discount_money_object'] ?? null;
                         <?php echo esc_html__('Subtotal', 'kirki-ecommerce'); ?>
                     </td>
                     <td data-email-part="colors.typography.body" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right;">
-                        <?php echo esc_html($totals['invoiced_items_subtotal_' . $price_variant . '_money_object']->display ?? ''); ?>
+                        <?php echo esc_html($totals['invoiced_items_subtotal_money_object']->display ?? ''); ?>
                     </td>
                 </tr>
                 <?php if (!empty($order_discount->raw)) : ?>
@@ -115,7 +114,7 @@ $order_discount = $totals['invoiced_order_discount_money_object'] ?? null;
                         <?php echo esc_html__('Total', 'kirki-ecommerce'); ?>
                     </td>
                     <td data-email-part="colors.typography.body colors.background.divider" style="padding-bottom: 8px; font-size: 13px; font-weight: 400; color: <?php echo esc_attr($body_color); ?>; text-align: right; border-top: 1px solid <?php echo esc_attr($divider_color); ?>;">
-                        <?php echo esc_html($totals['invoiced_order_total_' . $price_variant . '_money_object']->display ?? ''); ?>
+                        <?php echo esc_html($totals['invoiced_order_total_money_object']->display ?? ''); ?>
                     </td>
                 </tr>
                 <tr>

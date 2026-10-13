@@ -81,13 +81,14 @@ class RecalculateCartAction
 
         $discount_result = $this->get_discount_result($context);
         $tax_result = $this->get_tax_result($context, $discount_result);
+        $undiscounted_tax_result = $this->get_tax_result($context, new DiscountCalculationResultDTO());
         $is_inclusive_tax = $this->is_tax_inclusive_price();
 
         $items = [];
         $items_count = 0;
 
         foreach ($context->items as $item) {
-            $items[$item->variant_id] = $this->build_item_result($item, $discount_result, $tax_result, $is_inclusive_tax);
+            $items[$item->variant_id] = $this->build_item_result($item, $discount_result, $tax_result, $undiscounted_tax_result, $is_inclusive_tax);
             $items_count += $item->quantity;
         }
 
@@ -357,27 +358,35 @@ class RecalculateCartAction
      *
      * In tax-inclusive mode the tax is not added on top of the item total. The
      * subtotal, unit price and regular unit price are always excluded of tax,
-     * regardless of the store's tax-inclusive-price setting - see
-     * exclude_tax().
+     * regardless of the store's tax-inclusive-price setting. The tax excluded
+     * is the item's tax before any discount, so the subtotal stays net however
+     * large the discount is - see exclude_tax().
+     *
+     * The base_catalog_* figures are the catalog prices as the variant has
+     * them, never excluded of tax, so they include tax exactly when the store
+     * prices items inclusive of tax.
      *
      * @since 1.0.0
      *
-     * @param CalculationItemDTO           $item             Cart item to price.
-     * @param DiscountCalculationResultDTO $discount_result  Discounts for the whole cart.
-     * @param TaxCalculationResultDTO      $tax_result       Tax lines for the whole cart.
-     * @param bool                         $is_inclusive_tax Whether prices already include tax.
+     * @param CalculationItemDTO           $item                    Cart item to price.
+     * @param DiscountCalculationResultDTO $discount_result         Discounts for the whole cart.
+     * @param TaxCalculationResultDTO      $tax_result              Tax lines for the whole cart, after discounts.
+     * @param TaxCalculationResultDTO      $undiscounted_tax_result Tax lines for the whole cart, before any discount.
+     * @param bool                         $is_inclusive_tax        Whether prices already include tax.
      * @return CalculationItemDTO Cloned item with base_* amounts set.
      */
-    protected function build_item_result(CalculationItemDTO $item, DiscountCalculationResultDTO $discount_result, TaxCalculationResultDTO $tax_result, bool $is_inclusive_tax): CalculationItemDTO
+    protected function build_item_result(CalculationItemDTO $item, DiscountCalculationResultDTO $discount_result, TaxCalculationResultDTO $tax_result, TaxCalculationResultDTO $undiscounted_tax_result, bool $is_inclusive_tax): CalculationItemDTO
     {
         $item_result = clone $item;
 
         $net_total_money = $this->calculate_item_net_total($item);
         $discount_money = $this->calculate_item_discount($item, $net_total_money, $discount_result);
         $taxable_amount_money = $net_total_money->minus($discount_money);
+        $product_coupon_discount_money = Money::of_minor($discount_result->product_item_discounts[$item->variant_id] ?? 0);
 
         $tax_lines = $tax_result->items[$item->variant_id] ?? [];
         $tax_amount_money = $this->sum_tax_amount($tax_lines);
+        $undiscounted_tax_amount_money = $this->sum_tax_amount($undiscounted_tax_result->items[$item->variant_id] ?? []);
 
         $item_total_money = $taxable_amount_money;
 
@@ -385,9 +394,9 @@ class RecalculateCartAction
             $item_total_money = $item_total_money->plus($tax_amount_money);
         }
 
-        $tax_fraction = $this->calculate_tax_fraction($tax_amount_money, $taxable_amount_money, $is_inclusive_tax);
+        $tax_fraction = $this->calculate_tax_fraction($undiscounted_tax_amount_money, $net_total_money, $is_inclusive_tax);
 
-        $exclusive_net_total_money = $this->exclude_tax($net_total_money, $tax_fraction);
+        $exclusive_net_total_money = $is_inclusive_tax ? $net_total_money->minus($undiscounted_tax_amount_money) : $net_total_money;
         $exclusive_unit_price_money = $this->exclude_tax(Money::of_minor($item->base_unit_price), $tax_fraction);
         $exclusive_regular_unit_price_money = $this->exclude_tax(Money::of_minor($item->base_product_total), $tax_fraction);
         $product_total_money = $exclusive_regular_unit_price_money->multipliedBy($item->quantity);
@@ -402,6 +411,11 @@ class RecalculateCartAction
         $item_result->base_unit_price = $exclusive_unit_price_money->getMinorAmount()->toInt();
         $item_result->base_regular_unit_price = $exclusive_regular_unit_price_money->getMinorAmount()->toInt();
         $item_result->base_regular_tax_amount = $regular_tax_amount_money->getMinorAmount()->toInt();
+
+        $item_result->base_catalog_regular_price = $item->base_product_total;
+        $item_result->base_catalog_sale_price = $item->base_unit_price;
+        $item_result->base_catalog_product_coupon_discounted_subtotal = $net_total_money->minus($product_coupon_discount_money)->getMinorAmount()->toInt();
+        $item_result->base_discount_tax_amount = $undiscounted_tax_amount_money->minus($tax_amount_money)->getMinorAmount()->toInt();
 
         return $item_result;
     }

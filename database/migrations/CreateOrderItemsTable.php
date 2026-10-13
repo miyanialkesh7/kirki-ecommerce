@@ -48,6 +48,15 @@ class CreateOrderItemsTable implements Migration
             $table->integer('invoiced_regular_tax_total')->default(0);
             $table->integer('base_regular_tax_total')->default(0);
 
+            $table->integer('invoiced_catalog_regular_price')->default(0)->comment('Unit regular price exactly as set on the variant, in the invoiced currency; includes tax when orders.is_tax_inclusive is true');
+            $table->integer('base_catalog_regular_price')->default(0)->comment('Unit regular price exactly as set on the variant, in the base currency; includes tax when orders.is_tax_inclusive is true');
+            $table->integer('invoiced_catalog_sale_price')->default(0)->comment('Unit price sold at (sale price, or regular price when no sale was active) exactly as set on the variant, in the invoiced currency; includes tax when orders.is_tax_inclusive is true');
+            $table->integer('base_catalog_sale_price')->default(0)->comment('Unit price sold at (sale price, or regular price when no sale was active) exactly as set on the variant, in the base currency; includes tax when orders.is_tax_inclusive is true');
+            $table->integer('invoiced_catalog_product_coupon_discounted_subtotal')->default(0)->comment('Line total (catalog sale price x quantity) after product-scoped coupons only, before order-wide coupons, in the invoiced currency; includes tax when orders.is_tax_inclusive is true');
+            $table->integer('base_catalog_product_coupon_discounted_subtotal')->default(0)->comment('Line total (catalog sale price x quantity) after product-scoped coupons only, before order-wide coupons, in the base currency; includes tax when orders.is_tax_inclusive is true');
+            $table->integer('invoiced_discount_tax_total')->default(0)->comment('Tax removed from this line by all discounts (tax before any discount minus tax_total), in the invoiced currency');
+            $table->integer('base_discount_tax_total')->default(0)->comment('Tax removed from this line by all discounts (tax before any discount minus tax_total), in the base currency');
+
             $table->integer('quantity')->default(1);
 
             $table->integer('invoiced_subtotal')->default(0);

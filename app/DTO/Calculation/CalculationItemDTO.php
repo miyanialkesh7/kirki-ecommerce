@@ -49,4 +49,12 @@ class CalculationItemDTO extends DTO
     public $base_regular_unit_price = 0;
     /** @var int */
     public $base_regular_tax_amount = 0;
+    /** @var int */
+    public $base_catalog_regular_price = 0;
+    /** @var int */
+    public $base_catalog_sale_price = 0;
+    /** @var int */
+    public $base_catalog_product_coupon_discounted_subtotal = 0;
+    /** @var int */
+    public $base_discount_tax_amount = 0;
 }
