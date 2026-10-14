@@ -42,7 +42,10 @@ class CurrencyExchangeController
     /**
      * Pull fresh exchange rates from the configured provider on demand.
      *
-     * Responds with 400 when no provider is configured or the sync fails.
+     * Responds with 400 when no provider is configured or the sync fails. A
+     * successful sync clears the error of the last failed automatic sync. With
+     * automatic updates on, the next automatic sync moves to one interval after
+     * this one, whether this sync succeeds or fails.
      *
      * @since 1.0.0
      *
@@ -59,10 +62,15 @@ class CurrencyExchangeController
 
         try {
             CurrencyExchange::sync();
+            CurrencyExchange::clear_sync_error();
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ], Response::BAD_REQUEST);
+        } finally {
+            if (CurrencyExchange::is_automatic_update_active()) {
+                CurrencyExchange::reschedule_after_sync();
+            }
         }
 
         $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);

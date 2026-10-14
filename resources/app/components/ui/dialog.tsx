@@ -293,6 +293,7 @@ const styles = defineStyles({
     rowGap: theme.spacing[2],
     padding: `${theme.spacing[4]} ${theme.spacing[6]}`,
     paddingRight: theme.spacing[12],
+    borderBottom: `1px solid ${theme.colors.border.default}`,
   },
   footer: {
     display: 'flex',
@@ -301,6 +302,7 @@ const styles = defineStyles({
     justifyContent: 'flex-end',
     columnGap: theme.spacing[2],
     padding: `${theme.spacing[4]} ${theme.spacing[6]}`,
+    borderTop: `1px solid ${theme.colors.border.default}`,
   },
   title: {
     margin: 0,
