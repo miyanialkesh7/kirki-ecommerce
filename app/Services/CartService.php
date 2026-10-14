@@ -23,7 +23,6 @@ use Kirki\Ecommerce\Framework\Supports\Facades\DB;
 
 use function Kirki\Ecommerce\App\base_currency;
 use function Kirki\Ecommerce\App\customer;
-use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\request;
 use function Kirki\Ecommerce\Framework\throw_if;
 use function Kirki\Ecommerce\Framework\uuid;
@@ -35,6 +34,21 @@ use function Kirki\Ecommerce\Framework\uuid;
  */
 class CartService
 {
+    /** @var InventoryService */
+    protected $inventory_service;
+
+    /**
+     * Set up the service.
+     *
+     * @since 1.0.0
+     *
+     * @param InventoryService $inventory_service Stock and per-order limit checks.
+     */
+    public function __construct(InventoryService $inventory_service)
+    {
+        $this->inventory_service = $inventory_service;
+    }
+
     /**
      * Resolve the canonical cart for the given identity.
      *
@@ -568,12 +582,10 @@ class CartService
                 $owned_items[$item->variant_id] = $item;
             }
 
-            $inventory_service = app()->make(InventoryService::class);
-
             foreach ($guest_cart->items as $guest_item) {
                 $variant_id = $guest_item->variant_id;
                 $existing_item = $owned_items[$variant_id] ?? null;
-                $quantity = $inventory_service->max_purchasable_quantity((int) $variant_id, (int) $guest_item->quantity);
+                $quantity = $this->inventory_service->max_purchasable_quantity($variant_id, $guest_item->quantity);
 
                 if ($quantity < 1) {
                     continue;
@@ -590,11 +602,11 @@ class CartService
                 ]);
             }
 
-            $owned_coupon_ids = array_map('intval', $owned_cart->coupons->pluck('id')->all());
+            $owned_coupon_ids = $owned_cart->coupons->pluck('id')->all();
 
             foreach ($guest_cart->coupons as $guest_coupon) {
-                if (!in_array((int) $guest_coupon->id, $owned_coupon_ids, true)) {
-                    $this->add_coupon($owned_cart->id, (int) $guest_coupon->id);
+                if (!in_array($guest_coupon->id, $owned_coupon_ids, true)) {
+                    $this->add_coupon($owned_cart->id, $guest_coupon->id);
                 }
             }
 
