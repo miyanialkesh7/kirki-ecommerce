@@ -247,6 +247,11 @@ describe('mediaId', () => {
     expect(result.logo).toEqual({ id: 9, poster: null });
   });
 
+  it('does not treat an object with id and type but no url as media', () => {
+    const result = schema.parse({ logo: { id: 'method-0002', type: 'local_pickup' } });
+    expect(result.logo).toBeNull();
+  });
+
   it('maps empty and nullish values to null', () => {
     expect(schema.parse({ logo: null }).logo).toBeNull();
     expect(schema.parse({ logo: undefined }).logo).toBeNull();

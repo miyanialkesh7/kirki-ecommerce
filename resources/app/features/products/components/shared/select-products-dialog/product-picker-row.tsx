@@ -228,11 +228,6 @@ const ProductPickerRow = ({
                   <Flex gap={3} align="center">
                     <Image src={variant.thumbnail} alt={variant.variantLabel} size="sm" />
                     <Text variant="small">{variant.variantLabel}</Text>
-                    {isLocked && (
-                      <Badge variant="destructive">
-                        {__('Item already picked', 'kirki-ecommerce')}
-                      </Badge>
-                    )}
                   </Flex>
                 </Flex>
               </TableCell>

@@ -24,41 +24,42 @@ The manual order calculation payload SHALL expose every monetary figure only as 
 - **WHEN** any monetary figure is rendered in the payload
 - **THEN** it appears only as a money object, with no separate bare numeric key duplicating that same amount
 
-### Requirement: Item and root subtotal figures expose both a tax-exclusive and a tax-inclusive amount
+### Requirement: Item and root subtotal figures are exposed once, in the store's tax mode
 
-Every calculated line item's subtotal, and the root items-subtotal and order-total figures, SHALL expose both a tax-exclusive money object and a tax-inclusive money object, in the base currency, as flat sibling keys. It SHALL NOT expose a single subtotal money object whose tax treatment is ambiguous.
+Every calculated line item's subtotal, and the root items-subtotal and order-total figures, SHALL be exposed as a single money object in the base currency, in the store's current tax mode. The payload SHALL expose that mode as an `is_tax_inclusive` flag. It SHALL NOT expose a tax-exclusive and a tax-inclusive variant of the same figure.
 
 #### Scenario: Calculation priced under tax-exclusive pricing
 
 - **WHEN** an admin prices a manual order under tax-exclusive pricing
-- **THEN** each line item's tax-exclusive subtotal money object equals its charged subtotal, and its tax-inclusive subtotal money object equals that amount plus the item's own tax total
+- **THEN** `is_tax_inclusive` is false and each line item's subtotal money object excludes tax
 
 #### Scenario: Calculation priced under tax-inclusive pricing
 
 - **WHEN** an admin prices a manual order under tax-inclusive pricing
-- **THEN** each line item's tax-exclusive subtotal money object excludes the tax portion of the item's price, and its tax-inclusive subtotal money object includes it
+- **THEN** `is_tax_inclusive` is true and each line item's subtotal money object includes the tax portion of the item's price
 
 #### Scenario: Root items-subtotal and order-total figures
 
 - **WHEN** an admin views the calculation's root pricing breakdown
-- **THEN** the items-subtotal and order-total figures each expose both a tax-exclusive and a tax-inclusive money object
+- **THEN** the items-subtotal and order-total figures are each one money object, in the same tax mode as the line item subtotals
 
-### Requirement: A calculated line item's strikethrough price expose both a tax-exclusive and a tax-inclusive amount
+### Requirement: A calculated line item's strikethrough price is exposed once, in the store's tax mode
 
-When a calculated line item exposes a strikethrough price, it SHALL expose both a tax-exclusive money object and a tax-inclusive money object, in the base currency, as flat sibling keys — matching the tax treatment of its subtotal, so the "was" price is comparable to whichever of the item's subtotal figures it is displayed alongside.
+When a calculated line item exposes a strikethrough price, it SHALL expose it as a single money object in the base currency, in the same tax mode as the item's subtotal, so the "was" price is directly comparable to the subtotal it is displayed alongside. It SHALL NOT expose a tax-exclusive and a tax-inclusive variant of the same figure.
 
 #### Scenario: Strikethrough price shown alongside either subtotal figure
 
 - **WHEN** a calculated line item exposes a strikethrough price
-- **THEN** its tax-exclusive strikethrough money object is comparable to the item's tax-exclusive subtotal, and its tax-inclusive strikethrough money object is comparable to the item's tax-inclusive subtotal
+- **THEN** its strikethrough money object is in the same tax mode as the item's subtotal money object
 
 ### Requirement: The root breakdown separates items subtotal, order discount, and order total
 
 The calculation payload SHALL expose the sum of every item's own subtotal
 net of its product-scoped coupon share, the order-wide coupon discount, and
 an order total equal to the items subtotal minus the order-wide discount,
-computed before shipping and before tax, matching the
-`cart-pricing-breakdown` capability's root breakdown shape.
+computed before shipping and before any tax is added on top, matching the
+`cart-pricing-breakdown` capability's root breakdown shape. All three
+figures SHALL be in the store's current tax mode.
 
 #### Scenario: Order total excludes shipping and tax
 
@@ -129,22 +130,22 @@ Each available shipping method in the calculation payload SHALL expose its cost 
 
 ### Requirement: A calculated line item exposes a per-unit price derived from its line subtotal
 
-Every calculated line item in the manual order calculation payload SHALL expose a per-unit price as a tax-exclusive money object and a tax-inclusive money object, in the base currency, as flat sibling keys. Each per-unit figure SHALL equal the matching line-subtotal figure the item exposes divided by the item's quantity, rounded up to the currency's minor unit. So, like the line subtotal, the per-unit price SHALL be net of only that item's own product-scoped coupon share.
+Every calculated line item in the manual order calculation payload SHALL expose a per-unit price as a single money object in the base currency, in the store's current tax mode. The per-unit figure SHALL equal the line-subtotal figure the item exposes divided by the item's quantity, rounded up to the currency's minor unit. So, like the line subtotal, the per-unit price SHALL be net of only that item's own product-scoped coupon share.
 
 #### Scenario: Line subtotal divides evenly
 
-- **WHEN** a calculated line item has quantity 2, a tax-exclusive line subtotal of 70.00 and a tax-inclusive line subtotal of 77.00
-- **THEN** its tax-exclusive unit price is 35.00 and its tax-inclusive unit price is 38.50
+- **WHEN** a calculated line item has quantity 2 and a line subtotal of 70.00
+- **THEN** its unit price is 35.00
 
 #### Scenario: Line subtotal does not divide evenly
 
-- **WHEN** a calculated line item has quantity 3 and a tax-exclusive line subtotal of 10.00
-- **THEN** its tax-exclusive unit price is 3.34, rounded up, and its line subtotal is still 10.00
+- **WHEN** a calculated line item has quantity 3 and a line subtotal of 10.00
+- **THEN** its unit price is 3.34, rounded up, and its line subtotal is still 10.00
 
 #### Scenario: Item discounted by a product-scoped coupon
 
 - **WHEN** a calculated line item with quantity 2 and a pre-coupon line subtotal of 80.00 is discounted 10.00 by a product-targeted coupon
-- **THEN** its tax-exclusive unit price is 35.00, reflecting the coupon discount
+- **THEN** its unit price is 35.00, reflecting the coupon discount
 
 #### Scenario: Item discounted only by an order-wide coupon
 
@@ -153,19 +154,19 @@ Every calculated line item in the manual order calculation payload SHALL expose 
 
 ### Requirement: A calculated line item exposes a per-unit strikethrough price derived from its line strikethrough price
 
-Every calculated line item in the manual order calculation payload SHALL expose a per-unit strikethrough price as a tax-exclusive money object and a tax-inclusive money object, in the base currency, as flat sibling keys. Each per-unit strikethrough figure SHALL equal the matching line strikethrough figure divided by the item's quantity, rounded up to the currency's minor unit. A per-unit strikethrough figure SHALL be null exactly when the matching line strikethrough figure is null.
+Every calculated line item in the manual order calculation payload SHALL expose a per-unit strikethrough price as a single money object in the base currency, in the store's current tax mode. The per-unit strikethrough figure SHALL equal the line strikethrough figure divided by the item's quantity, rounded up to the currency's minor unit. A per-unit strikethrough figure SHALL be null exactly when the line strikethrough figure is null.
 
 #### Scenario: Item on sale with no product-scoped coupon
 
-- **WHEN** a calculated line item with quantity 2 is on sale, with a tax-exclusive line strikethrough price of 100.00 (its regular-price total)
-- **THEN** its tax-exclusive unit strikethrough price is 50.00
+- **WHEN** a calculated line item with quantity 2 is on sale, with a line strikethrough price of 100.00 (its regular-price total)
+- **THEN** its unit strikethrough price is 50.00
 
 #### Scenario: Item with nothing struck through
 
-- **WHEN** a calculated line item is neither on sale nor discounted by a product-scoped coupon, so its line strikethrough figures are null
-- **THEN** both of its unit strikethrough figures are null
+- **WHEN** a calculated line item is neither on sale nor discounted by a product-scoped coupon, so its line strikethrough figure is null
+- **THEN** its unit strikethrough figure is null
 
 #### Scenario: Unit strikethrough is comparable to unit price
 
 - **WHEN** a calculated line item exposes a unit strikethrough price
-- **THEN** its tax-exclusive unit strikethrough figure is comparable to its tax-exclusive unit price, and its tax-inclusive unit strikethrough figure to its tax-inclusive unit price
+- **THEN** it is in the same tax mode as the item's unit price, so the two are directly comparable

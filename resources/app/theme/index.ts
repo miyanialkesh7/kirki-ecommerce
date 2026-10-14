@@ -267,7 +267,7 @@ const theme = {
       warning: cssVar('orange2'),
     },
     text: {
-      brand: cssVar('violet2'),
+      brand: cssVar('brand1'),
       caution: cssVar('yellow2'),
       critical: cssVar('red3'),
       disabled: cssVar('gray8'),

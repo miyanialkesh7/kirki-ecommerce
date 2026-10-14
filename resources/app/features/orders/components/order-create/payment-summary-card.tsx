@@ -18,10 +18,9 @@ const EMPTY_AMOUNT = '—';
 
 type PaymentSummaryTotals = Pick<
   OrderCalculation['totals'],
-  | 'base_items_subtotal_exclusive_money_object'
-  | 'base_items_subtotal_inclusive_money_object'
-  | 'base_order_total_exclusive_money_object'
-  | 'base_order_total_inclusive_money_object'
+  | 'base_items_subtotal_money_object'
+  | 'base_order_total_money_object'
+  | 'base_tax_total_money_object'
   | 'base_shipping_amount_money_object'
   | 'base_total_money_object'
 >;
@@ -47,6 +46,7 @@ type PaymentSummaryCardProps = {
   itemsCount?: number;
   availableShippingMethods?: OrderCalculation['available_shipping_methods'];
   shippingMethodName?: string | null;
+  isTaxInclusive?: boolean;
   isCalculating?: boolean;
   isDiscountEditable?: boolean;
   isShippingEditable?: boolean;
@@ -74,18 +74,15 @@ const PaymentSummaryCard = ({
   itemsCount,
   availableShippingMethods = [],
   shippingMethodName,
+  isTaxInclusive,
   isCalculating,
   isDiscountEditable,
   isShippingEditable,
   badge,
   actions,
 }: PaymentSummaryCardProps) => {
-  const subtotalDisplay = totals
-    ? totals.base_items_subtotal_exclusive_money_object.display
-    : EMPTY_AMOUNT;
-  const totalDisplay = totals
-    ? totals.base_order_total_exclusive_money_object.display
-    : EMPTY_AMOUNT;
+  const subtotalDisplay = totals ? totals.base_items_subtotal_money_object.display : EMPTY_AMOUNT;
+  const totalDisplay = totals ? totals.base_order_total_money_object.display : EMPTY_AMOUNT;
   const shippingDisplay = totals?.base_shipping_amount_money_object.display ?? EMPTY_AMOUNT;
   const orderTotalDisplay = totals?.base_total_money_object.display ?? EMPTY_AMOUNT;
 
@@ -108,7 +105,7 @@ const PaymentSummaryCard = ({
         <Flex direction="column" gap={2} cssOverride={styles.dashedCard}>
           <Flex justify="space-between">
             <Text variant="small" color="secondary" cssOverride={styles.info}>
-              {__('Subtotal (Excl. tax)', 'kirki-ecommerce')}
+              {__('Subtotal', 'kirki-ecommerce')}
             </Text>
             {isProductSelected ? (
               <Flex justify="space-between" grow={1}>
@@ -219,26 +216,25 @@ const PaymentSummaryCard = ({
             </Flex>
           </Flex>
 
-          {taxLines.map((taxLine, index) => (
-            <Flex key={`${taxLine.name}-${taxLine.rate}`} justify="space-between">
-              <Text variant="tiny" color="secondary" cssOverride={styles.info}>
-                {index === 0 ? __('Estimated Tax', 'kirki-ecommerce') : ''}
-              </Text>
-              <Flex justify="space-between" grow={1}>
-                <Text variant="small" color="secondary">
-                  {sprintf('%s %s%%', taxLine.name, taxLine.rate)}
-                </Text>
-                <Text variant="small">{taxLine.base_amount_money_object.display}</Text>
-              </Flex>
-            </Flex>
-          ))}
-
-          {taxLines.length === 0 && (
+          {!isTaxInclusive && (
             <Flex justify="space-between">
               <Text variant="tiny" color="secondary" cssOverride={styles.info}>
                 {__('Estimated tax', 'kirki-ecommerce')}
               </Text>
-              <Text variant="small">{EMPTY_AMOUNT}</Text>
+              {taxLines.length === 0 ? (
+                <Text variant="small">{EMPTY_AMOUNT}</Text>
+              ) : (
+                <Flex direction="column" gap={1} grow={1}>
+                  {taxLines.map((taxLine) => (
+                    <Flex key={`${taxLine.name}-${taxLine.rate}`} justify="space-between">
+                      <Text variant="small" color="secondary">
+                        {sprintf('%s %s%%', taxLine.name, taxLine.rate)}
+                      </Text>
+                      <Text variant="small">{taxLine.base_amount_money_object.display}</Text>
+                    </Flex>
+                  ))}
+                </Flex>
+              )}
             </Flex>
           )}
 
@@ -252,6 +248,31 @@ const PaymentSummaryCard = ({
               {orderTotalDisplay}
             </Text>
           </Flex>
+
+          {isTaxInclusive && totals && taxLines.length > 0 && (
+            <Flex direction="column" gap={1}>
+              <Text variant="tiny" color="secondary" weight="medium">
+                {/* @todo: need to fix the label of incl. tax */}
+                {sprintf(
+                  /* translators: %s: total tax amount included in the order total */
+                  __('Incl. Tax %s', 'kirki-ecommerce'),
+                  totals.base_tax_total_money_object.display,
+                )}
+              </Text>
+              <Flex cssOverride={{ paddingLeft: theme.spacing[3] }} direction="column" gap={1}>
+                {taxLines.map((taxLine, index) => (
+                  <Flex key={index} gap={2}>
+                    <Text variant="tiny" color="subdued">
+                      {sprintf('%s %s%%', taxLine.name, taxLine.rate)}
+                    </Text>
+                    <Text variant="tiny" color="subdued">
+                      {taxLine.base_amount_money_object.display}
+                    </Text>
+                  </Flex>
+                ))}
+              </Flex>
+            </Flex>
+          )}
         </Flex>
       </CardContent>
       {Boolean(actions) && <CardFooter>{actions}</CardFooter>}

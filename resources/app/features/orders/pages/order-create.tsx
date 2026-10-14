@@ -41,6 +41,8 @@ const OrderCreateContent = () => {
     (method) => String(method.id) === shippingMethodId,
   )?.name;
 
+  const isDirty = form.formState.isDirty;
+
   return (
     <Page containerSize="xl">
       <Form {...form}>
@@ -52,9 +54,11 @@ const OrderCreateContent = () => {
               <Button variant="ghost" onClick={handleBack}>
                 {__('Cancel', 'kirki-ecommerce')}
               </Button>
-              <Button variant="primary" onClick={handleSubmit} loading={isCreating}>
-                {__('Create Order', 'kirki-ecommerce')}
-              </Button>
+              {isDirty && (
+                <Button variant="primary" onClick={handleSubmit} loading={isCreating}>
+                  {__('Create Order', 'kirki-ecommerce')}
+                </Button>
+              )}
             </>
           }
           hasBack
@@ -68,17 +72,20 @@ const OrderCreateContent = () => {
                 onQuantityChange={handleQuantityChange}
                 onRemoveItem={handleRemoveItem}
               />
-              <PaymentSummaryCard
-                totals={calculation?.totals}
-                coupons={calculation?.coupons}
-                taxLines={calculation?.tax_lines}
-                itemsCount={calculation?.items_count}
-                availableShippingMethods={calculation?.available_shipping_methods}
-                shippingMethodName={selectedShippingMethodName}
-                isCalculating={isCalculating}
-                isDiscountEditable
-                isShippingEditable
-              />
+              {selections.length > 0 && (
+                <PaymentSummaryCard
+                  totals={calculation?.totals}
+                  coupons={calculation?.coupons}
+                  taxLines={calculation?.tax_lines}
+                  itemsCount={calculation?.items_count}
+                  availableShippingMethods={calculation?.available_shipping_methods}
+                  shippingMethodName={selectedShippingMethodName}
+                  isTaxInclusive={calculation?.is_tax_inclusive}
+                  isCalculating={isCalculating}
+                  isDiscountEditable
+                  isShippingEditable
+                />
+              )}
             </Flex>
 
             <Flex
