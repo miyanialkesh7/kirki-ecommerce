@@ -34,6 +34,21 @@ use function Kirki\Ecommerce\Framework\uuid;
  */
 class CartService
 {
+    /** @var InventoryService */
+    protected $inventory_service;
+
+    /**
+     * Set up the service.
+     *
+     * @since 1.0.0
+     *
+     * @param InventoryService $inventory_service Stock and per-order limit checks.
+     */
+    public function __construct(InventoryService $inventory_service)
+    {
+        $this->inventory_service = $inventory_service;
+    }
+
     /**
      * Resolve the canonical cart for the given identity.
      *
@@ -540,10 +555,14 @@ class CartService
     }
 
     /**
-     * Merge a guest cart's items into the user's cart, then delete the guest cart.
+     * Merge a guest cart's items and coupons into the user's cart, then delete the guest cart.
      *
      * Runs in a transaction. Items for a variant already in the user's cart
-     * take the guest item's quantity; the rest are moved across.
+     * take the guest item's quantity; the rest are moved across. Every quantity
+     * is lowered to what stock and the per-order limit allow, and never rejected,
+     * because this runs on every cart read. A guest-only item with no allowed
+     * quantity is dropped. Guest coupons not already on the user's cart are
+     * copied; pricing later drops any that no longer apply.
      *
      * @since 1.0.0
      *
@@ -566,15 +585,29 @@ class CartService
             foreach ($guest_cart->items as $guest_item) {
                 $variant_id = $guest_item->variant_id;
                 $existing_item = $owned_items[$variant_id] ?? null;
+                $quantity = $this->inventory_service->max_purchasable_quantity($variant_id, $guest_item->quantity);
+
+                if ($quantity < 1) {
+                    continue;
+                }
 
                 if ($existing_item) {
-                    $this->update_item($existing_item->id, ['quantity' => $guest_item->quantity]);
+                    $this->update_item($existing_item->id, ['quantity' => $quantity]);
                     continue;
                 }
 
                 $guest_item->update([
                     'cart_id' => $owned_cart->id,
+                    'quantity' => $quantity,
                 ]);
+            }
+
+            $owned_coupon_ids = $owned_cart->coupons->pluck('id')->all();
+
+            foreach ($guest_cart->coupons as $guest_coupon) {
+                if (!in_array($guest_coupon->id, $owned_coupon_ids, true)) {
+                    $this->add_coupon($owned_cart->id, $guest_coupon->id);
+                }
             }
 
             CartModel::where('id', $guest_cart->id)->delete();
