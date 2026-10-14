@@ -119,7 +119,6 @@ class UpdateOrderAction
     public function execute(UpdateOrderPayloadDTO $dto)
     {
         // @todo Should we allow to edit the order if its status is cancelled or refunded?
-        $order = $this->order_service->find_order_or_fail($dto->id);
         $context = $this->prepare_calculation_context_dto($dto);
 
         throw_if(!$this->shipping_service->has_valid_shipping_method($context), __('Invalid shipping method', 'kirki-ecommerce'));
@@ -129,6 +128,10 @@ class UpdateOrderAction
         DB::begin_transaction();
 
         try {
+            // Wait for any edit or cancel of this order already running, then read the order as it is now.
+            $this->order_service->lock_order($dto->id);
+            $order = $this->order_service->find_order_or_fail($dto->id);
+
             $exchange_rate = Currency::exchange_rate($dto->currency_code);
             $this->inventory_service->collect_stock_alerts(fn() => $this->sync_order_items($order, $calculated_result, $dto->currency_code, $exchange_rate));
 

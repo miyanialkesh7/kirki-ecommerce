@@ -266,6 +266,116 @@ class VariantService
     }
 
     /**
+     * Decrease the available quantity of a variant in one statement.
+     *
+     * When stock is required, the statement only matches a row that still holds
+     * the amount, so concurrent requests cannot take the same stock twice.
+     *
+     * @since 1.0.0
+     *
+     * @param int  $id            Variant ID.
+     * @param int  $amount        Amount to subtract.
+     * @param bool $require_stock Whether the available quantity must cover the amount.
+     * @return bool False when the amount is not positive or no row matched.
+     */
+    public function decrement_available(int $id, int $amount, bool $require_stock)
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        $query = Variant::query()->where('id', $id);
+
+        if ($require_stock) {
+            $query->where('available_quantity', '>=', $amount);
+        }
+
+        return (bool) $query->decrement('available_quantity', $amount);
+    }
+
+    /**
+     * Move an amount from available to committed in one statement.
+     *
+     * When stock is required, the statement only matches a row that still holds
+     * the amount, so concurrent requests cannot reserve the same stock twice.
+     * Both columns change together, so a failed reserve changes neither.
+     *
+     * @since 1.0.0
+     *
+     * @param int  $id            Variant ID.
+     * @param int  $amount        Amount to reserve.
+     * @param bool $require_stock Whether the available quantity must cover the amount.
+     * @return bool False when the amount is not positive or no row matched.
+     */
+    public function reserve_available(int $id, int $amount, bool $require_stock)
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        $query = Variant::query()->where('id', $id);
+
+        if ($require_stock) {
+            $query->where('available_quantity', '>=', $amount);
+        }
+
+        return (bool) $query->decrement('available_quantity', $amount, ['committed_quantity' => $query->raw('committed_quantity + ' . $amount)]);
+    }
+
+    /**
+     * Move at most the committed quantity back to available in one statement.
+     *
+     * The amount moved is the smaller of the request and the committed quantity
+     * at the moment of the update. MySQL applies the assignments from left to
+     * right, so available_quantity must stay before committed_quantity: it has to
+     * read the committed quantity before that column is reduced.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id     Variant ID.
+     * @param int $amount Amount to release.
+     * @return bool False when the amount is not positive or nothing was committed.
+     */
+    public function release_committed(int $id, int $amount)
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        $query = Variant::query()->where('id', $id)->where('committed_quantity', '>', 0);
+
+        return (bool) $query->update([
+            'available_quantity' => $query->raw('available_quantity + LEAST(committed_quantity, ' . $amount . ')'),
+            'committed_quantity' => $query->raw('committed_quantity - LEAST(committed_quantity, ' . $amount . ')'),
+        ]);
+    }
+
+    /**
+     * Remove at most the committed quantity in one statement.
+     *
+     * The amount removed is the smaller of the request and the committed quantity
+     * at the moment of the update.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id     Variant ID.
+     * @param int $amount Amount to confirm.
+     * @return bool False when the amount is not positive or nothing was committed.
+     */
+    public function confirm_committed(int $id, int $amount)
+    {
+        if ($amount <= 0) {
+            return false;
+        }
+
+        $query = Variant::query()->where('id', $id)->where('committed_quantity', '>', 0);
+
+        return (bool) $query->update([
+            'committed_quantity' => $query->raw('committed_quantity - LEAST(committed_quantity, ' . $amount . ')'),
+        ]);
+    }
+
+    /**
      * Delete a variant by ID.
      *
      * @since 1.0.0

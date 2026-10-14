@@ -420,4 +420,39 @@ class CouponService
     {
         return (bool) Coupon::query()->where('id', $id)->decrement($column, $count);
     }
+
+    /**
+     * Count one use of a coupon, only while its usage limit allows it.
+     *
+     * The limit is checked inside the update, so concurrent orders cannot
+     * both take the last remaining use.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Coupon ID.
+     * @return bool False when the coupon is at its usage limit or does not exist.
+     */
+    public function claim_usage(int $id)
+    {
+        return (bool) Coupon::query()
+            ->where('id', $id)
+            ->where_raw('(has_usage_limit = 0 OR current_usage_count < usage_limit)')
+            ->increment('current_usage_count');
+    }
+
+    /**
+     * Give back one counted use of a coupon, never going below zero.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Coupon ID.
+     * @return bool True when a use was given back.
+     */
+    public function release_usage(int $id)
+    {
+        return (bool) Coupon::query()
+            ->where('id', $id)
+            ->where('current_usage_count', '>', 0)
+            ->decrement('current_usage_count');
+    }
 }
