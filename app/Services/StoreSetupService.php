@@ -117,6 +117,9 @@ class StoreSetupService
                 'country' => $data->country,
             ],
             'is_tax_calculation_enabled' => (bool) $data->is_tax_collected,
+            'order_number' => [
+                'prefix' => '#'
+            ]
         ]);
     }
 
