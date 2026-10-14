@@ -74,6 +74,8 @@ const CustomerSummary = ({
       billing_country: address.country,
       billing_phone: address.phone,
       billing_email: address.email,
+    }, {
+      shouldDirty: true,
     });
   };
   return (
