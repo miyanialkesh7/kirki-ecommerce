@@ -141,7 +141,7 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <Flex direction="column" gap={3}>
-          <FieldLabel>
+          <FieldLabel htmlFor="search-coupon">
             <Text variant="heading6" weight="semibold">
               {__('Edit discount', 'kirki-ecommerce')}
             </Text>
@@ -151,6 +151,7 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
             <Popover open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
               <PopoverAnchor asChild>
                 <CommandPrimitive.Input
+                  id="search-coupon"
                   ref={inputRef}
                   value={search}
                   placeholder={__('Enter a discount code', 'kirki-ecommerce')}
@@ -225,7 +226,7 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
                     {sprintf(
                       /* translators: %s: rejected discount code */
                       __(
-                        '"%s" discount code isn\'t valid for the items in your cart',
+                        `"%s" discount code isn't valid for the items in your cart`,
                         'kirki-ecommerce',
                       ),
                       code,
@@ -275,8 +276,7 @@ const DiscountPopover = ({ children }: DiscountPopoverProps) => {
             </Flex>
           )}
 
-          <Separator marginTop={0} marginBottom={0} cssOverride={{ width: '100%' }} />
-
+          <Separator negativeMargin={16} cssOverride={{ width: '100%' }} />
           <Flex gap={2} justify="flex-end">
             <Button variant="outline" onClick={handleDiscard}>
               {__('Cancel', 'kirki-ecommerce')}
@@ -308,7 +308,8 @@ const styles = defineStyles({
   },
   searchInput: {
     width: '100%',
-    minHeight: '28px',
+    minHeight: '32px',
+    maxHeight: '32px',
     margin: 0,
     padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
     border: `1px solid ${theme.colors.border.secondary}`,

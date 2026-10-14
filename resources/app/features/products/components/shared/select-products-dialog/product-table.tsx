@@ -145,7 +145,9 @@ const ProductTable = (props: ProductTableProps) => {
                 />
               </TableHead>
               <TableHead>
-                {isOrderMode ? __('Variants', 'kirki-ecommerce') : __('Products', 'kirki-ecommerce')}
+                {isOrderMode
+                  ? __('Variants', 'kirki-ecommerce')
+                  : __('Products', 'kirki-ecommerce')}
               </TableHead>
               <TableHead>{__('Inventory', 'kirki-ecommerce')}</TableHead>
               <TableHead alignment="right">{__('Price', 'kirki-ecommerce')}</TableHead>

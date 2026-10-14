@@ -82,7 +82,9 @@ const SelectProductsDialogBody = ({
     () =>
       new Set(
         mode === 'order'
-          ? selectedProducts.flatMap((product) => product.variants.map((variant) => variant.variantId))
+          ? selectedProducts.flatMap((product) =>
+              product.variants.map((variant) => variant.variantId),
+            )
           : [],
       ),
   );
@@ -216,7 +218,7 @@ const SelectProductsDialogBody = ({
         </Flex>
         <DialogCloseButton />
       </DialogHeader>
-      <DialogBody cssOverride={{ height: '80vh' }}>
+      <DialogBody cssOverride={{ minHeight: '50svh', maxHeight: '80svh' }}>
         <Flex gap={2}>
           <div style={{ flex: 1 }}>
             <Searchbox
@@ -262,17 +264,14 @@ const SelectProductsDialogBody = ({
         cssOverride={{
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: `${theme.spacing[0]} ${theme.spacing[6]} ${theme.spacing[4]} ${theme.spacing[6]}`,
+          padding: `${theme.spacing[3]} ${theme.spacing[6]} ${theme.spacing[3]} ${theme.spacing[6]}`,
+          borderTop: `1px solid ${theme.colors.border.default}`,
         }}
       >
         {totalResults > 0 && (
           <Pagination disabled={loading}>
             <Flex align="center" gap={2}>
-              <PaginationPageSelect
-                currentPage={page}
-                totalPages={totalPages}
-                onChange={setPage}
-              />
+              <PaginationPageSelect currentPage={page} totalPages={totalPages} onChange={setPage} />
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious disabled={page <= 1} onClick={() => setPage(page - 1)} />
