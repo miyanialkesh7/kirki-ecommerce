@@ -298,6 +298,26 @@ class CurrencySyncScheduleTest extends RestTestCase
     }
 
     /**
+     * A successful Sync now clears the error of the last failed automatic run.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_sync_now_clears_the_automatic_sync_error(): void
+    {
+        FakeCurrencyProvider::$error = 'Invalid API key.';
+        $this->save_currency_settings();
+        $this->run_job($this->stored('sync_token'));
+
+        FakeCurrencyProvider::$error = null;
+        FakeCurrencyProvider::$rates = ['EUR' => 0.7];
+        $this->assert_api_success($this->request('POST', 'currency-exchange/sync'));
+
+        $this->assertNull($this->stored('last_sync_error'));
+        $this->assertNull($this->stored('last_sync_error_at'));
+    }
+
+    /**
      * Sync now with automatic updates off leaves no schedule.
      *
      * @return void

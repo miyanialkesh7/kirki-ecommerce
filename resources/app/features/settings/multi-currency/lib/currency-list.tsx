@@ -1,4 +1,4 @@
-import { formatDistanceStrict, isValid, parse } from 'date-fns';
+import { format, formatDistanceStrict, isValid, parse } from 'date-fns';
 import z from 'zod';
 
 import {
@@ -76,14 +76,26 @@ export type SyncStatus = {
   message: string;
 };
 
-const toRelativeTime = (value: string | null | undefined, now: Date) => {
+const parseSyncTime = (value: string | null | undefined, now: Date) => {
   if (!value) {
-    return '';
+    return null;
   }
 
-  const date = parse(value, 'yyyy-MM-dd HH:mm:ss', now);
+  const date = parse(`${value}Z`, 'yyyy-MM-dd HH:mm:ssX', now);
 
-  return isValid(date) ? formatDistanceStrict(date, now, { addSuffix: true }) : '';
+  return isValid(date) ? date : null;
+};
+
+const toRelativeTime = (value: string | null | undefined, now: Date) => {
+  const date = parseSyncTime(value, now);
+
+  return date ? formatDistanceStrict(date, now, { addSuffix: true }) : '';
+};
+
+export const formatSyncTime = (value: string | null | undefined) => {
+  const date = parseSyncTime(value, new Date());
+
+  return date ? format(date, 'd MMM, yyyy hh:mm:ss a') : '';
 };
 
 const joinSentences = (sentences: string[]) => sentences.filter(Boolean).join(' ');

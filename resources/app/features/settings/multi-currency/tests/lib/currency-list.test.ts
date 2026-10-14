@@ -4,6 +4,7 @@ import type { CurrencyListItem } from '@/features/settings/multi-currency/lib/cu
 import {
   buildCurrencyListItems,
   buildCurrencyUpdatePayload,
+  formatSyncTime,
   getSyncStatus,
   type SyncStatusInput,
 } from '@/features/settings/multi-currency/lib/currency-list';
@@ -98,7 +99,7 @@ describe('buildCurrencyUpdatePayload', () => {
 });
 
 describe('getSyncStatus', () => {
-  const now = new Date(2026, 9, 14, 12, 0, 0);
+  const now = new Date(Date.UTC(2026, 9, 14, 12, 0, 0));
   const connected: SyncStatusInput = {
     apiProvider: 'exchangerate-api',
     providerName: 'ExchangeRate API',
@@ -182,6 +183,16 @@ describe('getSyncStatus', () => {
     expect(status.tone).toBe('default');
   });
 
+  it('reads the stored sync times as UTC', () => {
+    expect(
+      getSyncStatus({
+        ...connected,
+        lastSyncAt: '2026-10-14 11:59:30',
+        now: new Date('2026-10-14T18:00:00+06:00'),
+      }).message,
+    ).toBe('Automatic updates on. Last sync 30 seconds ago. Next sync in 58 minutes.');
+  });
+
   it('leaves out the times that are empty when no sync has completed', () => {
     expect(getSyncStatus({ ...connected, lastSyncAt: null }).message).toBe(
       'Automatic updates on. Next sync in 58 minutes.',
@@ -189,5 +200,19 @@ describe('getSyncStatus', () => {
     expect(getSyncStatus({ ...connected, lastSyncAt: null, nextSyncAt: null }).message).toBe(
       'Automatic updates on.',
     );
+  });
+});
+
+describe('formatSyncTime', () => {
+  it('formats a stored UTC time in the local time zone', () => {
+    const local = new Date(Date.UTC(2026, 9, 14, 13, 33, 7));
+    const expected = `${local.getDate()} Oct, 2026 ${String(local.getHours() % 12 || 12).padStart(2, '0')}:33:07 ${local.getHours() < 12 ? 'AM' : 'PM'}`;
+
+    expect(formatSyncTime('2026-10-14 13:33:07')).toBe(expected);
+  });
+
+  it('returns an empty string for an empty or invalid time', () => {
+    expect(formatSyncTime(null)).toBe('');
+    expect(formatSyncTime('not a date')).toBe('');
   });
 });

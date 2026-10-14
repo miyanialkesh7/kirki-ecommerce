@@ -1,3 +1,4 @@
+import { CheckCircle, Edit } from 'lucide-react';
 import { type Dispatch, type SetStateAction } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -7,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import Flex from '@/components/ui/flex';
 import ProgressBar from '@/components/ui/progressbar';
 import Text from '@/components/ui/text';
+import { formatSyncTime } from '@/features/settings/multi-currency/lib/currency-list';
 import ProviderLogo from '@/features/settings/multi-currency/pages/api-config/provider-logo';
 import type { MultiCurrencySettingsFormInput } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
 import type { CurrencySettings } from '@/schemas/catalog/settings';
@@ -15,7 +17,6 @@ import { defineStyles } from '@/theme/mixins';
 import { dateFormatter } from '@/utils/common';
 import { toDisplayString } from '@/utils/string';
 import { __, sprintf } from '@/wpi18n';
-import { CheckCircle, Edit } from 'lucide-react';
 
 type ApiConfigurationCardProps = {
   providerName: string;
@@ -66,10 +67,8 @@ const ApiConfigurationCard = ({
               </Flex>
               <Text color="secondary" variant="small">
                 {sprintf(
-                  __(`Last tested: %s`, 'kirki-ecommerce'),
-                  currencySettings?.last_sync_at
-                    ? dateFormatter(currencySettings?.last_sync_at, 'datetime')
-                    : __('N/A', 'kirki-ecommerce'),
+                  __(`Last synced: %s`, 'kirki-ecommerce'),
+                  formatSyncTime(currencySettings?.last_sync_at) ?? __('N/A', 'kirki-ecommerce'),
                 )}
               </Text>
             </Flex>

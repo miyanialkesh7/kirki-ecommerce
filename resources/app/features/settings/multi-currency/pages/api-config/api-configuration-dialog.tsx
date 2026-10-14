@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/dialog';
 import Flex from '@/components/ui/flex';
 import { Form } from '@/components/ui/form';
-import Text from '@/components/ui/text';
 import {
   type ApiConfigurationFormInput,
   type ApiConfigurationFormPayload,
@@ -121,19 +120,17 @@ const ApiConfigurationPopup = ({
                   name="api_key"
                   label={__('API Key', 'kirki-ecommerce')}
                   placeholder="******"
-                />
-                <Text variant="paragraph" weight="medium" color="secondary">
-                  {
+                  description={
                     /* translators: %s: provider name */
                     sprintf(
                       __(
-                        'Your API key is encrypted and stored securely. Get your API key from %s',
+                        'Your API key is stored securely. Get your API key from %s',
                         'kirki-ecommerce',
                       ),
                       providerName,
                     )
                   }
-                </Text>
+                />
                 <SelectField
                   name="update_frequency"
                   label={__('Update Frequency', 'kirki-ecommerce')}

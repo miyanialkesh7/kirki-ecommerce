@@ -139,7 +139,11 @@ the provider selection. Select a provider, add its API key and an update frequen
   fails.
 - **A failed sync keeps the current rates.** The error and its time are stored as
   `last_sync_error` and `last_sync_error_at`, and the next run is still queued. The
-  next successful sync clears them.
+  next successful sync, automatic or **Sync now**, clears them. A failed **Sync now**
+  shows its error in a toast and does not store it.
+- **Sync times are stored in UTC** (`last_sync_at`, `next_sync_at`,
+  `last_sync_error_at`, as `Y-m-d H:i:s`). The footer reads them as UTC and shows them
+  relative to the viewer's clock.
 - **A stopped schedule repairs itself.** Once a minute, the queue's maintenance run
   checks the schedule. If automatic updates are on and `next_sync_at` is empty or more
   than one interval in the past, it starts a new schedule.
