@@ -41,7 +41,8 @@ class CurrencyServiceProvider extends ServiceProvider
             $settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
 
             $active_provider_id = $settings->get('api_provider') ?? '';
-            $config = $settings->get('api_config') ?? [];
+            $configs = $settings->get('api_configs');
+            $config = is_array($configs) && is_array($configs[$active_provider_id] ?? null) ? $configs[$active_provider_id] : [];
 
             return new CurrencyExchangeManager($factory, $service, $active_provider_id, $config);
         });

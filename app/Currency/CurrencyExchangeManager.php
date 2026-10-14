@@ -168,7 +168,7 @@ class CurrencyExchangeManager
 
         return (bool) $currency_settings->get('is_automatic_update_enabled')
             && !empty($currency_settings->get('api_provider'))
-            && !empty($currency_settings->get('api_config.api_key'));
+            && !empty($this->get_active_provider_config()['api_key']);
     }
 
     /**
@@ -320,6 +320,61 @@ class CurrencyExchangeManager
     }
 
     /**
+     * Get the API configuration of the selected provider.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> The normalized configuration, or an empty array when the selected provider has none.
+     */
+    public function get_active_provider_config()
+    {
+        $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
+        $provider_id = (string) $currency_settings->get('api_provider');
+        $configs = $this->normalize_provider_configs($currency_settings->get('api_configs'));
+
+        return $configs[$provider_id] ?? [];
+    }
+
+    /**
+     * Normalize a map of provider API configurations keyed by provider id.
+     *
+     * Entries that are not arrays are dropped.
+     *
+     * @since 1.0.0
+     *
+     * @param mixed $configs
+     * @return array<string, array<string, mixed>>
+     */
+    public function normalize_provider_configs($configs)
+    {
+        $normalized = [];
+
+        foreach ((array) $configs as $provider_id => $config) {
+            if (is_array($config)) {
+                $normalized[(string) $provider_id] = $this->normalize_provider_config($config);
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Keep only the known fields of a provider's API configuration.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     */
+    public function normalize_provider_config(array $config)
+    {
+        return [
+            'api_key' => $config['api_key'] ?? null,
+            'update_frequency' => $config['update_frequency'] ?? null,
+        ];
+    }
+
+    /**
      * Get the number of seconds between automatic syncs for the saved update frequency.
      *
      * Falls back to a 24 hour interval for unrecognised frequencies.
@@ -330,7 +385,7 @@ class CurrencyExchangeManager
      */
     public function get_sync_interval()
     {
-        $frequency = Settings::get(OptionKeys::CURRENCY_SETTINGS)->get('api_config.update_frequency');
+        $frequency = $this->get_active_provider_config()['update_frequency'] ?? null;
 
         switch ($frequency) {
             case UpdateFrequency::EVERY_15_MIN:
@@ -378,12 +433,13 @@ class CurrencyExchangeManager
     protected function get_schedule_fingerprint()
     {
         $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
+        $active_config = $this->get_active_provider_config();
 
         return md5((string) wp_json_encode([
             (bool) $currency_settings->get('is_automatic_update_enabled'),
             $currency_settings->get('api_provider'),
-            $currency_settings->get('api_config.api_key'),
-            $currency_settings->get('api_config.update_frequency'),
+            $active_config['api_key'] ?? null,
+            $active_config['update_frequency'] ?? null,
         ]));
     }
 }

@@ -437,7 +437,7 @@ class SettingsSeeder extends Seeder
                 "decimal_separator" => ".",
                 "is_automatic_update_enabled" => true,
                 "api_provider" => null,
-                "api_config" => []
+                "api_configs" => []
             ]
         ];
     }

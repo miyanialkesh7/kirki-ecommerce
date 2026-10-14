@@ -127,6 +127,17 @@ the provider selection. Select a provider, add its API key and an update frequen
   does not delete them.
 - **Syncs need a provider and an API key.** You can save the switch as on before you add
   them, but no automatic sync runs until both are saved.
+- **Each provider keeps its own configuration.** The settings store the API key and
+  update frequency of each provider in `api_configs`, keyed by provider id. There is no
+  separate `api_config`: the sync uses `api_configs[api_provider]`. When you select
+  another provider, the page shows that provider's configuration. A provider with no API
+  key shows **Configure** and an empty dialog. Values that you enter for a provider stay
+  on the page until you save or discard, also when you select another provider in
+  between. Clearing the provider and saving keeps all configurations.
+- **A save merges `api_configs` per provider.** Each provider entry that a save sends
+  replaces that provider's stored entry. Providers that the save does not send keep
+  their stored entry. Only `api_key` and `update_frequency` are stored; other fields are
+  dropped.
 
 - **The save does not wait for the provider.** A background job syncs the rates soon
   after the save, then queues the next sync one interval later. The time of that next
@@ -190,3 +201,6 @@ the provider again.
   the store never resets the rates to the base currency.
 - **No rate caching.** Each sync calls the provider. There is no option to cache
   the rates.
+- **A saved provider configuration cannot be deleted from the page.** Selecting another
+  provider or clearing the provider keeps it. To remove a key, select that provider,
+  enter a new key, and save.

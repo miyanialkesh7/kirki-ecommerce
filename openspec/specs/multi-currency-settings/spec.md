@@ -248,6 +248,23 @@ last known rates. The store SHALL NOT show a rate-caching setting, and the curre
 settings SHALL NOT store or return one. The provider cards SHALL show the selected
 provider's logo.
 
+The currency settings SHALL store the API configuration (API key and update frequency)
+of each provider separately, keyed by provider, and SHALL NOT store a separate
+configuration for the selected provider. The configuration of the selected provider
+SHALL be the one that automatic syncs and "Sync now" use. A save SHALL store each
+provider configuration that it sends and SHALL keep the stored configurations of the
+providers that it does not send. The settings response SHALL return the configuration
+of each provider. The currency settings SHALL NOT store, accept or return a fallback
+behaviour.
+
+When the administrator changes the selected provider, the page SHALL show the
+configuration of the newly selected provider, or an empty configuration when that
+provider has none. The page SHALL show a provider as configured only when that provider
+has an API key. Configuration values entered for a provider SHALL stay on the page until
+the administrator saves or discards the changes; saving SHALL store them and discarding
+SHALL restore the stored configurations. Clearing the provider and saving SHALL keep the
+stored configurations of all providers.
+
 #### Scenario: Saving provider configuration
 
 - **WHEN** the administrator turns the toggle on, selects a provider, enters an API key,
@@ -318,6 +335,52 @@ provider's logo.
 
 - **WHEN** a provider is selected
 - **THEN** the provider card shows that provider's logo next to its name
+
+#### Scenario: Changing to a provider with no saved configuration
+
+- **WHEN** provider A is saved with an API key and the administrator selects provider B,
+  which has no saved configuration
+- **THEN** provider B is not shown as configured
+- **AND** the API configuration dialog for provider B opens with empty values
+
+#### Scenario: Each provider keeps its saved configuration
+
+- **WHEN** provider A is saved with API key "A", then provider B is selected and saved
+  with API key "B"
+- **AND** the administrator selects provider A again
+- **THEN** provider A is shown as configured with API key "A"
+- **AND** saving the page keeps API key "B" saved for provider B
+
+#### Scenario: Unsaved values stay until save or discard
+
+- **WHEN** the administrator enters an API key for provider B and, without saving the
+  page, selects provider A and then provider B again
+- **THEN** provider B shows the entered API key
+- **AND** saving the page stores that API key for provider B
+- **AND** discarding the changes restores the stored configurations
+
+#### Scenario: A save keeps providers it does not send
+
+- **WHEN** provider A and provider B have stored configurations and a save sends only
+  the configuration of provider B
+- **THEN** the stored configuration of provider A does not change
+
+#### Scenario: No fallback behaviour is stored
+
+- **WHEN** a client sends a fallback behaviour in a provider configuration
+- **THEN** it is not stored
+- **AND** the settings response returns no fallback behaviour
+
+#### Scenario: A failed sync keeps the rates
+
+- **WHEN** an automatic sync or "Sync now" fails
+- **THEN** the exchange rates of all currencies do not change
+
+#### Scenario: Clearing the provider keeps saved configurations
+
+- **WHEN** the administrator clears the selected provider and saves
+- **THEN** no provider is selected
+- **AND** selecting a provider that has a saved configuration shows it as configured
 
 ### Requirement: Available currencies panel layout
 

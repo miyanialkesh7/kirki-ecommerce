@@ -28,6 +28,9 @@ use Kirki\Ecommerce\Framework\Facade;
  * @method static void record_sync_error(string $message)
  * @method static void clear_sync_error()
  * @method static int get_sync_interval()
+ * @method static array get_active_provider_config()
+ * @method static array normalize_provider_configs(mixed $configs)
+ * @method static array normalize_provider_config(array $config)
  *
  * @see \Kirki\Ecommerce\App\Currency\CurrencyExchangeManager
  */

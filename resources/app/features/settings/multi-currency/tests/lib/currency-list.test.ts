@@ -5,6 +5,7 @@ import {
   buildCurrencyListItems,
   buildCurrencyUpdatePayload,
   formatSyncTime,
+  getProviderConfig,
   getSyncStatus,
   type SyncStatusInput,
 } from '@/features/settings/multi-currency/lib/currency-list';
@@ -214,5 +215,32 @@ describe('formatSyncTime', () => {
   it('returns an empty string for an empty or invalid time', () => {
     expect(formatSyncTime(null)).toBe('');
     expect(formatSyncTime('not a date')).toBe('');
+  });
+});
+
+describe('getProviderConfig', () => {
+  const apiConfigs = {
+    exchange_rates_api: { api_key: 'key-a', update_frequency: 'every_1_hour' },
+  };
+
+  it('returns the config of the provider', () => {
+    expect(getProviderConfig(apiConfigs, 'exchange_rates_api')).toEqual({
+      api_key: 'key-a',
+      update_frequency: 'every_1_hour',
+    });
+  });
+
+  it('returns null for a provider with no config', () => {
+    expect(getProviderConfig(apiConfigs, 'currency_api')).toBeNull();
+  });
+
+  it('returns null when no provider is selected', () => {
+    expect(getProviderConfig(apiConfigs, null)).toBeNull();
+    expect(getProviderConfig(apiConfigs, '')).toBeNull();
+  });
+
+  it('returns null when there are no configs', () => {
+    expect(getProviderConfig({}, 'exchange_rates_api')).toBeNull();
+    expect(getProviderConfig(undefined, 'exchange_rates_api')).toBeNull();
   });
 });

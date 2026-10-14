@@ -7,6 +7,7 @@ defined('ABSPATH') || exit;
 use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\Constants\PageKeys;
 use Kirki\Ecommerce\Framework\Resource;
+use Kirki\Ecommerce\App\Facades\CurrencyExchange;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Models\Page;
 use Kirki\Ecommerce\App\Supports\Utils;
@@ -179,11 +180,7 @@ class SettingResource extends Resource
             'next_sync_at' => $data['next_sync_at'] ?? null,
             'last_sync_error' => $data['last_sync_error'] ?? null,
             'last_sync_error_at' => $data['last_sync_error_at'] ?? null,
-            'api_config' => !empty($data['api_config']) ? [
-                'api_key' => $data['api_config']['api_key'] ?? null,
-                'update_frequency' => $data['api_config']['update_frequency'] ?? null,
-                'fallback_behaviour' => $data['api_config']['fallback_behaviour'] ?? null,
-            ] : null,
+            'api_configs' => (object) CurrencyExchange::normalize_provider_configs($data['api_configs'] ?? []),
             'base_currency' => $data['base_currency'] ?? null,
             'usage' => !empty($data['usage']) ? [
                 'total' => $data['usage']['total'] ?? null,

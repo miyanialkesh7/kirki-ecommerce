@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import Flex from '@/components/ui/flex';
 import { Form } from '@/components/ui/form';
+import { getProviderConfig } from '@/features/settings/multi-currency/lib/currency-list';
 import {
   type ApiConfigurationFormInput,
   type ApiConfigurationFormPayload,
@@ -53,10 +54,11 @@ const ApiConfigurationPopup = ({
   });
 
   const { control } = useFormContext<MultiCurrencySettingsFormInput>();
-  const apiConfig = useWatch({
+  const [apiProvider, apiConfigs] = useWatch({
     control,
-    name: 'api_config',
+    name: ['api_provider', 'api_configs'],
   });
+  const apiConfig = getProviderConfig(apiConfigs, apiProvider);
 
   useEffect(() => {
     if (!isOpen) {
@@ -69,7 +71,6 @@ const ApiConfigurationPopup = ({
         ? {
             api_key: apiConfig.api_key,
             update_frequency: apiConfig.update_frequency,
-            fallback_behaviour: apiConfig.fallback_behaviour,
           }
         : apiConfigurationDefaultValues,
     );

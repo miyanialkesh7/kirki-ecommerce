@@ -9,6 +9,7 @@ import Flex from '@/components/ui/flex';
 import ProgressBar from '@/components/ui/progressbar';
 import Text from '@/components/ui/text';
 import { formatSyncTime } from '@/features/settings/multi-currency/lib/currency-list';
+import { getProviderConfig } from '@/features/settings/multi-currency/lib/currency-list';
 import ProviderLogo from '@/features/settings/multi-currency/pages/api-config/provider-logo';
 import type { MultiCurrencySettingsFormInput } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
 import type { CurrencySettings } from '@/schemas/catalog/settings';
@@ -37,10 +38,11 @@ const ApiConfigurationCard = ({
       .replace(/_/g, ' ')
       .replace(/\b\w/g, (char) => char.toUpperCase());
 
-  const apiConfig = useWatch({
+  const [apiProvider, apiConfigs] = useWatch({
     control,
-    name: 'api_config',
+    name: ['api_provider', 'api_configs'],
   });
+  const apiConfig = getProviderConfig(apiConfigs, apiProvider);
 
   const usage = currencySettings?.usage;
 

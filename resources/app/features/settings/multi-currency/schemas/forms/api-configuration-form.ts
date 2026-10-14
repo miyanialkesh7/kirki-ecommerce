@@ -9,14 +9,12 @@ const ApiConfigurationFormShape = z.object({
     z.string().nullish().default('every_1_hour'),
     __('Update Frequency is required', 'kirki-ecommerce'),
   ),
-  fallback_behaviour: z.string().nullish().default('last_known_rate'),
 });
 
 export const ApiConfigurationFormSchema = prepareFormSchema(ApiConfigurationFormShape).transform(
   (values) => ({
     api_key: values.api_key,
     update_frequency: values.update_frequency,
-    fallback_behaviour: values.fallback_behaviour,
   }),
 );
 

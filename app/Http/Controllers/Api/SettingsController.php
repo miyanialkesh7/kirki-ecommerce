@@ -7,6 +7,7 @@ defined('ABSPATH') || exit;
 use Kirki\Ecommerce\App\Resources\SettingResource;
 use Kirki\Ecommerce\App\Http\Requests\Settings\SettingsUpdateRequest;
 use Kirki\Ecommerce\App\Constants\OptionKeys;
+use Kirki\Ecommerce\App\Facades\CurrencyExchange;
 
 use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\Framework\Http\Request;
@@ -68,6 +69,10 @@ class SettingsController
     /**
      * Save the request `data` into the settings stored under a settings key.
      *
+     * For the currency settings, each sent provider entry in `api_configs`
+     * replaces that provider's stored entry, and providers that are not sent keep
+     * their stored entry.
+     *
      * @since 1.0.0
      *
      * @param SettingsUpdateRequest $request
@@ -84,6 +89,11 @@ class SettingsController
         }
 
         $settings = Settings::get($key);
+
+        if ($key === OptionKeys::CURRENCY_SETTINGS) {
+            $data['api_configs'] = static::merge_provider_configs($settings->get('api_configs'), $data['api_configs'] ?? null);
+        }
+
         $settings->set($data);
 
         return response()->json([
@@ -93,5 +103,19 @@ class SettingsController
             ]),
             'message' => __('Settings saved', 'kirki-ecommerce'),
         ]);
+    }
+
+    /**
+     * Merge the sent provider API configurations into the stored ones.
+     *
+     * @since 1.0.0
+     *
+     * @param mixed $stored Stored `api_configs` map.
+     * @param mixed $sent   `api_configs` map from the request.
+     * @return array<string, array<string, mixed>>
+     */
+    protected static function merge_provider_configs($stored, $sent)
+    {
+        return CurrencyExchange::normalize_provider_configs($sent) + CurrencyExchange::normalize_provider_configs($stored);
     }
 }

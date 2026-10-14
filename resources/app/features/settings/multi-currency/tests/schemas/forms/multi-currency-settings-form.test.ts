@@ -6,11 +6,7 @@ describe('MultiCurrencySettingsFormSchema', () => {
   const base = {
     is_automatic_update_enabled: false,
     api_provider: '',
-    api_config: {
-      api_key: '',
-      update_frequency: 'every_1_hour',
-      fallback_behaviour: 'last_known_rate',
-    },
+    api_configs: {},
     currency_format: 'short',
     currency_position: 'before',
     thousand_separator: ',',
@@ -24,10 +20,12 @@ describe('MultiCurrencySettingsFormSchema', () => {
       ...base,
       is_automatic_update_enabled: true,
       api_provider: 'exchangerate-api',
-      api_config: { ...base.api_config, api_key: 'secret-key' },
+      api_configs: {
+        'exchangerate-api': { api_key: 'secret-key', update_frequency: 'every_1_hour' },
+      },
     });
     expect(result.is_automatic_update_enabled).toBe(true);
-    expect(result.api_config?.api_key).toBe('secret-key');
+    expect(result.api_configs['exchangerate-api']?.api_key).toBe('secret-key');
   });
 
   it('sends is_automatic_update_enabled as set without a provider or API key', () => {
@@ -61,7 +59,22 @@ describe('MultiCurrencySettingsFormSchema', () => {
   it('sends null for blank api_provider and format fields', () => {
     const result = MultiCurrencySettingsFormSchema.parse(base);
     expect(result.api_provider).toBeNull();
-    expect(result.api_config).toBeNull();
+    expect(result.api_configs).toEqual({});
+  });
+
+  it('sends the configuration of every provider without a fallback behaviour', () => {
+    const result = MultiCurrencySettingsFormSchema.parse({
+      ...base,
+      api_provider: 'currency_api',
+      api_configs: {
+        exchange_rates_api: { api_key: 'key-a', update_frequency: 'every_6_hours' },
+        currency_api: { api_key: '', update_frequency: 'every_1_hour' },
+      },
+    });
+    expect(result.api_configs).toEqual({
+      exchange_rates_api: { api_key: 'key-a', update_frequency: 'every_6_hours' },
+      currency_api: { api_key: null, update_frequency: 'every_1_hour' },
+    });
   });
 
   it('defaults is_automatic_update_enabled to false', () => {

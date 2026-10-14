@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import Switch from '@/components/ui/switch';
 import Text from '@/components/ui/text';
+import { getProviderConfig } from '@/features/settings/multi-currency/lib/currency-list';
 import ApiConfigurationCard from '@/features/settings/multi-currency/pages/api-config/api-configuration-card';
 import ApiConfigurationPopup from '@/features/settings/multi-currency/pages/api-config/api-configuration-dialog';
 import ProviderLogo from '@/features/settings/multi-currency/pages/api-config/provider-logo';
@@ -35,9 +36,9 @@ const ApiConfig = ({ currencySettings }: { currencySettings?: CurrencySettings |
     control,
     name: 'api_provider',
   });
-  const apiConfig = useWatch({
+  const apiConfigs = useWatch({
     control,
-    name: 'api_config',
+    name: 'api_configs',
   });
   const isAutomaticUpdateEnabled = useWatch({
     control,
@@ -67,10 +68,18 @@ const ApiConfig = ({ currencySettings }: { currencySettings?: CurrencySettings |
   const providerName = selectedProvider?.name || '';
 
   const isApiProviderSelected = isDefined(apiProvider) && apiProvider;
-  const hasAPIConfiguration = Boolean(apiConfig?.api_key);
+  const hasAPIConfiguration = Boolean(getProviderConfig(apiConfigs, apiProvider)?.api_key);
+
+  const handleProviderChange = (providerId: string | null) => {
+    setValue('api_provider', providerId, { shouldDirty: true });
+  };
 
   const handlePopupSave = (values: ApiConfigurationFormPayload) => {
-    setValue('api_config', values, { shouldDirty: true });
+    if (!apiProvider) {
+      return;
+    }
+
+    setValue('api_configs', { ...apiConfigs, [apiProvider]: values }, { shouldDirty: true });
   };
 
   const handleAutomaticUpdateChange = (checked: boolean) => {
@@ -117,18 +126,11 @@ const ApiConfig = ({ currencySettings }: { currencySettings?: CurrencySettings |
             <Label htmlFor="api-provider-select">
               {__('Select API Provider', 'kirki-ecommerce')}
             </Label>
-            <Select
-              value={apiProvider ?? undefined}
-              onValueChange={(value) => setValue('api_provider', value, { shouldDirty: true })}
-            >
+            <Select value={apiProvider ?? undefined} onValueChange={handleProviderChange}>
               <SelectTrigger
                 id="api-provider-select"
                 showClear={Boolean(isApiProviderSelected)}
-                onClear={
-                  isApiProviderSelected
-                    ? () => setValue('api_provider', null, { shouldDirty: true })
-                    : undefined
-                }
+                onClear={isApiProviderSelected ? () => handleProviderChange(null) : undefined}
               >
                 <SelectValue placeholder={__('Select', 'kirki-ecommerce')} />
               </SelectTrigger>

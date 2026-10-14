@@ -81,7 +81,7 @@ class CurrencySyncScheduleTest extends RestTestCase
         $this->save_currency_settings([
             'is_automatic_update_enabled' => false,
             'api_provider' => null,
-            'api_config' => null,
+            'api_configs' => null,
             'last_sync_at' => '1999-01-01 00:00:00',
             'next_sync_at' => '1999-01-01 01:00:00',
             'sync_token' => 'client-token',
@@ -122,7 +122,7 @@ class CurrencySyncScheduleTest extends RestTestCase
         $this->save_currency_settings();
         $first_token = $this->stored('sync_token');
 
-        $this->save_currency_settings(['api_config' => $this->api_config(UpdateFrequency::EVERY_15_MIN)]);
+        $this->save_currency_settings(['api_configs' => [FakeCurrencyProvider::ID => $this->provider_config(UpdateFrequency::EVERY_15_MIN)]]);
 
         $this->assertCount(2, $this->queue->pushed(SyncExchangeRatesJob::class));
         $this->assertNotSame($first_token, $this->stored('sync_token'));
@@ -280,7 +280,7 @@ class CurrencySyncScheduleTest extends RestTestCase
     }
 
     /**
-     * A failed Sync now also restarts the schedule.
+     * A failed Sync now keeps the rates and also restarts the schedule.
      *
      * @return void
      * @since 1.0.0
@@ -293,6 +293,7 @@ class CurrencySyncScheduleTest extends RestTestCase
 
         $this->assert_api_error($this->request('POST', 'currency-exchange/sync'), 400);
 
+        $this->assertEquals(0.5, Currency::where('code', 'EUR')->first()->exchange_rate);
         $this->assertNotSame($token, $this->stored('sync_token'));
         $this->assert_next_sync_in(HOUR_IN_SECONDS);
     }
@@ -389,7 +390,7 @@ class CurrencySyncScheduleTest extends RestTestCase
             'decimal_separator' => '.',
             'is_automatic_update_enabled' => true,
             'api_provider' => FakeCurrencyProvider::ID,
-            'api_config' => $this->api_config(UpdateFrequency::EVERY_1_HOUR),
+            'api_configs' => [FakeCurrencyProvider::ID => $this->provider_config(UpdateFrequency::EVERY_1_HOUR)],
         ], $overrides);
 
         $this->assert_api_success($this->request('PUT', 'settings', [
@@ -407,12 +408,11 @@ class CurrencySyncScheduleTest extends RestTestCase
      * @return array<string, mixed>
      * @since 1.0.0
      */
-    protected function api_config(string $frequency): array
+    protected function provider_config(string $frequency): array
     {
         return [
             'api_key' => 'test-key',
             'update_frequency' => $frequency,
-            'fallback_behaviour' => 'last_known_rate',
         ];
     }
 

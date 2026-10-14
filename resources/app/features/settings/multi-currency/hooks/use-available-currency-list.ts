@@ -4,6 +4,7 @@ import {
   buildCurrencyListItems,
   buildCurrencyUpdatePayload,
   type CurrencyListItem,
+  getProviderConfig,
   getSyncStatus,
   type SyncStatus,
 } from '@/features/settings/multi-currency/lib/currency-list';
@@ -41,7 +42,7 @@ export const useAvailableCurrencyList = (): UseAvailableCurrencyListResult => {
   const syncStatus = getSyncStatus({
     apiProvider: settings?.api_provider,
     providerName: providers?.find((provider) => provider.id === settings?.api_provider)?.name ?? '',
-    hasApiKey: Boolean(settings?.api_config?.api_key),
+    hasApiKey: Boolean(getProviderConfig(settings?.api_configs, settings?.api_provider)?.api_key),
     isAutomaticUpdateEnabled: Boolean(settings?.is_automatic_update_enabled),
     lastSyncAt: settings?.last_sync_at,
     nextSyncAt: settings?.next_sync_at,

@@ -5,7 +5,10 @@ import {
   type CurrencyDraft,
   CurrencySchema,
 } from '@/features/settings/multi-currency/schemas/catalog/currency';
-import type { CurrencyRateItem } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
+import type {
+  CurrencyRateItem,
+  MultiCurrencySettingsFormInput,
+} from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
 import type { CurrencyBulkPayload } from '@/features/settings/multi-currency/services/currency';
 import { __, sprintf } from '@/wpi18n';
 
@@ -57,6 +60,19 @@ export const buildCurrencyUpdatePayload = (
   return {
     items: [toCurrencyDraft({ ...selectedCurrency, [key]: !selectedCurrency[key] })],
   };
+};
+
+type ProviderConfig = NonNullable<MultiCurrencySettingsFormInput['api_configs']>[string];
+
+export const getProviderConfig = (
+  apiConfigs: Record<string, ProviderConfig | undefined> | null | undefined,
+  providerId: string | null | undefined,
+): ProviderConfig | null => {
+  if (!providerId) {
+    return null;
+  }
+
+  return apiConfigs?.[providerId] ?? null;
 };
 
 export type SyncStatusInput = {
