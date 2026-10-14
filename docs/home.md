@@ -1,9 +1,11 @@
-# Home Page and Setup Checklist
+# Home Page, Setup Checklist and Store Overview
 
 The Home page is the plugin's dashboard root (`#/`). It opens after onboarding and
-from the **eCommerce → Home** admin menu. It shows a setup checklist that leads a
-new merchant through the tasks a store needs before it can sell, and a gallery of
-storefront templates.
+from the **eCommerce → Home** admin menu. Until setup is done, it shows a setup
+checklist that leads a new merchant through the tasks a store needs before it can
+sell. When every checklist step is complete, the checklist is replaced by a store
+overview: sales metrics, recent orders and top selling products. While setup is
+not done, a gallery of storefront templates shows below the checklist.
 
 - [1. Quick start](#1-quick-start)
 - [2. The page](#2-the-page)
@@ -11,11 +13,12 @@ storefront templates.
 - [4. When a step completes](#4-when-a-step-completes)
 - [5. Preconfigured steps](#5-preconfigured-steps)
 - [6. Loading sample data](#6-loading-sample-data)
-- [7. Storage](#7-storage)
-- [8. REST API](#8-rest-api)
-- [9. Resetting the checklist in development](#9-resetting-the-checklist-in-development)
-- [10. Requirements and limitations](#10-requirements-and-limitations)
-- [11. Where this differs from WooCommerce's task list](#11-where-this-differs-from-woocommerces-task-list)
+- [7. Store overview](#7-store-overview)
+- [8. Storage](#8-storage)
+- [9. REST API](#9-rest-api)
+- [10. Resetting the checklist in development](#10-resetting-the-checklist-in-development)
+- [11. Requirements and limitations](#11-requirements-and-limitations)
+- [12. Where this differs from WooCommerce](#12-where-this-differs-from-woocommerce)
 
 ---
 
@@ -24,15 +27,17 @@ storefront templates.
 Finish onboarding and press **Go to Dashboard**, or open **eCommerce → Home**. The
 first incomplete step is open. Each step's button opens the admin page where the
 task is done. When you come back to Home, the checklist checks the store again and
-marks the steps that are now done.
+marks the steps that are now done. When the last step is done, Home shows the
+store overview (section 7) from then on.
 
 ## 2. The page
 
 | Part | What it shows |
 |---|---|
-| Heading | "Let's get you started", and a **View Live Site** link that opens the site URL in a new tab. |
-| Setup checklist | "X out of N complete", a percentage, a progress bar and the steps (section 3). |
-| Template gallery | Three square template cards (194 × 194 px, with a 150 px cover image). Each card has a **Coming soon** badge at its top-right corner. The cards cannot be clicked. |
+| Heading | While setup is not done: "Let's get you started". After: "Welcome, {name}" (section 7). Both have a **View Live Site** link that opens the site URL in a new tab, and a primary **Add Product** button that opens the create product page. |
+| Setup checklist | Only while setup is not done. "X out of N complete", a percentage, a progress bar and the steps (section 3). |
+| Store overview | Only after every checklist step is complete, in place of the checklist (section 7). |
+| Template gallery | Only while setup is not done, below the checklist. Three square template cards (194 × 194 px, with a 150 px cover image). Each card has a **Coming soon** badge at its top-right corner. The cards cannot be clicked. |
 
 The template gallery is a placeholder. The names, images and links come from
 `resources/app/features/home/lib/templates.ts`. The images are in the plugin, in
@@ -131,7 +136,105 @@ reads **Load sample data** again and both buttons work again.
 The flow is in `resources/app/features/home/hooks/use-sample-data-import.ts`. The
 phase durations are constants at the top of that file.
 
-## 7. Storage
+## 7. Store overview
+
+Home shows the store overview when **every visible checklist step is completed**.
+The visible steps are `products`, `payments`, `tax` (only while tax calculation
+is on) and `shipping`. Because completion is sticky (section 4), the overview
+stays after the data behind a step is removed. If the merchant completes the last
+step on Home, the page changes to the overview without a reload.
+
+The admin page also sends `is_setup_complete` in `window.kirki_ecommerce`. Home
+uses it to pick the mode before the checklist response arrives, so a completed
+store does not first show the narrow checklist skeleton. The flag reads only the
+stored completions. A step whose data was added outside Home (for example a
+product made from the products page) is recorded by the next checklist request,
+so that store shows the checklist skeleton once more on its next Home visit.
+
+In this mode the page is wider (the `xl` page container, 1024 px), and:
+
+- the heading reads **"Welcome, {name}"**. The name is the current user's first
+  name, or the display name when the first name is empty. With neither, the
+  heading reads "Welcome";
+- **View Live Site** and **Add Product** stay;
+- the template gallery is not shown.
+
+Each metric card and list card has an information icon next to its title. The
+icon shows only while the pointer is over its card (always on a device without
+hover). On hover, the icon's tooltip describes the card in plain language.
+
+### Counted orders
+
+Metrics and top products use only **counted orders**: orders whose
+`payment_status` is `paid`, `refunding` or `refunded`. An unpaid cash on delivery
+order is not counted until the merchant marks it paid. Pending, unpaid, failed,
+processing and cancelled payments are never counted. All figures are **all time**.
+
+### Metric cards
+
+| Card | Value |
+|---|---|
+| Total sales | Sum of `base_total` of counted orders. |
+| Net sales | Total sales − sum of `base_tax_total` − sum of `base_shipping_total` − completed refunds of counted orders, in the base currency. |
+| Orders | Number of counted orders. |
+| Products sold | Sum of order item `quantity` of counted orders. |
+
+Money is in the store's **base currency**, formatted with the store's currency
+settings. Refunds are stored only in the order's currency, so each order's
+completed refunds are converted with that order's own `base_total / invoiced_total`
+ratio (the rate frozen when the order was placed). Pending and cancelled refunds
+are ignored. The cards show no change percentage or trend.
+
+On a store with no counted orders, every card shows 0.
+
+### Recent orders
+
+The 5 newest orders by creation date, **of any payment status**, so a new unpaid
+order shows here even though it is not counted in the metrics. Each row shows the
+order number with the fulfillment status in colored text, the customer name, the
+number of products, the total in the order's own currency and the time since the
+order was created in short form ("Just now", "45m ago", "3h ago", "2d ago",
+"4mo ago", "2y ago"). A row opens the order. With no orders, the card
+reads "No orders yet", centered in the card.
+
+### Top selling products
+
+Up to 5 products from counted orders. Variants are merged into their product.
+Rows are sorted by units sold, then by base-currency revenue. Each row shows a
+48 × 48 px image, the name with a stock badge, the revenue ("$3,134 generated")
+and the units sold ("1200 units sold"). The revenue is the sum of `base_total` of
+the product's order items in counted orders, for all of its variants. Name and
+image come from the product's newest order item, so a deleted product still
+shows. Items whose product was deleted have no product ID; they are grouped by
+their recorded name. With no counted orders, the card reads "No sales yet",
+centered in the card.
+
+The stock badge shows the product's current stock across all of its variants,
+with the same rules as the product list:
+
+| Product state | Badge |
+|---|---|
+| A variant tracks inventory and the summed available quantity of the tracked variants is above 0 | "{N} left in stock": gray, or orange when the product is low on stock |
+| Out of stock (every variant is out of stock) | "Out of stock" (red) |
+| Any other state, for example inventory is not tracked | "In stock" (green) |
+| Product was deleted | No badge |
+
+### Card buttons
+
+**View all orders** (Recent orders) opens the orders list. **View all products**
+(Top selling products) opens the products list. Both are ghost buttons. A
+button shows when the pointer is over its card or keyboard focus is inside it.
+On a device without hover, both buttons always show.
+
+### Layout
+
+The metric cards are in 4 columns from 1024 px, 2 columns from 600 px and 1
+column below. The two list cards are side by side, with the same height, from
+782 px and stacked below.
+While the data loads, skeletons show in their place. If the request fails, an
+error message shows and the rest of the page still renders.
+
+## 8. Storage
 
 One option, `kirki_ecommerce_setup_checklist`:
 
@@ -144,9 +247,9 @@ One option, `kirki_ecommerce_setup_checklist`:
 
 The option is created the first time a step completes, or at store setup.
 
-## 8. REST API
+## 9. REST API
 
-Both routes require a user who can manage the store (`manage_options`) and a valid
+All routes require a user who can manage the store (`manage_options`) and a valid
 REST nonce.
 
 | Method | Route | Does |
@@ -171,7 +274,48 @@ Both return the same shape:
 The titles, descriptions, time estimates and button targets are not in the
 response. They are in the admin app (`resources/app/features/home/lib/steps.ts`).
 
-## 9. Resetting the checklist in development
+### Store overview
+
+| Method | Route | Does |
+|---|---|---|
+| `GET` | `/wp-json/kirki/ecommerce/v1/dashboard/overview` | Returns the metrics, the 5 most recent orders and the top 5 products (section 7). |
+
+```json
+{
+  "data": {
+    "metrics": {
+      "base_total_sales": 120,
+      "base_total_sales_money_object": { "raw": 120, "display": "$120.00", "currency": { "code": "USD", "symbol": "$" } },
+      "base_net_sales": 80,
+      "base_net_sales_money_object": { "raw": 80, "display": "$80.00", "currency": { "code": "USD", "symbol": "$" } },
+      "orders_count": 1,
+      "products_sold": 2
+    },
+    "recent_orders": [ { "id": 12, "order_number": "#1012", "payment_status": "unpaid", "...": "same shape as GET /orders" } ],
+    "top_products": [
+      {
+        "product_id": 7,
+        "product_name": "T-shirt",
+        "image": null,
+        "units_sold": 5,
+        "base_revenue": 50,
+        "base_revenue_money_object": { "raw": 50, "display": "$50.00", "currency": { "code": "USD", "symbol": "$" } },
+        "availability_status": "in_stock",
+        "track_inventory": true,
+        "inventory": 59
+      }
+    ]
+  },
+  "message": "Dashboard overview retrieved successfully."
+}
+```
+
+`recent_orders` items use the same resource as the order list (`OrderListResource`).
+`product_id` is `null` for a product that was deleted. The endpoint does not check
+whether setup is complete; the admin app only calls it in overview mode. The
+queries are in `app/Services/DashboardService.php`.
+
+## 10. Resetting the checklist in development
 
 Delete the option to clear every completion and the preconfigured snapshot:
 
@@ -180,15 +324,17 @@ wp option delete kirki_ecommerce_setup_checklist
 ```
 
 The next Home load checks the rules again. Steps whose data still exists complete
-again at once.
+again at once. This also brings back the checklist in place of the store overview
+until every step completes again.
 
-## 10. Requirements and limitations
+## 11. Requirements and limitations
 
-- **No "all done" state.** The checklist cannot be dismissed or hidden.
+- **The checklist cannot be dismissed.** It goes away only when every step is
+  completed. Then the store overview replaces it for good.
 - **Completion is not a health check.** A sticky step stays checked after its data
   is removed, for example after all payment methods are disabled.
 - **Earlier completions stay.** A step that completed under an earlier, looser
-  rule stays completed. Reset the checklist (section 9) to check it again.
+  rule stays completed. Reset the checklist (section 10) to check it again.
 - **The "Cash on delivery" button only opens Payment settings.** It does not enable
   Cash on Delivery.
 - **No CSV import.** Step 1 has only **Add products** and **Load sample data**.
@@ -197,8 +343,16 @@ again at once.
 - **Sample data needs an empty store.** The import does nothing when a product
   exists, so the button does not show then.
 - **Template gallery is a placeholder.** There is no template catalog or API.
+- **Overview is all time only.** There is no date range, comparison or chart.
+- **Net sales subtracts the full refund.** Refunds do not record how much of them
+  was tax or shipping, so the refunded tax and shipping are subtracted a second
+  time.
+- **Products sold is not reduced by refunds.** Refunds do not record items.
+- **No caching.** The overview runs its queries on each Home visit.
 
-## 11. Where this differs from WooCommerce's task list
+## 12. Where this differs from WooCommerce
+
+### Task list
 
 - **Sticky completion.** Most WooCommerce tasks check the store's data on each
   load. Here a completed step stays completed.
@@ -208,3 +362,21 @@ again at once.
   section 5.
 - **Fewer tasks, no extension API.** The four steps are fixed. There is no filter
   or hook that adds a step.
+
+### Store overview (compared with WooCommerce Analytics / Home)
+
+- **Which orders count.** WooCommerce Analytics counts orders by their *order*
+  status (by default processing, completed and on-hold). Here an order counts by
+  its *payment* status (paid, refunding or refunded).
+- **Net sales.** In WooCommerce, net sales is gross sales minus coupons and
+  refunds, with tax and shipping never included. Here net sales starts from the
+  order total, which is already after coupons, and subtracts tax, shipping and the
+  **full** refund amounts. A refund that included tax or shipping makes net sales
+  lower than WooCommerce would show.
+- **Items sold and refunds.** WooCommerce subtracts refunded items. Here they
+  stay counted.
+- **No date range, no comparison, no charts, no reports pages.** WooCommerce's
+  Home and Analytics have all of these. "View all products" opens the plain
+  products list, not a sales report.
+- **No extension API.** The cards are fixed. There is no filter or hook that adds
+  a metric.

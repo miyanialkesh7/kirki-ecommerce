@@ -49,6 +49,8 @@ export const endpoints = {
   SETUP_CHECKLIST: '/setup-checklist',
   SETUP_CHECKLIST_COMPLETE_STEP: (step: string) => `/setup-checklist/${step}/complete`,
 
+  DASHBOARD_OVERVIEW: '/dashboard/overview',
+
   COUNTRIES: '/countries',
 
   CURRENCIES: '/currencies',

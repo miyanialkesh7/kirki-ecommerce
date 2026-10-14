@@ -5,6 +5,7 @@ import {
   getChecklistProgress,
   getFirstIncompleteStepId,
   getSetupStepDefinition,
+  isSetupComplete,
 } from '@/features/home/lib/steps';
 import type { SetupStep, SetupStepId } from '@/features/home/schemas/catalog/setup-checklist';
 
@@ -112,5 +113,32 @@ describe('getSetupStepDefinition', () => {
     const actions = getSetupStepDefinition(step('products', { has_data: true })).actions;
 
     expect(actions.map((action) => action.label)).toEqual(['Add products']);
+  });
+});
+
+describe('isSetupComplete', () => {
+  it('is true when every visible step is completed', () => {
+    const steps = [
+      step('products', { is_completed: true }),
+      step('payments', { is_completed: true }),
+      step('shipping', { is_completed: true }),
+    ];
+
+    expect(isSetupComplete(steps)).toBe(true);
+  });
+
+  it('is false while any step is not completed', () => {
+    const steps = [
+      step('products', { is_completed: true }),
+      step('payments', { is_completed: true }),
+      step('tax'),
+      step('shipping', { is_completed: true }),
+    ];
+
+    expect(isSetupComplete(steps)).toBe(false);
+  });
+
+  it('is false when there are no steps', () => {
+    expect(isSetupComplete([])).toBe(false);
   });
 });
