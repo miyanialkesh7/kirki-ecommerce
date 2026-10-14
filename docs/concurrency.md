@@ -185,7 +185,7 @@ Add `STRESS_ONLY="reserve coupon"` to run some scenarios only, and
   has no lower limit, as in WooCommerce, but its available quantity is stored as
   a negative number.
 - **MySQL or MariaDB only.** The guards use `LEAST`, `GREATEST`,
-  `INSERT IGNORE` and `SELECT ... FOR UPDATE`, and need InnoDB tables, which the
+  `ON DUPLICATE KEY UPDATE` and `SELECT ... FOR UPDATE`, and need InnoDB tables, which the
   plugin creates.
 - **No distributed lock.** Nothing relies on a cache or a lock service, so the
   guards work with any number of PHP workers, but they all depend on the same
