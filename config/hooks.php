@@ -8,6 +8,7 @@ use Kirki\Ecommerce\App\Hooks\Actions\EnqueueSiteScripts;
 use Kirki\Ecommerce\App\Hooks\Actions\MergeGuestOrder;
 use Kirki\Ecommerce\App\Hooks\Actions\RenderLoginConsents;
 use Kirki\Ecommerce\App\Hooks\Actions\RenderRegisterConsents;
+use Kirki\Ecommerce\App\Hooks\Actions\RepairCurrencySyncSchedule;
 use Kirki\Ecommerce\App\Hooks\Filters\PageIdentifier;
 use Kirki\Ecommerce\App\Hooks\Filters\ReplaceSiteTitle;
 use Kirki\Ecommerce\App\Hooks\Filters\PageInlineScript;
@@ -44,6 +45,7 @@ return [
         SyncCustomerEmailFromWordPressUser::class,
         AttachCustomerToNewWordPressUser::class,
         SendCustomerNewAccountEmail::class,
+        RepairCurrencySyncSchedule::class,
     ],
     'filters' => [
         ReplaceSiteTitle::class,

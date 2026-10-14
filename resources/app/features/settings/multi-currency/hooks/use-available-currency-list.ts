@@ -4,6 +4,8 @@ import {
   buildCurrencyListItems,
   buildCurrencyUpdatePayload,
   type CurrencyListItem,
+  getSyncStatus,
+  type SyncStatus,
 } from '@/features/settings/multi-currency/lib/currency-list';
 import type {
   CurrencyRateItem,
@@ -12,6 +14,7 @@ import type {
 import {
   type CurrencyBulkPayload,
   useAvailableCurrenciesQuery,
+  useCurrencyExchangeProvidersQuery,
   useDeleteCurrencyMutation,
   useUpdateCurrencyMutation,
 } from '@/features/settings/multi-currency/services/currency';
@@ -19,9 +22,7 @@ import {
 type UseAvailableCurrencyListResult = {
   currencyList: CurrencyListItem[];
   baseCurrencyCode: string | undefined;
-  showApiProviderStatus: boolean;
-  lastSyncAt: string | null | undefined;
-  nextSyncAt: string | null | undefined;
+  syncStatus: SyncStatus;
   updateData: (payload: CurrencyBulkPayload | null) => void;
   handleToggleCurrencyItem: (item: CurrencyListItem) => void;
   handleDeleteCurrencyItem: (item: CurrencyListItem) => void;
@@ -33,12 +34,20 @@ export const useAvailableCurrencyList = (): UseAvailableCurrencyListResult => {
   const currencies = useWatch<MultiCurrencySettingsFormInput, 'currencies'>({ name: 'currencies' });
 
   const { refetch } = useAvailableCurrenciesQuery({ limit: -1 }, false);
+  const { data: providers } = useCurrencyExchangeProvidersQuery();
   const { mutate: updateCurrencyMutate } = useUpdateCurrencyMutation();
   const { mutate: deleteCurrencyMutate } = useDeleteCurrencyMutation();
 
-  const showApiProviderStatus = Boolean(
-    settings?.api_provider && settings?.api_config?.api_key && settings?.last_sync_at,
-  );
+  const syncStatus = getSyncStatus({
+    apiProvider: settings?.api_provider,
+    providerName: providers?.find((provider) => provider.id === settings?.api_provider)?.name ?? '',
+    hasApiKey: Boolean(settings?.api_config?.api_key),
+    isAutomaticUpdateEnabled: Boolean(settings?.is_automatic_update_enabled),
+    lastSyncAt: settings?.last_sync_at,
+    nextSyncAt: settings?.next_sync_at,
+    lastSyncError: settings?.last_sync_error,
+    lastSyncErrorAt: settings?.last_sync_error_at,
+  });
 
   const currencyList = buildCurrencyListItems(currencies ?? []);
   const baseCurrencyCode = currencyList.find((currency) => currency?.is_base)?.code;
@@ -82,9 +91,7 @@ export const useAvailableCurrencyList = (): UseAvailableCurrencyListResult => {
   return {
     currencyList,
     baseCurrencyCode,
-    showApiProviderStatus,
-    lastSyncAt: settings?.last_sync_at,
-    nextSyncAt: settings?.next_sync_at,
+    syncStatus,
     updateData,
     handleDeleteCurrencyItem,
     handleToggleCurrencyItem,

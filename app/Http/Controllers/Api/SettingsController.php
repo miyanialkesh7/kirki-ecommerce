@@ -21,6 +21,23 @@ use function Kirki\Ecommerce\Framework\response;
 class SettingsController
 {
     /**
+     * Currency settings keys written only by the exchange rate sync, never by a client save.
+     *
+     * @since 1.0.0
+     *
+     * @var string[]
+     */
+    const SERVER_OWNED_CURRENCY_KEYS = [
+        'sync_token',
+        'sync_fingerprint',
+        'last_sync_at',
+        'next_sync_at',
+        'last_sync_error',
+        'last_sync_error_at',
+        'usage',
+    ];
+
+    /**
      * Return the settings stored under a settings key.
      *
      * The `key` parameter must be one of the known option keys.
@@ -61,6 +78,10 @@ class SettingsController
         $key = $request->string('key');
         $clean_data = $request->all();
         $data = $clean_data['data'] ?? [];
+
+        if ($key === OptionKeys::CURRENCY_SETTINGS) {
+            $data = array_diff_key($data, array_flip(static::SERVER_OWNED_CURRENCY_KEYS));
+        }
 
         $settings = Settings::get($key);
         $settings->set($data);

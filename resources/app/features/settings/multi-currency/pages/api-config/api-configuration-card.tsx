@@ -7,23 +7,26 @@ import { Card, CardContent } from '@/components/ui/card';
 import Flex from '@/components/ui/flex';
 import ProgressBar from '@/components/ui/progressbar';
 import Text from '@/components/ui/text';
+import ProviderLogo from '@/features/settings/multi-currency/pages/api-config/provider-logo';
 import type { MultiCurrencySettingsFormInput } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
-import { EditIcon, FlagIcon, RadioTickIcon } from '@/icons';
 import type { CurrencySettings } from '@/schemas/catalog/settings';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';
 import { dateFormatter } from '@/utils/common';
 import { toDisplayString } from '@/utils/string';
 import { __, sprintf } from '@/wpi18n';
+import { CheckCircle, Edit } from 'lucide-react';
 
 type ApiConfigurationCardProps = {
   providerName: string;
+  providerIcon?: string | null;
   setOpenPopup: Dispatch<SetStateAction<boolean>>;
   currencySettings?: CurrencySettings | null;
 };
 
 const ApiConfigurationCard = ({
   providerName,
+  providerIcon,
   setOpenPopup,
   currencySettings,
 }: ApiConfigurationCardProps) => {
@@ -52,11 +55,11 @@ const ApiConfigurationCard = ({
           <Flex justify="space-between" align="flex-start">
             <Flex direction="column" gap={2}>
               <Flex gap={2} align="center">
-                <FlagIcon />
+                <ProviderLogo icon={providerIcon} />
                 <Text weight="semibold">{providerName}</Text>
                 <Badge variant="success">
                   <span data-icon="inline-start" aria-hidden="true">
-                    <RadioTickIcon />
+                    <CheckCircle />
                   </span>
                   {__('Configured', 'kirki-ecommerce')}
                 </Badge>
@@ -70,8 +73,8 @@ const ApiConfigurationCard = ({
                 )}
               </Text>
             </Flex>
-            <Button variant="outline" size="icon" onClick={() => setOpenPopup(true)}>
-              <EditIcon />
+            <Button variant="outline" size="icon-sm" onClick={() => setOpenPopup(true)}>
+              <Edit color={theme.colors.icon.secondary} />
             </Button>
           </Flex>
           {usage && usage !== null && (
@@ -96,14 +99,8 @@ const ApiConfigurationCard = ({
               </Text>
             </Flex>
           )}
-          <Card cssOverride={styles.innerDarkCard}>
+          <Card cssOverride={styles.innerDarkCard} noShadow>
             <CardContent cssOverride={styles.innerDarkContent}>
-              <Flex gap={1}>
-                <Text color="subdued" variant="small">
-                  {__('Fallback Behavior: ', 'kirki-ecommerce')}
-                </Text>
-                <Text variant="small">{formatValue(apiConfig?.fallback_behaviour)}</Text>
-              </Flex>
               <Flex gap={1}>
                 <Text color="subdued" variant="small">
                   {__('Update Frequency: ', 'kirki-ecommerce')}

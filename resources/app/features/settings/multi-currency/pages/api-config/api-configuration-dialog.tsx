@@ -2,7 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm, useFormContext, useWatch } from 'react-hook-form';
 
-import CheckboxField from '@/components/form/checkbox-field';
 import PasswordField from '@/components/form/password-field';
 import SelectField from '@/components/form/select-field';
 import ActionGroup from '@/components/ui/action-group';
@@ -72,7 +71,6 @@ const ApiConfigurationPopup = ({
             api_key: apiConfig.api_key,
             update_frequency: apiConfig.update_frequency,
             fallback_behaviour: apiConfig.fallback_behaviour,
-            is_cache_enabled: apiConfig.is_cache_enabled,
           }
         : apiConfigurationDefaultValues,
     );
@@ -90,17 +88,6 @@ const ApiConfigurationPopup = ({
     {
       label: __('Daily (24 hours)', 'kirki-ecommerce'),
       value: 'daily_24_hours',
-    },
-  ];
-
-  const fallbackOptions = [
-    {
-      label: __('Use base currency only', 'kirki-ecommerce'),
-      value: 'base_currency',
-    },
-    {
-      label: __('Use last known rate', 'kirki-ecommerce'),
-      value: 'last_known_rate',
     },
   ];
 
@@ -151,15 +138,6 @@ const ApiConfigurationPopup = ({
                   name="update_frequency"
                   label={__('Update Frequency', 'kirki-ecommerce')}
                   options={updateFrequencyOptions}
-                />
-                <SelectField
-                  name="fallback_behaviour"
-                  label={__('Fallback Behavior', 'kirki-ecommerce')}
-                  options={fallbackOptions}
-                />
-                <CheckboxField
-                  name="is_cache_enabled"
-                  label={__('Cache exchange rates to reduce API calls', 'kirki-ecommerce')}
                 />
               </Flex>
             </DialogBody>

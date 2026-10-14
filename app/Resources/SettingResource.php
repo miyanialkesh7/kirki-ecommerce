@@ -177,11 +177,12 @@ class SettingResource extends Resource
             'api_provider' => $data['api_provider'] ?? null,
             'last_sync_at' => $data['last_sync_at'] ?? null,
             'next_sync_at' => $data['next_sync_at'] ?? null,
+            'last_sync_error' => $data['last_sync_error'] ?? null,
+            'last_sync_error_at' => $data['last_sync_error_at'] ?? null,
             'api_config' => !empty($data['api_config']) ? [
                 'api_key' => $data['api_config']['api_key'] ?? null,
                 'update_frequency' => $data['api_config']['update_frequency'] ?? null,
                 'fallback_behaviour' => $data['api_config']['fallback_behaviour'] ?? null,
-                'is_cache_enabled' => $data['api_config']['is_cache_enabled'] ?? false
             ] : null,
             'base_currency' => $data['base_currency'] ?? null,
             'usage' => !empty($data['usage']) ? [

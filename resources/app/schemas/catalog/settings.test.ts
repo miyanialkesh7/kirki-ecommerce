@@ -226,7 +226,6 @@ describe('CurrencySettingsSchema', () => {
         api_key: 'cur_live_x',
         update_frequency: 'hourly',
         fallback_behaviour: null,
-        is_cache_enabled: true,
       },
       last_sync_at: '2026-02-26 11:28:22',
       next_sync_at: '2026-02-26 12:28:23',

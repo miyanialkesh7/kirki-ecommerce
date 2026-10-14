@@ -9,11 +9,7 @@ const ApiConfigurationFormShape = z.object({
     z.string().nullish().default('every_1_hour'),
     __('Update Frequency is required', 'kirki-ecommerce'),
   ),
-  fallback_behaviour: required(
-    z.string().nullish().default('last_known_rate'),
-    __('Fallback Behaviour is required', 'kirki-ecommerce'),
-  ),
-  is_cache_enabled: z.boolean().nullish().default(false),
+  fallback_behaviour: z.string().nullish().default('last_known_rate'),
 });
 
 export const ApiConfigurationFormSchema = prepareFormSchema(ApiConfigurationFormShape).transform(
@@ -21,7 +17,6 @@ export const ApiConfigurationFormSchema = prepareFormSchema(ApiConfigurationForm
     api_key: values.api_key,
     update_frequency: values.update_frequency,
     fallback_behaviour: values.fallback_behaviour,
-    is_cache_enabled: values.is_cache_enabled,
   }),
 );
 

@@ -800,7 +800,6 @@ class SettingsUpdateRequest extends Request
             'data.api_config.api_key' => 'nullable|string',
             'data.api_config.update_frequency' => 'nullable|string|in:' . implode(',', UpdateFrequency::get_constant_values()),
             'data.api_config.fallback_behaviour' => 'nullable|string|in:' . implode(',', CurrencyUpdateFallback::get_constant_values()),
-            'data.api_config.is_cache_enabled' => 'nullable|boolean',
         ];
     }
 
@@ -824,7 +823,6 @@ class SettingsUpdateRequest extends Request
             'data.api_config.api_key' => Sanitizer::TEXT,
             'data.api_config.update_frequency' => Sanitizer::TEXT,
             'data.api_config.fallback_behaviour' => Sanitizer::TEXT,
-            'data.api_config.is_cache_enabled' => Sanitizer::BOOL,
         ];
     }
 
