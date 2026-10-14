@@ -149,7 +149,7 @@ class OrderManager
         if ($is_cancelled) {
             $order->order_coupons->reject(fn($order_coupon) => !empty($order_coupon->usage_reversed_at))->each(function ($order_coupon) {
                 $order_coupon->update(['usage_reversed_at' => Date::now()]);
-                $this->coupon_service->decrement($order_coupon->coupon_id, 'current_usage_count');
+                $this->coupon_service->release_usage($order_coupon->coupon_id);
             });
 
             $this->inventory_service->release_all_reserved_stock($order);

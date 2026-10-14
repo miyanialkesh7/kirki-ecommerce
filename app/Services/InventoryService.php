@@ -141,9 +141,14 @@ class InventoryService
         /* translators: %s: variant ID */
         throw_if(empty($variant), sprintf(__('Variant with id %s could not be found.', 'kirki-ecommerce'), $variant_id), NotFoundException::class, Response::NOT_FOUND);
 
-        throw_if($variant->track_inventory && !$variant->allow_back_order && $variant->available_quantity < $quantity, __('Insufficient stock.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
+        $require_stock = $variant->track_inventory && !$variant->allow_back_order;
 
-        $is_decremented = $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+        throw_if($require_stock && $variant->available_quantity < $quantity, __('Insufficient stock.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
+
+        $is_decremented = $this->variant_service->decrement_available($variant_id, $quantity, $require_stock);
+
+        // The read above can be stale: another request may have taken the stock before this update ran.
+        throw_if(!$is_decremented && $require_stock && $quantity > 0, __('Insufficient stock.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
 
         if ($is_decremented) {
             $this->record_stock_level_crossing($variant, $quantity);
@@ -176,9 +181,14 @@ class InventoryService
             return true;
         }
 
-        throw_if(!$variant->allow_back_order && $variant->available_quantity < $quantity, __('Insufficient stock to reserve.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
+        $require_stock = !$variant->allow_back_order;
 
-        $is_reserved = $this->variant_service->increment($variant_id, 'committed_quantity', $quantity) && $this->variant_service->decrement($variant_id, 'available_quantity', $quantity);
+        throw_if($require_stock && $variant->available_quantity < $quantity, __('Insufficient stock to reserve.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
+
+        $is_reserved = $this->variant_service->reserve_available($variant_id, $quantity, $require_stock);
+
+        // The read above can be stale: another request may have taken the stock before this update ran.
+        throw_if(!$is_reserved && $require_stock && $quantity > 0, __('Insufficient stock to reserve.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
 
         if ($is_reserved) {
             $this->record_stock_level_crossing($variant, $quantity);
@@ -211,10 +221,7 @@ class InventoryService
             return true;
         }
 
-        $current_committed = $variant->committed_quantity;
-        $release_amount = min($current_committed, $quantity);
-
-        return $this->variant_service->decrement($variant_id, 'committed_quantity', $release_amount) && $this->variant_service->increment($variant_id, 'available_quantity', $release_amount);
+        return $this->variant_service->release_committed($variant_id, $quantity);
     }
 
     /**
@@ -241,10 +248,7 @@ class InventoryService
             return true;
         }
 
-        $current_committed = $variant->committed_quantity;
-        $confirm_amount = min($current_committed, $quantity);
-
-        return $this->variant_service->decrement($variant_id, 'committed_quantity', $confirm_amount);
+        return $this->variant_service->confirm_committed($variant_id, $quantity);
     }
 
     /**

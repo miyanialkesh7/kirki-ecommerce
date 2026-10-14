@@ -7,8 +7,10 @@ defined('ABSPATH') || exit;
 use Kirki\Ecommerce\App\DTO\Calculation\CalculationResultDTO;
 use Kirki\Ecommerce\App\DTO\Order\CreateOrderCouponDTO;
 use Kirki\Ecommerce\App\DTO\Order\CreateOrderItemCouponDTO;
+use Kirki\Ecommerce\App\Models\Coupon;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Models\OrderCoupon;
+use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 use Exception;
 
@@ -96,7 +98,7 @@ trait PersistsOrderCoupons
             } elseif (!empty($order->cancelled_at)) {
                 $order_coupon_dto->usage_reversed_at = Date::now();
             } else {
-                $this->coupon_service->increment($coupon->id, 'current_usage_count');
+                $this->claim_coupon_usage($coupon, $order);
             }
 
             $order_coupon = $this->order_service->create_order_coupon($order_coupon_dto);
@@ -132,7 +134,7 @@ trait PersistsOrderCoupons
                 continue;
             }
 
-            $this->coupon_service->decrement($coupon_id, 'current_usage_count');
+            $this->coupon_service->release_usage($coupon_id);
         }
 
         $this->assert_order_coupons_reconcile(
@@ -142,6 +144,34 @@ trait PersistsOrderCoupons
         );
 
         return $order_coupons;
+    }
+
+    /**
+     * Count one use of a coupon for an order, failing when the coupon ran out meanwhile.
+     *
+     * The total limit is enforced by the update itself. That update also locks the
+     * coupon row until the transaction ends, so the per-customer limit is checked
+     * again afterwards: a competing order from the same buyer is waiting for the
+     * lock and cannot slip a use in between.
+     *
+     * @since 1.0.0
+     *
+     * @param Coupon $coupon Coupon applied to the order.
+     * @param Order  $order  Order the coupon is applied to.
+     * @return void
+     * @throws ValidationException When the total or per-customer usage limit is reached.
+     */
+    protected function claim_coupon_usage(Coupon $coupon, Order $order)
+    {
+        throw_if(!$this->coupon_service->claim_usage($coupon->id), __('Coupon usage limit reached.', 'kirki-ecommerce'), ValidationException::class);
+
+        if (!$coupon->has_customer_limit || $coupon->customer_limit <= 0) {
+            return;
+        }
+
+        $customer_usage = $this->order_service->count_coupon_usages($coupon->id, $order->customer_id, $order->customer_email, $order->id);
+
+        throw_if($customer_usage >= $coupon->customer_limit, __('You have reached the usage limit for this coupon.', 'kirki-ecommerce'), ValidationException::class);
     }
 
     /**

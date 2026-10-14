@@ -30,6 +30,7 @@ use Kirki\Ecommerce\App\Resources\Site\Order\OrderListResource;
 use Kirki\Ecommerce\App\Supports\OrderNumberGenerator;
 use Kirki\Ecommerce\Framework\Exceptions\NotFoundException;
 use Kirki\Ecommerce\Framework\Http\Response;
+use Kirki\Ecommerce\Framework\Supports\Facades\DB;
 
 use function Kirki\Ecommerce\App\customer;
 use function Kirki\Ecommerce\Framework\app;
@@ -359,13 +360,16 @@ class OrderService
      * order's current status, it is a side-effect only action and no status
      * fields are changed.
      *
+     * The update only matches while the order is still in the given status, so
+     * when several requests race for one transition only one of them applies it.
+     *
      * @since 1.0.0
      *
      * @param int    $id                  Order ID.
-     * @param string $order_status_before Order status before the action.
+     * @param string $order_status_before Order status the caller read before the action.
      * @param string $action              Action being applied.
-     * @return bool True when the transition was applied or the action needs none.
-     * @throws NotFoundException When the order does not exist or could not be updated.
+     * @return bool True when the transition was applied or the action needs none; false when the order had already left the given status.
+     * @throws NotFoundException When the order does not exist.
      */
     public function apply_order_action(int $id, string $order_status_before, string $action)
     {
@@ -382,15 +386,32 @@ class OrderService
 
         throw_if(empty($order), __('Order not found.', 'kirki-ecommerce'), NotFoundException::class);
 
-        $is_updated = (bool) $order->update([
-            'order_status' => $target_status,
-            'fulfillment_status' => $target_state['fulfillment_status'],
-            'payment_status' => $target_state['payment_status'],
-        ]);
+        return (bool) Order::query()
+            ->where('id', $id)
+            ->where('order_status', $order_status_before)
+            ->update([
+                'order_status' => $target_status,
+                'fulfillment_status' => $target_state['fulfillment_status'],
+                'payment_status' => $target_state['payment_status'],
+                'updated_at' => $order->fresh_timestamp_string(),
+            ]);
+    }
 
-        throw_if(!$is_updated, __('Order not found.', 'kirki-ecommerce'), NotFoundException::class);
-
-        return $is_updated;
+    /**
+     * Lock an order row until the current transaction ends.
+     *
+     * Other requests that lock or change the same order wait for the lock, so
+     * work done after this call sees every change that committed before it.
+     * Call it inside a transaction: outside one the lock is released at once.
+     *
+     * @since 1.0.0
+     *
+     * @param int $id Order ID.
+     * @return void
+     */
+    public function lock_order(int $id)
+    {
+        DB::select('SELECT id FROM ' . DB::get_table_prefix() . (new Order())->get_table() . ' WHERE id = %d FOR UPDATE', [$id]);
     }
 
     /**

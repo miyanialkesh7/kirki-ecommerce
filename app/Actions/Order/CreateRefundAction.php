@@ -15,6 +15,7 @@ use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Payment\Facades\Payment;
 use Kirki\Ecommerce\App\Services\InventoryService;
 use Kirki\Ecommerce\App\Services\OrderService;
+use Kirki\Ecommerce\Framework\Exceptions\NotFoundException;
 use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Framework\Http\Response;
 use Kirki\Ecommerce\Framework\Supports\Facades\Date;
@@ -64,21 +65,25 @@ class CreateRefundAction
      *
      * @param CreateRefundPayloadDTO $dto Order ID, refund amount, reason and creator.
      * @return Order The order reloaded with its refunds, items and coupons.
+     * @throws NotFoundException When the order does not exist.
+     * @throws ValidationException When the order cannot be refunded or the amount exceeds what is refundable.
      * @throws Throwable When the refund record or the gateway call fails; the transaction is rolled back.
      */
     public function execute(CreateRefundPayloadDTO $dto)
     {
-        $order = $this->order_service->find_order_or_fail($dto->order_id);
-
-        throw_if($order->payment_status !== PaymentStatus::PAID || !in_array($order->fulfillment_status, [FulfillmentStatus::DELIVERED, FulfillmentStatus::CANCELLED], true), __('Invalid order status for refund.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
-
-        $refundable_amount = $this->get_refundable_amount($order);
-
-        throw_if($dto->invoiced_amount > $refundable_amount, __('Refund amount exceeds refundable amount.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
-
         DB::begin_transaction();
 
         try {
+            // Lock first and read after, so a refund another request just committed is counted.
+            $this->order_service->lock_order($dto->order_id);
+            $order = $this->order_service->find_order_or_fail($dto->order_id);
+
+            throw_if($order->payment_status !== PaymentStatus::PAID || !in_array($order->fulfillment_status, [FulfillmentStatus::DELIVERED, FulfillmentStatus::CANCELLED], true), __('Invalid order status for refund.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
+
+            $refundable_amount = $this->get_refundable_amount($order);
+
+            throw_if($dto->invoiced_amount > $refundable_amount, __('Refund amount exceeds refundable amount.', 'kirki-ecommerce'), ValidationException::class, Response::UNPROCESSABLE_ENTITY);
+
             $provider = Payment::get_provider($order->payment_provider);
 
             // @todo should we create it this way or should we use repository?

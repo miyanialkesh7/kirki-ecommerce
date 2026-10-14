@@ -54,13 +54,15 @@ class PerformOrderAction
      */
     public function execute(PerformOrderActionDTO $dto)
     {
-        $order = $this->order_service->find_order_or_fail($dto->order_id);
-
-        $this->guard($order, $dto->action);
-
         DB::begin_transaction();
 
         try {
+            // Lock first and check after, so an action another request just finished is seen by the guard.
+            $this->order_service->lock_order($dto->order_id);
+            $order = $this->order_service->find_order_or_fail($dto->order_id);
+
+            $this->guard($order, $dto->action);
+
             switch ($dto->action) {
                 case OrderAction::MARK_AS_PROCESSING:
                 case OrderAction::RESUME_FULFILLMENT:
