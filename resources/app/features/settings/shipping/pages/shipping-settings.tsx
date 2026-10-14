@@ -31,7 +31,7 @@ import ShippingProfile from '@/features/settings/shipping/pages/shipping-profile
 import ShippingZoneActions from '@/features/settings/shipping/pages/shipping-zone-actions';
 import ShippingSettingsSkeleton from '@/features/settings/shipping/skeletons/shipping-settings-skeleton';
 import { useBaseCurrencySymbol } from '@/hooks';
-import { EditPenIcon, LocationIcon, TrashIcon, TruckIcon } from '@/icons';
+import { EditPenIcon, LocationIcon, TrashIcon, TruckIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';

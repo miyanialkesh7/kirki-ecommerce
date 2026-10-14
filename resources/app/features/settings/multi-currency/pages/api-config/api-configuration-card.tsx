@@ -8,7 +8,7 @@ import Flex from '@/components/ui/flex';
 import ProgressBar from '@/components/ui/progressbar';
 import Text from '@/components/ui/text';
 import type { MultiCurrencySettingsFormInput } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
-import { EditIcon, FlagIcon, RadioTickIcon } from '@/icons';
+import { EditIcon, FlagIcon, RadioTickIcon } from '@/icons/common';
 import type { CurrencySettings } from '@/schemas/catalog/settings';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';

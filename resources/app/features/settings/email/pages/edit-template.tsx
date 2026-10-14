@@ -22,7 +22,7 @@ import {
 } from '@/features/settings/email/lib/template';
 import { useSendTestEmailMutation } from '@/features/settings/email/services/email-template-preview';
 import EditTemplateSkeleton from '@/features/settings/email/skeletons/edit-template-skeleton';
-import { AlignCenterIcon, AlignLeftIcon } from '@/icons';
+import { AlignCenterIcon, AlignLeftIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';

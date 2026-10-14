@@ -27,7 +27,7 @@ import Timeline from '@/features/orders/components/order-details/timeline';
 import { useOrderDetails } from '@/features/orders/hooks/use-order-details';
 import { getActionLabel } from '@/features/orders/lib/order-actions';
 import OrderDetailsSkeleton from '@/features/orders/skeletons/order-details-skeleton';
-import { ShowMoreIcon } from '@/icons';
+import { ShowMoreIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';

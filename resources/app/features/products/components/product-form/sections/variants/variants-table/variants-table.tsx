@@ -21,7 +21,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { RouteConfig } from '@/config/route-config';
 import type { ProductFormInput } from '@/features/products/schemas/forms/product-form';
 import { useBaseCurrencySymbol } from '@/hooks';
-import { EditIcon } from '@/icons';
+import { EditIcon } from '@/icons/common';
 import { useSettingsQuery } from '@/services/settings';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';

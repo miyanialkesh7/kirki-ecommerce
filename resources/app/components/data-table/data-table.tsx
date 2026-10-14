@@ -47,7 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDownFilled, ArrowDownUpFilled, ArrowUpFilled } from '@/icons';
+import { ArrowDownFilled, ArrowDownUpFilled, ArrowUpFilled } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';

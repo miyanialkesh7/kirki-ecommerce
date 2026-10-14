@@ -24,7 +24,7 @@ import {
   useShippingProfilesQuery,
 } from '@/features/settings/shipping/services/shipping';
 import { useConfirmDelete } from '@/hooks';
-import { EditPenIcon, TrashIcon } from '@/icons';
+import { EditPenIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, scoped } from '@/theme/mixins';
@@ -106,9 +106,7 @@ const ShippingProfile = () => {
                         <Text variant="small" weight="medium">
                           {item.name}
                         </Text>
-                        {item.is_default && (
-                          <Badge>{__('Default', 'kirki-ecommerce')}</Badge>
-                        )}
+                        {item.is_default && <Badge>{__('Default', 'kirki-ecommerce')}</Badge>}
                       </StackedItemTitle>
                     </StackedItemContent>
                     <StackedItemActions>

@@ -4,7 +4,7 @@ import PriceText from '@/components/ui/price-text';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import Text from '@/components/ui/text';
 import type { Order } from '@/features/orders/schemas/catalog/order';
-import { TagIcon } from '@/icons';
+import { TagIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';
 import { sprintf } from '@/wpi18n';

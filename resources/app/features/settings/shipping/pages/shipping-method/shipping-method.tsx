@@ -26,7 +26,7 @@ import {
 } from '@/features/settings/shipping/lib/utils';
 import type { ShippingMethodData, ShippingZone } from '@/features/settings/shipping/types';
 import { useBaseCurrencySymbol, useConfirmDelete } from '@/hooks';
-import { EditPenIcon, TrashIcon } from '@/icons';
+import { EditPenIcon, TrashIcon } from '@/icons/common';
 import type { ShippingSettings } from '@/schemas/catalog/settings';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';

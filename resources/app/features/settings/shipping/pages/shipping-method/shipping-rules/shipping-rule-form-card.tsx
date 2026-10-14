@@ -43,7 +43,7 @@ import type {
   ShippingZone,
 } from '@/features/settings/shipping/types';
 import { useBaseCurrencySymbol } from '@/hooks';
-import { LighteningIcon } from '@/icons';
+import { LighteningIcon } from '@/icons/common';
 import type { ErrorResponse } from '@/libs/api';
 import { applyServerErrors } from '@/libs/form-errors';
 import { queryClient } from '@/libs/query-client';

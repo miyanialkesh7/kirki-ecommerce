@@ -26,7 +26,7 @@ import {
 } from '@/features/settings/multi-currency/services/currency';
 import MultiCurrencySettingsSkeleton from '@/features/settings/multi-currency/skeletons/multi-currency-settings-skeleton';
 import SettingsPageHeader from '@/features/settings/pages/settings-page-header';
-import { CurrencyIcon } from '@/icons';
+import { CurrencyIcon } from '@/icons/common';
 import type { ErrorResponse } from '@/libs/api';
 import { applyServerErrors } from '@/libs/form-errors';
 import { getDefaults, pickFormValues } from '@/libs/zod';

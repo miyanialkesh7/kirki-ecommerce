@@ -23,7 +23,7 @@ import {
   resolveNotificationTemplate,
 } from '@/features/settings/email/lib/utils';
 import type { EmailSettingsFormInput } from '@/features/settings/email/schemas/forms/email-settings-form';
-import { CartIcon, EditPenIcon, InventoryBoxIcon, SettingsIcon } from '@/icons';
+import { CartIcon, EditPenIcon, InventoryBoxIcon, SettingsIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';
 import { __ } from '@/wpi18n';

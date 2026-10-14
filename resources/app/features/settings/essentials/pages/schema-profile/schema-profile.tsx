@@ -24,7 +24,7 @@ import {
 } from '@/features/settings/essentials/services/schema';
 import StackedListSkeleton from '@/features/settings/skeletons/stacked-list-skeleton';
 import { useConfirmDelete } from '@/hooks';
-import { BoxOpenIcon, EditPenIcon, TrashIcon } from '@/icons';
+import { BoxOpenIcon, EditPenIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
@@ -37,7 +37,7 @@ type SchemaListItem = SchemaProfile & {
 
 const countSchemaProperties = (schema: SchemaListItem) => {
   return Object.values(schema.schema).reduce((total, item) => total + item.length, 0) ?? 0;
-}
+};
 
 const SchemaProfileComponent = () => {
   const [showPopup, setShowPopup] = useState(false);
@@ -125,11 +125,14 @@ const SchemaProfileComponent = () => {
                         {item.name}
                       </Text>
                       {countSchemaProperties(item) > 0 && (
-                        <Badge>{sprintf(__('%d Properties', 'kirki-ecommerce'), countSchemaProperties(item))}</Badge>
+                        <Badge>
+                          {sprintf(
+                            __('%d Properties', 'kirki-ecommerce'),
+                            countSchemaProperties(item),
+                          )}
+                        </Badge>
                       )}
-                      {item.is_default && (
-                        <Badge>{__('Default', 'kirki-ecommerce')}</Badge>
-                      )}
+                      {item.is_default && <Badge>{__('Default', 'kirki-ecommerce')}</Badge>}
                     </StackedItemTitle>
                   </StackedItemContent>
                   <StackedItemActions>

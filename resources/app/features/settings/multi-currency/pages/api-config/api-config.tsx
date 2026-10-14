@@ -21,7 +21,7 @@ import ApiConfigurationPopup from '@/features/settings/multi-currency/pages/api-
 import type { ApiConfigurationFormPayload } from '@/features/settings/multi-currency/schemas/forms/api-configuration-form';
 import type { MultiCurrencySettingsFormInput } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
 import { useCurrencyExchangeProvidersQuery } from '@/features/settings/multi-currency/services/currency';
-import { WrenchIcon } from '@/icons';
+import { WrenchIcon } from '@/icons/common';
 import type { CurrencySettings } from '@/schemas/catalog/settings';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';

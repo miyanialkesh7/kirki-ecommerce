@@ -22,7 +22,7 @@ import { useAttributesQuery, useDeleteAttributeMutation } from '@/features/produ
 import AddVariationPopover from '@/features/settings/essentials/pages/variation-library/add-variation-popover';
 import StackedListSkeleton from '@/features/settings/skeletons/stacked-list-skeleton';
 import { useConfirmDelete } from '@/hooks';
-import { BoxIcon, ColorPaletteIcon, EditPenIcon, TrashIcon } from '@/icons';
+import { BoxIcon, ColorPaletteIcon, EditPenIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';

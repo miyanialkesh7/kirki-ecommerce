@@ -1,3 +1,5 @@
+import { PlusIcon } from 'lucide-react';
+
 import Button from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Flex from '@/components/ui/flex';
@@ -5,7 +7,7 @@ import { Table, TableBody } from '@/components/ui/table';
 import Text from '@/components/ui/text';
 import OrderItemRow from '@/features/orders/components/order-create/order-item/order-item-row';
 import { useOrderCreate } from '@/features/orders/hooks/use-order-create';
-import { PlusIcon, ProductIcon } from '@/icons';
+import { ProductSelectionIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';
@@ -29,9 +31,9 @@ const ProductSelectionCard = ({
       <Card cssOverride={mergeCss(cardStyles.formCard, styles.emptyCard)}>
         <CardContent>
           <Flex direction="column" gap={9} align="center" justify="center">
-            <ProductIcon />
+            <ProductSelectionIcon />
             <Button size="sm" variant="secondary" onClick={onOpenPicker}>
-              <PlusIcon />
+              <PlusIcon size={16} />
               {__('Add products', 'kirki-ecommerce')}
             </Button>
           </Flex>
@@ -53,7 +55,7 @@ const ProductSelectionCard = ({
           </Text>
         </CardTitle>
         <Button variant="secondary" onClick={onOpenPicker}>
-          <PlusIcon />
+          <PlusIcon size={16} />
           {__('Add more', 'kirki-ecommerce')}
         </Button>
       </CardHeader>

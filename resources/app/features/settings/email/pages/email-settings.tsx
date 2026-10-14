@@ -28,7 +28,7 @@ import {
 import EmailSettingsSkeleton from '@/features/settings/email/skeletons/email-settings-skeleton';
 import { useSettingsPageActions } from '@/features/settings/hooks/use-settings-page-actions';
 import SettingsPageHeader from '@/features/settings/pages/settings-page-header';
-import { BrushIcon } from '@/icons';
+import { BrushIcon } from '@/icons/common';
 import type { ErrorResponse } from '@/libs/api';
 import { applyServerErrors } from '@/libs/form-errors';
 import { getDefaults, pickFormValues } from '@/libs/zod';

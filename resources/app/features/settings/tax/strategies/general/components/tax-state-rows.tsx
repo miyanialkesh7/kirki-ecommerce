@@ -12,7 +12,7 @@ import Text from '@/components/ui/text';
 import { RouteConfig } from '@/config/route-config';
 import type { StateTaxRate } from '@/features/settings/tax/shared/lib/utils';
 import type { TaxRegionGeneralFormInput } from '@/features/settings/tax/strategies/general/schemas/forms/tax-region-general-form';
-import { PaymentIcon, TrashIcon } from '@/icons';
+import { PaymentIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';

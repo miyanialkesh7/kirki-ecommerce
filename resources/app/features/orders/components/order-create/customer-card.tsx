@@ -27,7 +27,7 @@ import {
 } from '@/features/orders/lib/customer-address';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
 import { OrderFormSchema } from '@/features/orders/schemas/forms/order-form';
-import { ShowMoreIcon } from '@/icons';
+import { ShowMoreIcon } from '@/icons/common';
 import { getDefaults } from '@/libs/zod';
 import { useCountriesQuery } from '@/services/country';
 import { theme } from '@/theme';

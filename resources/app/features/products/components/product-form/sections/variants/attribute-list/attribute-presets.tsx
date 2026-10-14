@@ -1,3 +1,4 @@
+import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import Button from '@/components/ui/button';
@@ -12,7 +13,6 @@ import {
 import Flex from '@/components/ui/flex';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Attribute } from '@/features/products/schemas/catalog/attribute';
-import { PlusIcon } from '@/icons';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __, sprintf } from '@/wpi18n';
@@ -51,7 +51,7 @@ const AttributePresets = ({
       disabled={disabled}
       onClick={overflow.length > 0 ? undefined : onAddNew}
     >
-      <PlusIcon />
+      <PlusIcon size={16} />
       {__('Add', 'kirki-ecommerce')}
     </Button>
   );
@@ -66,7 +66,7 @@ const AttributePresets = ({
           aria-label={sprintf(__('Add %s variation', 'kirki-ecommerce'), attribute.name)}
           onClick={() => onPick(attribute)}
         >
-          <PlusIcon />
+          <PlusIcon size={16} />
           {attribute.name}
         </Button>
       ))}
@@ -107,7 +107,7 @@ const AttributePresets = ({
                   onAddNew();
                 }}
               >
-                <PlusIcon />
+                <PlusIcon size={16} />
                 {__('Add new', 'kirki-ecommerce')}
               </Button>
             </div>

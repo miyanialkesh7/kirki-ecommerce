@@ -16,7 +16,7 @@ import {
 import Switch from '@/components/ui/switch';
 import Text from '@/components/ui/text';
 import type { PaymentMethod } from '@/features/settings/payment/schemas/catalog/payment';
-import { EditPenIcon, TrashIcon } from '@/icons';
+import { EditPenIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
 import { __, sprintf } from '@/wpi18n';
@@ -137,7 +137,7 @@ const SortablePaymentMethod = (props: SortablePaymentMethodProps) => {
             )}
             onClick={() => onEdit(method)}
           >
-            <EditPenIcon color='#000' />
+            <EditPenIcon color="#000" />
           </Button>
           <Switch
             checked={Boolean(method.is_enabled)}

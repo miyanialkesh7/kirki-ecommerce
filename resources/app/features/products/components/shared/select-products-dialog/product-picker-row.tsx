@@ -14,7 +14,7 @@ import type {
   SelectProductsMode,
 } from '@/features/products/components/shared/select-products-dialog/types';
 import type { ProductListItem } from '@/features/products/schemas/catalog/product';
-import { ChevronDownIcon } from '@/icons';
+import { ChevronDownIcon } from '@/icons/common';
 import { __, sprintf } from '@/wpi18n';
 
 type ProductPickerRowProps = {

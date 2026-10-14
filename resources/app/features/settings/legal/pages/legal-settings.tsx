@@ -34,7 +34,7 @@ import type { ConsentFormPayload } from '@/features/settings/legal/schemas/forms
 import SettingsPageHeader from '@/features/settings/pages/settings-page-header';
 import StackedListSkeleton from '@/features/settings/skeletons/stacked-list-skeleton';
 import { useConfirmDelete } from '@/hooks';
-import { EditPenIcon, TrashIcon } from '@/icons';
+import { EditPenIcon, TrashIcon } from '@/icons/common';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/services/settings';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';

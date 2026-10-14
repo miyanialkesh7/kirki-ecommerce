@@ -16,7 +16,7 @@ import Image from '@/components/ui/image';
 import Text from '@/components/ui/text';
 import SelectProductsDialog from '@/features/products/components/shared/select-products-dialog';
 import type { ProductSelection } from '@/features/products/schemas/catalog/product-selection';
-import { ProductIcon } from '@/icons';
+import { ProductSelectionIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scopedMerge } from '@/theme/mixins';
@@ -70,7 +70,7 @@ const ProductSelectionField = <
               >
                 <CardContent>
                   <Flex direction="column" gap={9} align="center" justify="center">
-                    <ProductIcon />
+                    <ProductSelectionIcon />
                     <Button variant="secondary" onClick={() => onOpenChange(true)}>
                       <PlusIcon />
                       <Text variant="small" weight="medium">

@@ -126,7 +126,7 @@ const CustomerDetails = () => {
                     <Flex direction="column" gap={4}>
                       <Label>{__('Notes', 'kirki-ecommerce')}</Label>
                       <Button variant="secondary" style={{ width: '100%' }}>
-                        <PlusIcon />
+                        <PlusIcon size={16} />
                         {__('Add note', 'kirki-ecommerce')}
                       </Button>
                     </Flex>

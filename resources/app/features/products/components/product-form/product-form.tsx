@@ -34,7 +34,7 @@ import {
   type ProductFormPayload,
 } from '@/features/products/schemas/forms/product-form';
 import { useConfirmDelete } from '@/hooks';
-import { ShowMoreIcon } from '@/icons';
+import { ShowMoreIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { __ } from '@/wpi18n';

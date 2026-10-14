@@ -9,7 +9,7 @@ import Flex from '@/components/ui/flex';
 import Text from '@/components/ui/text';
 import Tooltip from '@/components/ui/tooltip';
 import type { CouponFormInput } from '@/features/coupons/schemas/forms/coupon-form';
-import { InfoIcon } from '@/icons';
+import { InfoIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { __ } from '@/wpi18n';

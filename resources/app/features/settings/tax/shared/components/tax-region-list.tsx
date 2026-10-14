@@ -16,7 +16,7 @@ import { resolveTaxRegionStrategy } from '@/features/settings/tax/registry';
 import type { TaxRegion } from '@/features/settings/tax/shared/lib/utils';
 import type { TaxSettingsFormInput } from '@/features/settings/tax/shared/schemas/forms/tax-settings-form';
 import type { SettingsOutletContext } from '@/features/settings/types';
-import { EyeClosedIcon, EyeIcon, LocationIcon, TrashIcon } from '@/icons';
+import { EyeClosedIcon, EyeIcon, LocationIcon, TrashIcon } from '@/icons/common';
 import type { Country } from '@/schemas/reference/country';
 import type { Region, RegionsDialogFormPayload } from '@/schemas/shared/region';
 import { useCountriesQuery } from '@/services/country';

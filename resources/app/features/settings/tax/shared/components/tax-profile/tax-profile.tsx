@@ -23,7 +23,7 @@ import {
   useTaxProfilesQuery,
 } from '@/features/settings/tax/shared/services/tax';
 import { useConfirmDelete } from '@/hooks';
-import { BoxClosedIcon, BoxOpenIcon, EditPenIcon, TrashIcon } from '@/icons';
+import { BoxClosedIcon, BoxOpenIcon, EditPenIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
@@ -112,9 +112,7 @@ const TaxProfile = () => {
                         <Text variant="small" weight="medium">
                           {item.name}
                         </Text>
-                        {item.is_default && (
-                          <Badge>{__('Default', 'kirki-ecommerce')}</Badge>
-                        )}
+                        {item.is_default && <Badge>{__('Default', 'kirki-ecommerce')}</Badge>}
                       </StackedItemTitle>
                     </StackedItemContent>
                     <StackedItemActions>

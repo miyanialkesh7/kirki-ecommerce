@@ -1,3 +1,4 @@
+import { PlusIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
@@ -9,7 +10,6 @@ import type {
   AddressFormValues,
   CustomerFormInput,
 } from '@/features/customers/schemas/forms/customer-form';
-import { PlusIcon } from '@/icons';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
@@ -72,7 +72,7 @@ const CustomerAddressCard = () => {
           onClick={() => append(NEW_ADDRESS)}
           cssOverride={styles.addNewAddressButton}
         >
-          <PlusIcon width={16} height={16} />
+          <PlusIcon size={16} />
           <Text variant="small" weight="medium" color="emphasis">
             {__('Add new address', 'kirki-ecommerce')}
           </Text>
