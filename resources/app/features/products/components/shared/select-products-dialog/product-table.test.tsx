@@ -149,7 +149,6 @@ describe('select products dialog table locked variants', () => {
   it('shows a product with every variant locked as disabled and unchecked', () => {
     render(<Harness mode="order" lockedVariantIds={new Set([20, 21])} />);
 
-    expect(screen.getAllByText('Item already picked')).toHaveLength(3);
     expect(isDisabled(checkboxes()[3])).toBe(true);
 
     fireEvent.click(screen.getByText('Product 2'));

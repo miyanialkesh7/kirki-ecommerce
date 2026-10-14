@@ -45,7 +45,10 @@ const ShippingZonePage = () => {
     [shippingSettingsData?.shipping_zones],
   );
 
-  const activeZone = zones.find((zone) => String(zone.id) === String(zoneId));
+  const activeZone = useMemo(
+    () => zones.find((zone) => String(zone.id) === String(zoneId)),
+    [zones, zoneId],
+  );
 
   const disabledRegions = useMemo(
     () =>

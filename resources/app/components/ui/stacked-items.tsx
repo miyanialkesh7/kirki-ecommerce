@@ -172,7 +172,7 @@ const styles = defineStyles({
     },
     '& [data-action-group="true"]': {
       position: 'absolute',
-      right: theme.spacing[3],
+      right: theme.spacing[1],
       top: '50%',
       transform: 'translateY(-50%)',
       pointerEvents: 'none',

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
@@ -61,11 +61,20 @@ const ShippingDeliveryMethod = () => {
   const navigate = useNavigate();
 
   const { data: shippingSettingsData, isLoading } = useSettingsQuery('shipping');
-  const shippingZones = (shippingSettingsData?.shipping_zones as ShippingZone[] | undefined) ?? [];
+  const shippingZones = useMemo(() => {
+    if (!isDefined(shippingSettingsData)) {
+      return [];
+    }
+    return (shippingSettingsData.shipping_zones ?? []) as ShippingZone[];
+  }, [shippingSettingsData]);
 
-  const editingMethod = shippingZones
-    .flatMap((zone) => zone.shipping_methods || [])
-    .find((method) => method.id === methodId);
+  const editingMethod = useMemo(
+    () =>
+      shippingZones
+        .flatMap((zone) => zone.shipping_methods)
+        .find((method) => method.id === methodId),
+    [shippingZones, methodId],
+  );
 
   const methodExists = shippingZones.some((zone) =>
     zone.shipping_methods?.some((method) => method.id === methodId),
@@ -79,7 +88,10 @@ const ShippingDeliveryMethod = () => {
   const { isDirty } = form.formState;
   const methodType = useWatch({ control: form.control, name: 'type' }) ?? 'flat_rate';
 
-  const parentZone = shippingZones.find((zone) => String(zone.id) === String(zoneIdParam));
+  const parentZone = useMemo(
+    () => shippingZones.find((zone) => String(zone.id) === String(zoneIdParam)),
+    [shippingZones, zoneIdParam],
+  );
 
   const breadcrumbs: SettingsBreadcrumb[] = [
     { label: __('Shipping', 'kirki-ecommerce'), to: ShippingRoutes.buildLink() },
@@ -109,12 +121,12 @@ const ShippingDeliveryMethod = () => {
   }, [isLoading, parentZone, methodId, navigate]);
 
   useEffect(() => {
-    if (!editingMethod) {
+    if (!isDefined(editingMethod)) {
       return;
     }
     form.reset(pickFormValues(ShippingMethodFormSchema, editingMethod));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the method id so the form only reloads when a different method is opened; depending on the whole object would discard edits on every keystroke upstream
-  }, [editingMethod?.id]);
+  }, [editingMethod]);
 
   const handleSave = async (payload: ShippingMethodFormPayload) => {
     if (!isDefined(zoneIdParam)) {
