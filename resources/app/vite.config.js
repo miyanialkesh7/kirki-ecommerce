@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
@@ -6,6 +7,17 @@ import { defineConfig } from 'vite';
 import babelPluginScopedAutoLabel from './scripts/babel-plugin-scoped-auto-label.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// bin/dev-up saves this worktree's Docker ports in the root .env.
+const readRootEnv = (key) => {
+  try {
+    const text = fs.readFileSync(path.resolve(__dirname, '../../.env'), 'utf8');
+
+    return text.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1].trim();
+  } catch {
+    return undefined;
+  }
+};
 
 const EAGER_CORE_PACKAGES = new Set([
   'react',
@@ -72,7 +84,7 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     cors: true,
-    origin: 'http://localhost:20100',
+    origin: `http://localhost:${readRootEnv('NGINX_HTTP_PORT') ?? 20100}`,
     fs: {
       allow: [path.resolve(__dirname, '..')],
     },
