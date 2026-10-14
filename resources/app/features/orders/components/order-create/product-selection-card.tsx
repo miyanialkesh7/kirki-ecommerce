@@ -9,7 +9,7 @@ import { PlusIcon, ProductIcon } from '@/icons';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss } from '@/theme/mixins';
-import { __ } from '@/wpi18n';
+import { __, sprintf } from '@/wpi18n';
 
 type ProductSelectionCardProps = {
   onOpenPicker: () => void;
@@ -32,9 +32,7 @@ const ProductSelectionCard = ({
             <ProductIcon />
             <Button size="sm" variant="secondary" onClick={onOpenPicker}>
               <PlusIcon />
-              <Text variant="small" weight="medium">
-                {__('Select Product', 'kirki-ecommerce')}
-              </Text>
+              {__('Add products', 'kirki-ecommerce')}
             </Button>
           </Flex>
         </CardContent>
@@ -47,12 +45,16 @@ const ProductSelectionCard = ({
       <CardHeader cssOverride={styles.headerRow}>
         <CardTitle>
           <Text variant="heading6" weight="semibold">
-            {__('Items', 'kirki-ecommerce')}({rows.length})
+            {sprintf(
+              /* translators: %s: number of items */
+              __('Products (%s)', 'kirki-ecommerce'),
+              rows.length,
+            )}
           </Text>
         </CardTitle>
         <Button variant="secondary" onClick={onOpenPicker}>
           <PlusIcon />
-          {__('Select More', 'kirki-ecommerce')}
+          {__('Add more', 'kirki-ecommerce')}
         </Button>
       </CardHeader>
       <CardContent>

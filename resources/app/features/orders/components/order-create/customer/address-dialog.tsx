@@ -1,5 +1,6 @@
-import { useMemo, useRef } from 'react';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMemo } from 'react';
+import { useForm, useFormContext, useWatch } from 'react-hook-form';
 
 import CountryField from '@/components/form/country-field';
 import StateField from '@/components/form/state-field';
@@ -17,9 +18,16 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import Flex from '@/components/ui/flex';
+import { Form } from '@/components/ui/form';
 import Grid from '@/components/ui/grid';
 import type { Customer } from '@/features/customers';
+import {
+  type OrderAddressFormInput,
+  type OrderAddressFormPayload,
+  OrderAddressFormSchema,
+} from '@/features/orders/schemas/forms/order-address-form';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
+import { pickFormValues } from '@/libs/zod';
 import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
@@ -39,55 +47,24 @@ const ADDRESS_TITLES: Record<AddressType, string> = {
   billing: __('Edit billing address', 'kirki-ecommerce'),
 };
 
-const FIELD_NAMES = {
-  shipping: {
-    firstName: 'shipping_first_name',
-    lastName: 'shipping_last_name',
-    email: 'shipping_email',
-    addressLine1: 'shipping_address_line1',
-    addressLine2: 'shipping_address_line2',
-    city: 'shipping_city',
-    state: 'shipping_state',
-    postalCode: 'shipping_postal_code',
-    country: 'shipping_country',
-    phone: 'shipping_phone',
-  },
-  billing: {
-    firstName: 'billing_first_name',
-    lastName: 'billing_last_name',
-    email: 'billing_email',
-    addressLine1: 'billing_address_line1',
-    addressLine2: 'billing_address_line2',
-    city: 'billing_city',
-    state: 'billing_state',
-    postalCode: 'billing_postal_code',
-    country: 'billing_country',
-    phone: 'billing_phone',
-  },
-} as const satisfies Record<AddressType, Record<string, keyof OrderFormInput>>;
+const ADDRESS_FIELDS = [
+  'first_name',
+  'last_name',
+  'email',
+  'phone',
+  'company',
+  'address_line1',
+  'address_line2',
+  'city',
+  'state',
+  'postal_code',
+  'country',
+] as const satisfies readonly (keyof OrderAddressFormInput)[];
 
-const ADDRESS_FIELD_KEYS = [
-  'shipping_first_name',
-  'shipping_last_name',
-  'shipping_email',
-  'shipping_phone',
-  'shipping_address_line1',
-  'shipping_address_line2',
-  'shipping_city',
-  'shipping_state',
-  'shipping_postal_code',
-  'shipping_country',
-  'billing_first_name',
-  'billing_last_name',
-  'billing_email',
-  'billing_phone',
-  'billing_address_line1',
-  'billing_address_line2',
-  'billing_city',
-  'billing_state',
-  'billing_postal_code',
-  'billing_country',
-] as const satisfies readonly (keyof OrderFormInput)[];
+type AddressField = (typeof ADDRESS_FIELDS)[number];
+
+const toOrderField = (type: AddressType, field: AddressField) =>
+  `${type}_${field}` as const satisfies keyof OrderFormInput;
 
 const AddressDialog = ({
   open,
@@ -97,11 +74,25 @@ const AddressDialog = ({
   onSave,
   isSaving,
 }: AddressDialogProps) => {
-  const form = useFormContext<OrderFormInput>();
-  const snapshot = useRef(form.getValues());
+  const orderForm = useFormContext<OrderFormInput>();
 
-  const fields = FIELD_NAMES[type];
-  const country = useWatch({ control: form.control, name: fields.country });
+  const isBillingSameAsShipping = orderForm.getValues('is_billing_same_as_shipping');
+  const sourceType: AddressType = type === 'billing' && isBillingSameAsShipping ? 'shipping' : type;
+
+  const form = useForm<OrderAddressFormInput, unknown, OrderAddressFormPayload>({
+    resolver: zodResolver(OrderAddressFormSchema),
+    defaultValues: pickFormValues(
+      OrderAddressFormSchema,
+      Object.fromEntries(
+        ADDRESS_FIELDS.map((field) => [
+          field,
+          orderForm.getValues(toOrderField(sourceType, field)),
+        ]),
+      ),
+    ),
+  });
+  const { isDirty } = form.formState;
+  const country = useWatch({ control: form.control, name: 'country' });
 
   const addressOptions = useMemo(() => {
     if (!isDefined(customer)) {
@@ -137,115 +128,93 @@ const AddressDialog = ({
 
     form.setValues(
       {
-        [fields.firstName]: address.first_name ?? '',
-        [fields.lastName]: address.last_name ?? '',
-        [fields.addressLine1]: address.address_line1 ?? '',
-        [fields.addressLine2]: address.address_line2 ?? '',
-        [fields.city]: address.city ?? '',
-        [fields.state]: address.state ?? '',
-        [fields.postalCode]: address.postal_code ?? '',
-        [fields.country]: address.country ?? '',
-        [fields.phone]: address.phone ?? '',
+        first_name: address.first_name ?? '',
+        last_name: address.last_name ?? '',
+        address_line1: address.address_line1 ?? '',
+        address_line2: address.address_line2 ?? '',
+        city: address.city ?? '',
+        state: address.state ?? '',
+        postal_code: address.postal_code ?? '',
+        country: address.country ?? '',
+        phone: address.phone ?? '',
       },
       { shouldDirty: true },
     );
   };
 
   const handleCancel = () => {
-    form.reset(snapshot.current);
     onOpenChange(false);
   };
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      handleCancel();
-      return;
-    }
+  const handleSave = (payload: OrderAddressFormPayload) => {
+    const addressEntries = ADDRESS_FIELDS.map(
+      (field) => [toOrderField(type, field), payload[field]] as const,
+    );
+    const detachesBilling = type === 'billing' && isDirty;
 
-    onOpenChange(nextOpen);
-  };
-
-  const handleSave = async () => {
-    if (type === 'billing') {
-      const shippingDefault =
-        (customer?.addresses ?? []).find((address) => address.is_default_shipping) ?? null;
-      const billingDefault =
-        (customer?.addresses ?? []).find((address) => address.is_default_billing) ?? null;
-      const isSameDefaultAddress = Boolean(
-        shippingDefault && billingDefault && shippingDefault.id === billingDefault.id,
-      );
-
-      const dirtyFields = form.formState.dirtyFields;
-      const areAddressFieldsDirty = ADDRESS_FIELD_KEYS.some((key) => Boolean(dirtyFields[key]));
-
-      form.setValue('is_billing_same_as_shipping', isSameDefaultAddress && !areAddressFieldsDirty, {
-        shouldDirty: true,
-      });
-    }
-
-    const isValid = await form.trigger(Object.values(fields));
-
-    if (!isValid) {
-      return;
-    }
+    orderForm.setValues({
+      ...Object.fromEntries(addressEntries),
+      ...(detachesBilling && { is_billing_same_as_shipping: false }),
+    }, {
+      shouldDirty: true,
+    });
+    orderForm.clearErrors(addressEntries.map(([name]) => name));
 
     onSave?.();
     onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent cssOverride={{ width: '560px' }}>
         <DialogHeader>
           <DialogTitle>{ADDRESS_TITLES[type]}</DialogTitle>
           <DialogCloseButton />
         </DialogHeader>
         <DialogBody>
-          <Flex direction="column" gap={4}>
-            {addressOptions.length > 1 && (
-              <Field cssOverride={{ width: 'max-content' }}>
-                <FieldLabel>{__('Address', 'kirki-ecommerce')}</FieldLabel>
-                <Combobox
-                  options={addressOptions}
-                  value=""
-                  onChange={handleSelectAddress}
-                  placeholder={__('Select address', 'kirki-ecommerce')}
-                  searchPlaceholder={__('Search addresses', 'kirki-ecommerce')}
-                />
-              </Field>
-            )}
+          <Form {...form}>
+            <Flex direction="column" gap={4}>
+              {addressOptions.length > 1 && (
+                <Field cssOverride={{ width: 'max-content' }}>
+                  <FieldLabel>{__('Address', 'kirki-ecommerce')}</FieldLabel>
+                  <Combobox
+                    options={addressOptions}
+                    value=""
+                    onChange={handleSelectAddress}
+                    placeholder={__('Select address', 'kirki-ecommerce')}
+                    searchPlaceholder={__('Search addresses', 'kirki-ecommerce')}
+                  />
+                </Field>
+              )}
 
-            <CountryField name={fields.country} />
+              <CountryField name="country" />
 
-            <Grid>
-              <TextField name={fields.firstName} label={__('First name', 'kirki-ecommerce')} />
-              <TextField name={fields.lastName} label={__('Last name', 'kirki-ecommerce')} />
-            </Grid>
+              <Grid>
+                <TextField name="first_name" label={__('First name', 'kirki-ecommerce')} />
+                <TextField name="last_name" label={__('Last name', 'kirki-ecommerce')} />
+              </Grid>
 
-            <TextField name={fields.addressLine1} label={__('Address', 'kirki-ecommerce')} />
-            <TextField
-              name={fields.addressLine2}
-              label={__('Apartment, suite, etc. (optional)', 'kirki-ecommerce')}
-            />
-
-            <Grid columns={3}>
-              <TextField name={fields.city} label={__('City', 'kirki-ecommerce')} />
-              <StateField
-                country={country}
-                name={fields.state}
-                label={__('State', 'kirki-ecommerce')}
+              <TextField name="address_line1" label={__('Address', 'kirki-ecommerce')} />
+              <TextField
+                name="address_line2"
+                label={__('Apartment, suite, etc. (optional)', 'kirki-ecommerce')}
               />
-              <TextField name={fields.postalCode} label={__('Zip code', 'kirki-ecommerce')} />
-            </Grid>
 
-            <TextField name={fields.phone} label={__('Phone', 'kirki-ecommerce')} />
-          </Flex>
+              <Grid columns={3}>
+                <TextField name="city" label={__('City', 'kirki-ecommerce')} />
+                <StateField country={country} name="state" label={__('State', 'kirki-ecommerce')} />
+                <TextField name="postal_code" label={__('Zip code', 'kirki-ecommerce')} />
+              </Grid>
+
+              <TextField name="phone" label={__('Phone', 'kirki-ecommerce')} />
+            </Flex>
+          </Form>
         </DialogBody>
         <DialogFooter>
           <Button variant="ghost" onClick={handleCancel}>
             {__('Cancel', 'kirki-ecommerce')}
           </Button>
-          <Button variant="primary" onClick={handleSave} loading={isSaving}>
+          <Button variant="primary" onClick={form.handleSubmit(handleSave)} loading={isSaving} disabled={!isDirty}>
             {__('Save', 'kirki-ecommerce')}
           </Button>
         </DialogFooter>

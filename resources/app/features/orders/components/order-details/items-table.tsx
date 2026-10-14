@@ -11,23 +11,16 @@ import { sprintf } from '@/wpi18n';
 
 type ItemsTableProps = {
   items: Order['items'];
-  isTaxInclusive: boolean;
 };
 
-const ItemsTable = ({ items, isTaxInclusive }: ItemsTableProps) => {
+const ItemsTable = ({ items }: ItemsTableProps) => {
   return (
     <Table cssOverride={styles.itemsTable}>
       <TableBody>
         {items.map((item) => {
-          const subtotal = isTaxInclusive
-            ? item.base_subtotal_inclusive_money_object
-            : item.base_subtotal_exclusive_money_object;
-          const unitPrice = isTaxInclusive
-            ? item.base_unit_price_inclusive_money_object
-            : item.base_unit_price_exclusive_money_object;
-          const unitStrikethrough = isTaxInclusive
-            ? item.base_unit_strikethrough_price_inclusive_money_object
-            : item.base_unit_strikethrough_price_exclusive_money_object;
+          const subtotal = item.base_subtotal_money_object;
+          const unitPrice = item.base_unit_price_money_object;
+          const unitStrikethrough = item.base_unit_strikethrough_price_money_object;
 
           return (
             <TableRow key={item.id}>

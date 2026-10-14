@@ -22,14 +22,11 @@ type OrderItemRowProps = {
 
 const OrderItemRow = ({ row, onQuantityChange, onRemove }: OrderItemRowProps) => {
   const { display, quantity, index } = row;
-  const { calculationItemById, calculation } = useOrderCreate();
+  const { calculationItemById } = useOrderCreate();
   const calculationItem = calculationItemById.get(index);
   const quantityLimit = getQuantityLimit(display);
   const lineTotal = calculationItem
-    ? (calculation?.is_tax_inclusive
-        ? calculationItem.base_subtotal_inclusive_money_object
-        : calculationItem.base_subtotal_exclusive_money_object
-      ).display
+    ? calculationItem.base_subtotal_money_object.display
     : EMPTY_AMOUNT;
 
   return (

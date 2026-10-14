@@ -150,7 +150,7 @@ const OrderDetails = () => {
                 <CardContent>
                   <Card cssOverride={mergeCss(cardStyles.innerCard, { overflow: 'hidden' })}>
                     <CardContent cssOverride={styles.zeroPadding}>
-                      <ItemsTable items={order.items} isTaxInclusive={order.is_tax_inclusive} />
+                      <ItemsTable items={order.items} />
                     </CardContent>
                   </Card>
                 </CardContent>
@@ -162,6 +162,7 @@ const OrderDetails = () => {
                 taxLines={order.tax_lines}
                 itemsCount={order.items_count}
                 shippingMethodName={order.shipping_method_name}
+                isTaxInclusive={order.is_tax_inclusive}
                 badge={<Badge variant={paymentBadge.variant}>{paymentBadge.text}</Badge>}
                 actions={
                   paymentActions.length > 0 && (

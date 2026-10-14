@@ -98,7 +98,14 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
       form.subscribe({
         formState: { values: true },
         callback: ({ name, values }) => {
-          if (!isDefined(name) || isApplyingCorrectionRef.current) {
+          if (
+            isDefined(name) &&
+            ['admin_notes', 'customer_notes', 'flags', 'is_manual'].includes(name)
+          ) {
+            return;
+          }
+
+          if (isApplyingCorrectionRef.current) {
             return;
           }
 

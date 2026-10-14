@@ -18,17 +18,12 @@ const money = (raw: number): MoneyObject => ({
   currency: { code: 'USD', symbol: '$' },
 });
 
-const buildCalculationResponse = (
-  itemsCount: number,
-  overrides: Record<string, unknown> = {},
-) => ({
+const buildCalculationResponse = (itemsCount: number, overrides: Record<string, unknown> = {}) => ({
   is_tax_inclusive: false,
   totals: {
-    base_items_subtotal_exclusive_money_object: money(0),
-    base_items_subtotal_inclusive_money_object: money(0),
+    base_items_subtotal_money_object: money(0),
     base_order_discount_money_object: money(0),
-    base_order_total_exclusive_money_object: money(0),
-    base_order_total_inclusive_money_object: money(0),
+    base_order_total_money_object: money(0),
     base_tax_total_money_object: money(0),
     base_shipping_amount_money_object: money(0),
     base_shipping_strikethrough_money_object: money(0),
@@ -41,10 +36,8 @@ const buildCalculationResponse = (
     {
       id: 0,
       quantity: 1,
-      base_subtotal_exclusive_money_object: money(0),
-      base_subtotal_inclusive_money_object: money(0),
-      base_unit_price_exclusive_money_object: money(0),
-      base_unit_price_inclusive_money_object: money(0),
+      base_subtotal_money_object: money(0),
+      base_unit_price_money_object: money(0),
       applied_product_coupons: [],
     },
   ],
@@ -142,7 +135,7 @@ describe('useOrderCreate debounce -> payload -> query wiring', () => {
     expect(result.current.calculation).toBeUndefined();
   });
 
-  it('does not fire the calculation query when the form is reset', async () => {
+  it('fires the calculation query when the form is reset', async () => {
     const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
 
     const { result } = renderUseOrderCreate();
@@ -151,10 +144,51 @@ describe('useOrderCreate debounce -> payload -> query wiring', () => {
       result.current.form.reset({ ...result.current.form.getValues(), customer_id: 7 });
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await waitFor(() => expect(getRequestCount()).toBe(1), { timeout: 2000 });
 
     expect(result.current.form.getValues('customer_id')).toBe(7);
-    expect(getRequestCount()).toBe(0);
+  });
+
+  it('fires the calculation query when addresses are set in bulk', async () => {
+    const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
+
+    const { result } = renderUseOrderCreate();
+
+    act(() => {
+      result.current.form.setValues(
+        { shipping_country: 'US', shipping_city: 'Austin' },
+        {
+          shouldDirty: true,
+        },
+      );
+    });
+
+    await waitFor(() => expect(getRequestCount()).toBe(1), { timeout: 2000 });
+  });
+
+  it('fires one calculation query for a full address block set at once', async () => {
+    const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
+
+    const { result } = renderUseOrderCreate();
+
+    act(() => {
+      result.current.form.setValues(
+        {
+          shipping_first_name: 'John',
+          shipping_last_name: 'Doe',
+          shipping_address_line1: '221B Baker Street',
+          shipping_city: 'London',
+          shipping_postal_code: 'NW1 6XE',
+          shipping_country: 'GB',
+        },
+        { shouldDirty: true },
+      );
+    });
+
+    await waitFor(() => expect(getRequestCount()).toBe(1), { timeout: 2000 });
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    expect(getRequestCount()).toBe(1);
   });
 
   it('fires the calculation query for a change made after a reset', async () => {
@@ -210,7 +244,17 @@ describe('useOrderCreate debounce -> payload -> query wiring', () => {
 describe('useOrderCreate calculation reconciliation', () => {
   it('syncs a stock-clamped quantity back onto the form', async () => {
     mockCalculationResponse(() =>
-      buildCalculationResponse(1, { items: [{ id: 0, quantity: 1, base_subtotal_exclusive_money_object: money(0), base_subtotal_inclusive_money_object: money(0), base_unit_price_exclusive_money_object: money(0), base_unit_price_inclusive_money_object: money(0), applied_product_coupons: [] }] }),
+      buildCalculationResponse(1, {
+        items: [
+          {
+            id: 0,
+            quantity: 1,
+            base_subtotal_money_object: money(0),
+            base_unit_price_money_object: money(0),
+            applied_product_coupons: [],
+          },
+        ],
+      }),
     );
 
     const { result } = renderUseOrderCreate();
@@ -282,10 +326,8 @@ describe('useOrderCreate calculation reconciliation', () => {
         items: items.map((_item, index) => ({
           id: index,
           quantity: 1,
-          base_subtotal_exclusive_money_object: money(0),
-          base_subtotal_inclusive_money_object: money(0),
-          base_unit_price_exclusive_money_object: money(0),
-          base_unit_price_inclusive_money_object: money(0),
+          base_subtotal_money_object: money(0),
+          base_unit_price_money_object: money(0),
           applied_product_coupons: [],
         })),
       });
@@ -325,10 +367,8 @@ describe('useOrderCreate calculation reconciliation', () => {
         items: items.map((item, index) => ({
           id: index,
           quantity: item.variant_id === 101 ? 1 : item.quantity,
-          base_subtotal_exclusive_money_object: money(0),
-          base_subtotal_inclusive_money_object: money(0),
-          base_unit_price_exclusive_money_object: money(0),
-          base_unit_price_inclusive_money_object: money(0),
+          base_subtotal_money_object: money(0),
+          base_unit_price_money_object: money(0),
           applied_product_coupons: [],
         })),
       });
