@@ -87,11 +87,11 @@ const CustomerCard = ({ onSave, isSaving, isGuest, mode }: CustomerCardProps) =>
       return;
     }
 
-    form.reset({
-      ...form.getValues(),
-      ...toOrderAddresses(customer),
-      customer_id: customer.id,
-    });
+    form.setValues(
+      { ...toOrderAddresses(customer), customer_id: customer.id },
+      { shouldDirty: true },
+    );
+    form.clearErrors('customer_id');
   }, [customer, form]);
 
   const handleSelectCustomer = (id: number) => {
@@ -105,7 +105,7 @@ const CustomerCard = ({ onSave, isSaving, isGuest, mode }: CustomerCardProps) =>
       WATCHED_ADDRESS_FIELDS.map((field) => [field, defaults[field]]),
     );
     setSelectedCustomerId(null);
-    form.reset({ ...form.getValues(), ...defaultAddresses, customer_id: null });
+    form.setValues({ ...defaultAddresses, customer_id: null }, { shouldDirty: true });
   };
 
   const [
