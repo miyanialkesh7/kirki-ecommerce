@@ -1109,41 +1109,146 @@ class CartApiTest extends RestTestCase
 
     public function test_duplicate_variant_merge_uses_guest_quantity(): void
     {
-        $product = $this->create_product([
-            'variants' => [
-                [
-                    'base_price' => 29.99,
-                    'sku' => 'SKU-' . wp_generate_password(6, false),
-                    'available_quantity' => 5,
-                    'in_stock' => true,
-                    'track_inventory' => true,
-                    'is_default' => true,
-                    'attribute_values' => [],
-                ],
-            ],
-        ]);
-        $variant_id = $this->default_variant_id($product);
+        [$product, $variant_id] = $this->create_stocked_product(10);
         $user_id = static::factory()->user->create(['role' => 'subscriber']);
         $owned = $this->raw_cart(['user_id' => $user_id]);
         $guest = $this->raw_cart(['cart_token' => uuid()]);
 
-        CartItem::create([
-            'cart_id' => $owned->id,
-            'product_id' => $product['id'],
-            'variant_id' => $variant_id,
-            'quantity' => 3,
-        ]);
-        CartItem::create([
-            'cart_id' => $guest->id,
-            'product_id' => $product['id'],
-            'variant_id' => $variant_id,
-            'quantity' => 9,
-        ]);
+        $this->add_raw_item($owned, $product, $variant_id, 3);
+        $this->add_raw_item($guest, $product, $variant_id, 9);
 
         $result = app()->make(CartService::class)->get_cart($user_id, $guest->cart_token);
-        $item = $result->items->first();
 
-        $this->assertEquals(9, $item->quantity);
+        $this->assertCount(1, $result->items);
+        $this->assertEquals(9, $result->items->first()->quantity);
+    }
+
+    public function test_duplicate_variant_merge_caps_quantity_to_available_stock(): void
+    {
+        [$product, $variant_id] = $this->create_stocked_product(5);
+        $user_id = static::factory()->user->create(['role' => 'subscriber']);
+        $owned = $this->raw_cart(['user_id' => $user_id]);
+        $guest = $this->raw_cart(['cart_token' => uuid()]);
+
+        $this->add_raw_item($owned, $product, $variant_id, 3);
+        $this->add_raw_item($guest, $product, $variant_id, 9);
+
+        $result = app()->make(CartService::class)->get_cart($user_id, $guest->cart_token);
+
+        $this->assertCount(1, $result->items);
+        $this->assertEquals(5, $result->items->first()->quantity);
+        $this->assertNull(CartModel::find($guest->id));
+    }
+
+    public function test_duplicate_variant_merge_caps_quantity_to_per_order_limit(): void
+    {
+        [$product, $variant_id] = $this->create_stocked_product(50, ['has_limit_per_order' => true, 'max_per_order' => 6]);
+        $user_id = static::factory()->user->create(['role' => 'subscriber']);
+        $owned = $this->raw_cart(['user_id' => $user_id]);
+        $guest = $this->raw_cart(['cart_token' => uuid()]);
+
+        $this->add_raw_item($owned, $product, $variant_id, 3);
+        $this->add_raw_item($guest, $product, $variant_id, 9);
+
+        $result = app()->make(CartService::class)->get_cart($user_id, $guest->cart_token);
+
+        $this->assertEquals(6, $result->items->first()->quantity);
+    }
+
+    public function test_merge_caps_carried_item_and_drops_out_of_stock_item(): void
+    {
+        [$limited_product, $limited_variant_id] = $this->create_stocked_product(2);
+        [$sold_out_product, $sold_out_variant_id] = $this->create_stocked_product(0);
+        $user_id = static::factory()->user->create(['role' => 'subscriber']);
+        $this->raw_cart(['user_id' => $user_id]);
+        $guest = $this->raw_cart(['cart_token' => uuid()]);
+
+        $this->add_raw_item($guest, $limited_product, $limited_variant_id, 7);
+        $this->add_raw_item($guest, $sold_out_product, $sold_out_variant_id, 1);
+
+        $result = app()->make(CartService::class)->get_cart($user_id, $guest->cart_token);
+
+        $this->assertCount(1, $result->items);
+        $this->assertEquals($limited_variant_id, $result->items->first()->variant_id);
+        $this->assertEquals(2, $result->items->first()->quantity);
+    }
+
+    public function test_merge_carries_guest_coupons_and_keeps_owned_coupons_without_duplicates(): void
+    {
+        $this->prepare_variant();
+        $shared_id = $this->create_coupon('SHARED-' . wp_generate_password(6, false));
+        $guest_only_id = $this->create_coupon('GUEST-' . wp_generate_password(6, false));
+        $owned_only_id = $this->create_coupon('OWNED-' . wp_generate_password(6, false));
+
+        $user_id = static::factory()->user->create(['role' => 'subscriber']);
+        $owned = $this->create_service_cart($user_id, $this->variant_id, 1);
+        $guest = $this->create_service_cart(null, $this->variant_id, 1);
+
+        $service = app()->make(CartService::class);
+        $service->add_coupon($owned->id, $shared_id);
+        $service->add_coupon($owned->id, $owned_only_id);
+        $service->add_coupon($guest->id, $shared_id);
+        $service->add_coupon($guest->id, $guest_only_id);
+
+        $merged = $service->get_cart($user_id, $guest->cart_token);
+
+        $coupon_ids = $merged->coupons->pluck('id')->all();
+        sort($coupon_ids);
+        $expected = [$shared_id, $guest_only_id, $owned_only_id];
+        sort($expected);
+
+        $this->assertEquals($expected, $coupon_ids);
+        $this->assertEquals(3, CartCoupon::where('cart_id', $owned->id)->count());
+        $this->assertNull(CartModel::find($guest->id));
+    }
+
+    public function test_guest_coupon_survives_login_merge_and_is_priced(): void
+    {
+        $this->prepare_variant();
+        $code = 'KEEP-' . wp_generate_password(6, false);
+        $coupon_id = $this->create_coupon($code);
+
+        $user_id = static::factory()->user->create(['role' => 'subscriber']);
+        $this->create_service_cart($user_id, $this->variant_id, 1);
+        $guest = $this->create_service_cart(null, $this->variant_id, 1);
+        app()->make(CartService::class)->add_coupon($guest->id, $coupon_id);
+
+        wp_set_current_user($user_id);
+
+        $payload = $this->with_cart_cookie($guest->cart_token, function () {
+            return $this->assert_api_success($this->request('GET', 'cart'));
+        });
+
+        $this->assertNotNull($this->find_coupon_in_response($payload['data'], $code));
+    }
+
+    public function test_carried_coupon_that_no_longer_applies_is_dropped_on_next_read(): void
+    {
+        $this->prepare_variant();
+        $valid_code = 'VALID-' . wp_generate_password(6, false);
+        $expired_code = 'EXPIRED-' . wp_generate_password(6, false);
+        $valid_id = $this->create_coupon($valid_code);
+        $expired_id = $this->create_coupon($expired_code);
+
+        $user_id = static::factory()->user->create(['role' => 'subscriber']);
+        $this->create_service_cart($user_id, $this->variant_id, 1);
+        $guest = $this->create_service_cart(null, $this->variant_id, 1);
+
+        $service = app()->make(CartService::class);
+        $service->add_coupon($guest->id, $valid_id);
+        $service->add_coupon($guest->id, $expired_id);
+
+        CouponModel::where('id', $expired_id)->update(['is_active' => false]);
+
+        wp_set_current_user($user_id);
+
+        $payload = $this->with_cart_cookie($guest->cart_token, function () {
+            return $this->assert_api_success($this->request('GET', 'cart'));
+        });
+
+        $this->assertNotNull($this->find_coupon_in_response($payload['data'], $valid_code));
+        $this->assertNull($this->find_coupon_in_response($payload['data'], $expired_code));
+        $this->assertEquals(0, CartCoupon::where('coupon_id', $expired_id)->count());
     }
 
     public function test_cross_shopper_item_update_and_remove_are_forbidden(): void
@@ -1207,6 +1312,51 @@ class CartApiTest extends RestTestCase
         $dto->user_id = $user_id;
 
         return app()->make(AddToCartAction::class)->execute($dto);
+    }
+
+    /**
+     * Create a product with one tracked-stock default variant.
+     *
+     * @param int                  $stock     Available quantity.
+     * @param array<string, mixed> $overrides Extra variant attributes.
+     *
+     * @return array{0: array, 1: int} The product and its default variant id.
+     */
+    protected function create_stocked_product(int $stock, array $overrides = []): array
+    {
+        $product = $this->create_product([
+            'variants' => [array_merge([
+                'base_price' => 29.99,
+                'sku' => 'SKU-' . wp_generate_password(6, false),
+                'available_quantity' => $stock,
+                'in_stock' => $stock > 0,
+                'track_inventory' => true,
+                'is_default' => true,
+                'attribute_values' => [],
+            ], $overrides)],
+        ]);
+
+        return [$product, $this->default_variant_id($product)];
+    }
+
+    /**
+     * Insert a cart line directly, bypassing add-to-cart validation.
+     *
+     * @param CartModel $cart       Cart receiving the line.
+     * @param array     $product    Product the variant belongs to.
+     * @param int       $variant_id Variant id.
+     * @param int       $quantity   Line quantity.
+     *
+     * @return void
+     */
+    protected function add_raw_item(CartModel $cart, array $product, int $variant_id, int $quantity): void
+    {
+        CartItem::create([
+            'cart_id' => $cart->id,
+            'product_id' => $product['id'],
+            'variant_id' => $variant_id,
+            'quantity' => $quantity,
+        ]);
     }
 
     protected function raw_cart(array $overrides = [])

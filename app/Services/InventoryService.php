@@ -104,6 +104,40 @@ class InventoryService
     }
 
     /**
+     * Lower a quantity to the most stock and the per-order limit allow.
+     *
+     * Applies the same rules as has_stock() and is_within_limit(). Never raises the quantity.
+     *
+     * @since 1.0.0
+     *
+     * @param int $variant_id Variant ID.
+     * @param int $quantity   Quantity wanted.
+     * @return int The allowed quantity, from 0 up to $quantity; $quantity itself when the variant does not exist.
+     */
+    public function max_purchasable_quantity(int $variant_id, int $quantity)
+    {
+        $variant = $this->variant_service->find_or_null($variant_id);
+
+        if (empty($variant)) {
+            return $quantity;
+        }
+
+        $allowed = $quantity;
+
+        $is_stock_unlimited = (!$variant->track_inventory && $variant->in_stock) || $variant->allow_back_order;
+
+        if (!$is_stock_unlimited) {
+            $allowed = min($allowed, max(0, $variant->available_quantity));
+        }
+
+        if ($variant->has_limit_per_order) {
+            $allowed = min($allowed, max(0, $variant->max_per_order));
+        }
+
+        return $allowed;
+    }
+
+    /**
      * Increase the available quantity of a variant.
      *
      * @since 1.0.0
