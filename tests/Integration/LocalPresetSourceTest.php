@@ -80,6 +80,30 @@ class LocalPresetSourceTest extends RestTestCase
         $this->assertSame([], $region['states'][0]['rules']);
     }
 
+    public function test_home_scope_region_lists_no_state_when_the_store_has_none(): void
+    {
+        $region = $this->build(['country' => 'US'], ['standard']);
+
+        $this->assertSame('US', $region['code']);
+        $this->assertFalse($region['is_central_tax_enabled']);
+        $this->assertSame([], $region['states']);
+    }
+
+    public function test_home_scope_region_lists_no_state_when_the_presets_do_not_know_it(): void
+    {
+        $region = $this->build(['country' => 'US', 'state' => '9999'], ['standard']);
+
+        $this->assertSame([], $region['states']);
+    }
+
+    public function test_all_scope_region_lists_every_state_without_a_home_extra_when_the_store_has_no_state(): void
+    {
+        $region = $this->build(['country' => 'CA'], ['standard', 'food']);
+
+        $rates = array_column($region['states'], 'product_tax_rate', 'name');
+        $this->assertEquals(['Alberta' => 5, 'British Columbia' => 5], $rates);
+    }
+
     /**
      * Build the tax region from the fixture for a tax-collecting store.
      *

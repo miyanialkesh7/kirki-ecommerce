@@ -606,11 +606,34 @@ class StorePresetsTest extends RestTestCase
         $this->assertEquals(6.25, $region['states'][0]['shipping_tax_rate']);
     }
 
-    public function test_us_store_without_a_state_gets_no_region(): void
+    public function test_us_store_without_a_state_gets_a_region_with_no_states(): void
     {
         $this->setup_store(['country' => 'US', 'currency' => 'USD', 'store_address' => ['city' => 'Austin']]);
 
-        $this->assertSame([], $this->tax_regions());
+        $regions = $this->tax_regions();
+        $this->assertCount(1, $regions);
+        $this->assertSame('US', $regions[0]['code']);
+        $this->assertTrue($regions[0]['is_enabled']);
+        $this->assertFalse($regions[0]['is_central_tax_enabled']);
+        $this->assertSame([], $regions[0]['states']);
+    }
+
+    public function test_us_store_in_a_state_without_sales_tax_gets_a_region_with_no_states(): void
+    {
+        $oregon = (string) array_column(CountryData::states_for('US'), 'id', 'name')['Oregon'];
+
+        $this->setup_store(['country' => 'US', 'currency' => 'USD', 'store_address' => ['state' => $oregon]]);
+
+        $regions = $this->tax_regions();
+        $this->assertCount(1, $regions);
+        $this->assertSame([], $regions[0]['states']);
+    }
+
+    public function test_canadian_store_without_a_state_still_gets_every_province(): void
+    {
+        $this->setup_store(['country' => 'CA', 'currency' => 'CAD']);
+
+        $this->assertCount(13, $this->tax_regions()[0]['states']);
     }
 
     public function test_canadian_store_gets_every_province_with_its_own_pst(): void
