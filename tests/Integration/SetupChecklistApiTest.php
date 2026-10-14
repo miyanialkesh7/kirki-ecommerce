@@ -301,6 +301,29 @@ class SetupChecklistApiTest extends RestTestCase
     }
 
     /**
+     * The checklist is complete only when every visible step is recorded, and a hidden tax step is ignored.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_is_complete_reads_the_recorded_visible_steps(): void
+    {
+        $service = app()->make(SetupChecklistService::class);
+
+        Option::set(OptionKeys::SETUP_CHECKLIST, ['completed' => ['products' => 1, 'payments' => 1, 'shipping' => 1]]);
+        $this->reset_option_manager_cache();
+        $this->assertFalse($service->is_complete());
+
+        $this->set_settings(OptionKeys::GENERAL_SETTINGS, ['is_tax_calculation_enabled' => false]);
+        $this->assertTrue($service->is_complete());
+
+        $this->set_settings(OptionKeys::GENERAL_SETTINGS, ['is_tax_calculation_enabled' => true]);
+        Option::set(OptionKeys::SETUP_CHECKLIST, ['completed' => ['products' => 1, 'payments' => 1, 'tax' => 1, 'shipping' => 1]]);
+        $this->reset_option_manager_cache();
+        $this->assertTrue($service->is_complete());
+    }
+
+    /**
      * Fetch the checklist steps through the API.
      *
      * @return array

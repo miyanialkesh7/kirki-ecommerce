@@ -11,6 +11,7 @@ use Kirki\Ecommerce\App\Http\Controllers\Api\CategoryController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OfflinePaymentController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnboardingController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\SetupChecklistController;
+use Kirki\Ecommerce\App\Http\Controllers\Api\DashboardController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\OnlinePaymentController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\PaymentMethodController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\VariantController;
@@ -61,6 +62,9 @@ Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], 
     // Setup Checklist
     Route::get('/setup-checklist', [SetupChecklistController::class, 'index']);
     Route::post('/setup-checklist/{step}/complete', [SetupChecklistController::class, 'complete']);
+
+    // Dashboard
+    Route::get('/dashboard/overview', [DashboardController::class, 'overview']);
 
     // App Config
     Route::get('/app-config', [AppConfigController::class, 'get']);

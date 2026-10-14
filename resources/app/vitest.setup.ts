@@ -14,4 +14,5 @@
   is_dev: true,
   assets_url: 'https://example.test/wp-content/plugins/kirki-ecommerce/assets',
   is_onboarded: true,
+  is_setup_complete: false,
 };
