@@ -41,8 +41,6 @@ const OrderCreateContent = () => {
     (method) => String(method.id) === shippingMethodId,
   )?.name;
 
-  const isDirty = form.formState.isDirty;
-
   return (
     <Page containerSize="xl">
       <Form {...form}>
@@ -54,11 +52,9 @@ const OrderCreateContent = () => {
               <Button variant="ghost" onClick={handleBack}>
                 {__('Cancel', 'kirki-ecommerce')}
               </Button>
-              {isDirty && (
-                <Button variant="primary" onClick={handleSubmit} loading={isCreating}>
-                  {__('Create Order', 'kirki-ecommerce')}
-                </Button>
-              )}
+              <Button variant="primary" onClick={handleSubmit} loading={isCreating}>
+                {__('Create Order', 'kirki-ecommerce')}
+              </Button>
             </>
           }
           hasBack
