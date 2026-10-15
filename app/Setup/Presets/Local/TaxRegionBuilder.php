@@ -99,24 +99,29 @@ class TaxRegionBuilder
      * so every listed state gets the country-wide profile rates, and a state's
      * own profile rates replace them for that state.
      *
+     * The region is built even when the store address has no state the
+     * presets know: it then lists no state when the scope is "home" (the
+     * merchant adds their state), and every state when the scope is "all".
+     *
      * @since 1.0.0
      *
      * @param PresetContext        $context      The store's answers.
      * @param array<string, mixed> $tax          The country's tax presets.
      * @param array<string, mixed> $rates        Country-wide profile rates keyed by tax profile key.
      * @param string[]             $profile_keys Keys of the tax profiles the store receives.
-     * @return array<string, mixed>|null Null when the store address has no state the presets know.
+     * @return array<string, mixed>
      */
     protected function make_states_region(PresetContext $context, array $tax, array $rates, array $profile_keys)
     {
         $presets = $tax['states'] ?? [];
         $home = (string) $context->state;
 
-        if ($home === '' || !isset($presets[$home])) {
-            return null;
+        if (static::SCOPE_ALL === ($tax['scope'] ?? null)) {
+            $state_ids = array_map('strval', array_keys($presets));
+        } else {
+            $state_ids = isset($presets[$home]) ? [$home] : [];
         }
 
-        $state_ids = static::SCOPE_ALL === ($tax['scope'] ?? null) ? array_map('strval', array_keys($presets)) : [$home];
         $state_names = array_column(CountryData::states_for($context->country), 'name', 'id');
         $states = [];
 

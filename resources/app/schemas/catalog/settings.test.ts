@@ -222,11 +222,8 @@ describe('CurrencySettingsSchema', () => {
       decimal_separator: '.',
       is_automatic_update_enabled: true,
       api_provider: 'currency_api',
-      api_config: {
-        api_key: 'cur_live_x',
-        update_frequency: 'hourly',
-        fallback_behaviour: null,
-        is_cache_enabled: true,
+      api_configs: {
+        currency_api: { api_key: 'cur_live_x', update_frequency: 'every_1_hour' },
       },
       last_sync_at: '2026-02-26 11:28:22',
       next_sync_at: '2026-02-26 12:28:23',
@@ -235,18 +232,24 @@ describe('CurrencySettingsSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('accepts api_config as an empty array — PHP empty-associative-array-as-JSON quirk, confirmed live (GET /settings/currency)', () => {
-    const result = CurrencySettingsSchema.safeParse({
-      currency_format: 'short',
-      is_automatic_update_enabled: true,
-      api_config: {},
-    });
-    expect(result.success).toBe(true);
-  });
-
   it('accepts every field absent', () => {
     const result = CurrencySettingsSchema.safeParse({});
     expect(result.success).toBe(true);
+  });
+
+  it('keeps the saved API configuration of each provider', () => {
+    const result = CurrencySettingsSchema.parse({
+      api_configs: {
+        exchange_rates_api: { api_key: 'key-a', update_frequency: 'every_1_hour' },
+        currency_api: { api_key: 'key-b', update_frequency: null },
+      },
+    });
+    expect(result.api_configs?.exchange_rates_api?.api_key).toBe('key-a');
+    expect(result.api_configs?.currency_api?.api_key).toBe('key-b');
+  });
+
+  it('accepts an empty api_configs map', () => {
+    expect(CurrencySettingsSchema.safeParse({ api_configs: {} }).success).toBe(true);
   });
 });
 

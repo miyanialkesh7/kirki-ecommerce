@@ -17,6 +17,8 @@
  * an entry for the country.
  */
 
+defined('ABSPATH') || exit;
+
 return [
     'AF' => [
         'name' => __('Afghanistan', 'kirki-ecommerce'),

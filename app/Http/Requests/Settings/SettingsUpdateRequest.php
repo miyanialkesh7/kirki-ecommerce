@@ -9,7 +9,6 @@ use Kirki\Ecommerce\App\Constants\ConsentLocations;
 use Kirki\Ecommerce\App\Constants\ConsentMethods;
 use Kirki\Ecommerce\App\Constants\CurrencyFormat;
 use Kirki\Ecommerce\App\Constants\CurrencyPosition;
-use Kirki\Ecommerce\App\Constants\CurrencyUpdateFallback;
 use Kirki\Ecommerce\App\Constants\DecimalSeparator;
 use Kirki\Ecommerce\App\Constants\Email\AdminInventoryNotification;
 use Kirki\Ecommerce\App\Constants\Email\AdminOrderNotification;
@@ -778,29 +777,9 @@ class SettingsUpdateRequest extends Request
 
                 return true;
             },
-            // TODO: replace with a reusable required-if-sibling rule once it can safely mix
-            // with type-check rules (e.g. string/array) without failing on null when not required.
-            'data.api_config' => function ($value, $key, $data) {
-                if (($data['data']['is_automatic_update_enabled'] ?? null) !== true) {
-                    return true;
-                }
-
-                if ($value === null || (is_array($value) && empty($value))) {
-                    /* translators: %s: field name */
-                    return sprintf(__('The %s field is required.', 'kirki-ecommerce'), $key);
-                }
-
-                if (!is_array($value)) {
-                    /* translators: %s: field name */
-                    return sprintf(__('The %s field must be an array.', 'kirki-ecommerce'), $key);
-                }
-
-                return true;
-            },
-            'data.api_config.api_key' => 'nullable|string',
-            'data.api_config.update_frequency' => 'nullable|string|in:' . implode(',', UpdateFrequency::get_constant_values()),
-            'data.api_config.fallback_behaviour' => 'nullable|string|in:' . implode(',', CurrencyUpdateFallback::get_constant_values()),
-            'data.api_config.is_cache_enabled' => 'nullable|boolean',
+            'data.api_configs' => 'nullable|array',
+            'data.api_configs.*.api_key' => 'nullable|string',
+            'data.api_configs.*.update_frequency' => 'nullable|string|in:' . implode(',', UpdateFrequency::get_constant_values()),
         ];
     }
 
@@ -820,11 +799,9 @@ class SettingsUpdateRequest extends Request
             'data.decimal_separator' => Sanitizer::TEXT,
             'data.is_automatic_update_enabled' => Sanitizer::BOOL,
             'data.api_provider' => Sanitizer::TEXT,
-            'data.api_config' => Sanitizer::ARRAY,
-            'data.api_config.api_key' => Sanitizer::TEXT,
-            'data.api_config.update_frequency' => Sanitizer::TEXT,
-            'data.api_config.fallback_behaviour' => Sanitizer::TEXT,
-            'data.api_config.is_cache_enabled' => Sanitizer::BOOL,
+            'data.api_configs' => Sanitizer::ARRAY,
+            'data.api_configs.*.api_key' => Sanitizer::TEXT,
+            'data.api_configs.*.update_frequency' => Sanitizer::TEXT,
         ];
     }
 

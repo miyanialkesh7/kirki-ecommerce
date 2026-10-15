@@ -211,8 +211,16 @@ methods for *Perishable* items and multiplies every method by 1.25 for
 | `eu` | One *European Union* region of type **micro business** that holds one country, the store's country, with its standard rate. A micro-business region holds exactly one country, the same as the admin form allows. | Any EU member |
 | `states` | A general per-state region. `scope: home` lists only the store address state. `scope: all` lists every state, and the home state also gets its `home_extra` rate. | US (home state only), Canada (GST/HST everywhere, plus PST/QST in the home province) |
 
-A `states` country whose store address has no known state gets no region. The
-address state is matched by its id in the bundled state dataset.
+The address state is matched by its id in the bundled state dataset. The address
+is optional in the wizard, so a `states` country still gets a region when the
+store address has no state, or a state with no preset:
+
+- With `scope: home` (US), the region has no states. The merchant adds their
+  state in *Settings > Tax*. A state with no preset is a state with no sales
+  tax (for example Oregon), so an empty region is correct for it.
+- With `scope: all` (Canada), the region lists every state, because the
+  federal tax applies everywhere. Only the home state's `home_extra` rate is
+  left out.
 
 Where the home country charges one of the created tax profiles at another rate
 than the standard rate (`profile_rates`), the region gets a rule "tax profile is

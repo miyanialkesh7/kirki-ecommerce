@@ -69,6 +69,24 @@ class SetupChecklistService
     }
 
     /**
+     * Check whether every visible step is recorded as completed.
+     *
+     * Reads only the stored state and does not check the step rules, so a step
+     * whose data was added outside the Home page counts once get_state() records it.
+     *
+     * @since 1.0.0
+     *
+     * @return bool
+     */
+    public function is_complete()
+    {
+        $completed = $this->read()['completed'];
+
+        return collection($this->get_visible_steps())
+            ->every(fn($step) => isset($completed[$step]));
+    }
+
+    /**
      * Record a confirmable step as completed, keeping an earlier completion time.
      *
      * @since 1.0.0

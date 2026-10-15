@@ -197,8 +197,6 @@ export const CurrencyApiConfigSchema = z
   .object({
     api_key: z.string().nullish(),
     update_frequency: z.string().nullish(),
-    fallback_behaviour: z.string().nullish(),
-    is_cache_enabled: z.boolean().nullish(), // @todo: not yet implemented in backend
   })
   .passthrough();
 
@@ -219,9 +217,11 @@ export const CurrencySettingsSchema = z
     decimal_separator: z.string().nullish(),
     is_automatic_update_enabled: z.boolean().nullish().default(false),
     api_provider: z.string().nullish(),
-    api_config: CurrencyApiConfigSchema.nullish(),
+    api_configs: z.record(z.string(), CurrencyApiConfigSchema).nullish(),
     last_sync_at: z.string().nullish(),
     next_sync_at: z.string().nullish(),
+    last_sync_error: z.string().nullish(),
+    last_sync_error_at: z.string().nullish(),
     usage: CurrencyUsageSchema.nullish(),
   })
   .passthrough();

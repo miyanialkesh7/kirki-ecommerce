@@ -5,6 +5,7 @@ namespace Kirki\Ecommerce\App\Supports;
 defined('ABSPATH') || exit;
 
 use Kirki\Ecommerce\App\Constants\Hooks\DevHookNames;
+use Kirki\Ecommerce\App\Services\SetupChecklistService;
 use Kirki\Ecommerce\Framework\Http\Superglobals;
 use Kirki\Ecommerce\Framework\Sanitizer;
 use Kirki\Ecommerce\Framework\Supports\Arr;
@@ -121,6 +122,7 @@ class Assets
             'login_url' => esc_url(wp_login_url()),
             'assets_url' => esc_url(KIRKI_ECOMMERCE_ASSETS_URL),
             'is_onboarded' => Onboarding::is_completed(),
+            'is_setup_complete' => app(SetupChecklistService::class)->is_complete(),
         ];
 
         $config_data = apply_filters(DevHookNames::CONFIG_DATA, $config_data);

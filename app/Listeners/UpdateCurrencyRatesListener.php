@@ -8,10 +8,9 @@ use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\Events\SettingsChangedEvent;
 use Kirki\Ecommerce\App\Facades\CurrencyExchange;
 use Kirki\Ecommerce\Framework\Listener;
-use Kirki\Ecommerce\App\Supports\Facades\Settings;
 
 /**
- * Listener for SettingsChangedEvent that syncs exchange rates after the currency settings are saved.
+ * Listener for SettingsChangedEvent that starts or stops the automatic exchange rate sync schedule.
  *
  * @since 1.0.0
  */
@@ -28,7 +27,9 @@ class UpdateCurrencyRatesListener extends Listener
     }
 
     /**
-     * Sync exchange rates when the currency settings change with automatic updates enabled and a provider active.
+     * Start, replace or stop the automatic sync schedule after the currency settings are saved.
+     *
+     * A save that changes none of the schedule settings leaves the schedule as it is.
      *
      * @since 1.0.0
      *
@@ -41,12 +42,13 @@ class UpdateCurrencyRatesListener extends Listener
             return;
         }
 
-        $is_automatic_update_enabled = Settings::get(OptionKeys::CURRENCY_SETTINGS)->get('is_automatic_update_enabled');
-
-        if (!$is_automatic_update_enabled || CurrencyExchange::get_active_provider() === null) {
+        if (!CurrencyExchange::is_automatic_update_active()) {
+            CurrencyExchange::stop_schedule();
             return;
         }
 
-        CurrencyExchange::sync();
+        if (CurrencyExchange::is_schedule_outdated()) {
+            CurrencyExchange::start_schedule();
+        }
     }
 }

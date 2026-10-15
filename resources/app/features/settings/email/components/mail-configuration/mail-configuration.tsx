@@ -1,4 +1,4 @@
-import { Edit3Icon, LucideCircleCheckBig, Mail, WrenchIcon } from 'lucide-react';
+import { Edit3Icon, LucideCircleCheckBig, Mail, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -89,7 +89,7 @@ const MailConfiguration = () => {
               </Button>
             ) : (
               <Button variant="secondary" onClick={() => setOpenPopup(true)}>
-                <WrenchIcon />
+                <Wrench />
                 {__('Configure', 'kirki-ecommerce')}
               </Button>
             )}

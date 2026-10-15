@@ -10,6 +10,8 @@ use Kirki\Ecommerce\App\Currency\DTO\ExchangeRateDTO;
 use Kirki\Ecommerce\Framework\Http\Response;
 use Kirki\Ecommerce\Framework\Supports\Facades\Http;
 use Exception;
+
+use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\resource_url;
 use function Kirki\Ecommerce\Framework\throw_if;
 
@@ -64,7 +66,7 @@ class ExchangeRatesApiProvider implements CurrencyProvider
      */
     public function get_icon()
     {
-        return resource_url('images/currency-exchange-providers/exchangeratesapi.png');
+        return app()->base_url('/resources/images/currency-exchange-providers/exchangeratesapi.png');
     }
 
     /**

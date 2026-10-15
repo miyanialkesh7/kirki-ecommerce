@@ -139,7 +139,7 @@ const MultiCurrencySettings = () => {
                   justify="space-between"
                   cssOverride={{ marginTop: theme.spacing[3], marginBottom: theme.spacing[3] }}
                 >
-                  <Flex direction="column" gap={2}>
+                  <Flex direction="column">
                     <Text weight="semibold">{__('Currency Management', 'kirki-ecommerce')}</Text>
                     <Text variant="small" color="secondary">
                       {__(
@@ -163,7 +163,7 @@ const MultiCurrencySettings = () => {
             cssOverride={cardStyles.formCard}
           >
             <CardContent>
-              <Flex direction="column" gap={2}>
+              <Flex direction="column">
                 <Text weight="semibold">{__('Currency Preferences', 'kirki-ecommerce')}</Text>
                 <Text color="secondary">
                   {__(

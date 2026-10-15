@@ -10,6 +10,7 @@ use Kirki\Ecommerce\App\Currency\Contracts\CurrencyProvider;
 use Kirki\Ecommerce\App\Currency\DTO\ExchangeRateDTO;
 use Kirki\Ecommerce\App\DTO\Currency\UpdateCurrencyDTO;
 use Kirki\Ecommerce\App\DTO\ListFilterDTO;
+use Kirki\Ecommerce\App\Jobs\SyncExchangeRatesJob;
 use Kirki\Ecommerce\App\Services\CurrencyService;
 use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 use Kirki\Ecommerce\App\Supports\Facades\Settings;
@@ -105,7 +106,7 @@ class CurrencyExchangeManager
      * Update stored currency exchange rates from the active provider.
      *
      * Updates only currencies whose rate changed, then records the provider
-     * usage and the last and next sync times in the currency settings.
+     * usage and the last sync time in the currency settings.
      *
      * @since 1.0.0
      *
@@ -144,46 +145,301 @@ class CurrencyExchangeManager
             $this->service->update($update_dto);
         }
 
-        $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
-        $frequency = $currency_settings->get('api_config.update_frequency', 'hourly');
-
-        $settings_array = $currency_settings->to_array();
-
         $usage = $this->get_active_provider()->get_usage();
 
-        $settings_array['usage'] = is_null($usage->total) || is_null($usage->remaining) ? null : $usage->to_array();
-        $settings_array['last_sync_at'] = Date::now()->to_date_time_string();
-        $settings_array['next_sync_at'] = $this->get_next_sync_at($frequency);
-
-        $currency_settings->set($settings_array, false);
+        Settings::get(OptionKeys::CURRENCY_SETTINGS)->set([
+            'usage' => is_null($usage->total) || is_null($usage->remaining) ? null : $usage->to_array(),
+            'last_sync_at' => Date::now()->to_date_time_string(),
+        ], false);
     }
 
     /**
-     * Calculate when the next sync is due for the given update frequency.
+     * Check whether automatic updates are on with a provider and an API key saved.
+     *
+     * Reads the stored settings, not the provider this manager was built with.
+     *
+     * @since 1.0.0
+     *
+     * @return bool
+     */
+    public function is_automatic_update_active()
+    {
+        $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
+
+        return (bool) $currency_settings->get('is_automatic_update_enabled')
+            && !empty($currency_settings->get('api_provider'))
+            && !empty($this->get_active_provider_config()['api_key']);
+    }
+
+    /**
+     * Start a new automatic sync schedule with an immediate sync.
+     *
+     * Any run queued by an earlier schedule does nothing once the token changes.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
+    public function start_schedule()
+    {
+        $token = $this->replace_schedule_token();
+
+        SyncExchangeRatesJob::dispatch($token);
+    }
+
+    /**
+     * Stop the automatic sync schedule.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
+    public function stop_schedule()
+    {
+        Settings::get(OptionKeys::CURRENCY_SETTINGS)->set([
+            'sync_token' => null,
+            'sync_fingerprint' => null,
+            'next_sync_at' => null,
+        ], false);
+    }
+
+    /**
+     * Start a new automatic sync schedule whose first run is one interval from now.
+     *
+     * Used after an on-demand sync, which has just synced the rates.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
+    public function reschedule_after_sync()
+    {
+        $this->schedule_next($this->replace_schedule_token());
+    }
+
+    /**
+     * Record the next run time and queue the next run of a schedule.
+     *
+     * Does nothing when the schedule has been replaced or stopped.
+     *
+     * @since 1.0.0
+     *
+     * @param string $token Token of the schedule to continue.
+     * @return void
+     */
+    public function schedule_next(string $token)
+    {
+        $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
+
+        if ($currency_settings->get('sync_token') !== $token) {
+            return;
+        }
+
+        $interval = $this->get_sync_interval();
+
+        $currency_settings->set(['next_sync_at' => Date::now()->add_seconds($interval)->to_date_time_string()], false);
+
+        SyncExchangeRatesJob::dispatch($token)->delay($interval);
+    }
+
+    /**
+     * Check whether a schedule token is the one currently stored.
+     *
+     * @since 1.0.0
+     *
+     * @param string $token
+     * @return bool
+     */
+    public function is_current_schedule(string $token)
+    {
+        return Settings::get(OptionKeys::CURRENCY_SETTINGS)->get('sync_token') === $token;
+    }
+
+    /**
+     * Check whether the stored schedule no longer matches the saved provider configuration.
+     *
+     * @since 1.0.0
+     *
+     * @return bool
+     */
+    public function is_schedule_outdated()
+    {
+        return Settings::get(OptionKeys::CURRENCY_SETTINGS)->get('sync_fingerprint') !== $this->get_schedule_fingerprint();
+    }
+
+    /**
+     * Check whether the schedule has stopped running.
+     *
+     * A schedule has stopped when no next run is recorded, or the recorded run
+     * is more than one interval in the past.
+     *
+     * @since 1.0.0
+     *
+     * @return bool
+     */
+    public function is_schedule_stalled()
+    {
+        $next_sync_at = Settings::get(OptionKeys::CURRENCY_SETTINGS)->get('next_sync_at');
+
+        if (empty($next_sync_at)) {
+            return true;
+        }
+
+        return Date::parse($next_sync_at)->get_timestamp() < Date::now()->get_timestamp() - $this->get_sync_interval();
+    }
+
+    /**
+     * Record the error of a failed automatic sync.
+     *
+     * @since 1.0.0
+     *
+     * @param string $message
+     * @return void
+     */
+    public function record_sync_error(string $message)
+    {
+        Settings::get(OptionKeys::CURRENCY_SETTINGS)->set([
+            'last_sync_error' => $message,
+            'last_sync_error_at' => Date::now()->to_date_time_string(),
+        ], false);
+    }
+
+    /**
+     * Clear the error of the last failed automatic sync.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
+    public function clear_sync_error()
+    {
+        Settings::get(OptionKeys::CURRENCY_SETTINGS)->set([
+            'last_sync_error' => null,
+            'last_sync_error_at' => null,
+        ], false);
+    }
+
+    /**
+     * Get the API configuration of the selected provider.
+     *
+     * @since 1.0.0
+     *
+     * @return array<string, mixed> The normalized configuration, or an empty array when the selected provider has none.
+     */
+    public function get_active_provider_config()
+    {
+        $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
+        $provider_id = (string) $currency_settings->get('api_provider');
+        $configs = $this->normalize_provider_configs($currency_settings->get('api_configs'));
+
+        return $configs[$provider_id] ?? [];
+    }
+
+    /**
+     * Normalize a map of provider API configurations keyed by provider id.
+     *
+     * Entries that are not arrays are dropped.
+     *
+     * @since 1.0.0
+     *
+     * @param mixed $configs
+     * @return array<string, array<string, mixed>>
+     */
+    public function normalize_provider_configs($configs)
+    {
+        $normalized = [];
+
+        foreach ((array) $configs as $provider_id => $config) {
+            if (is_array($config)) {
+                $normalized[(string) $provider_id] = $this->normalize_provider_config($config);
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Keep only the known fields of a provider's API configuration.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     */
+    public function normalize_provider_config(array $config)
+    {
+        return [
+            'api_key' => $config['api_key'] ?? null,
+            'update_frequency' => $config['update_frequency'] ?? null,
+        ];
+    }
+
+    /**
+     * Get the number of seconds between automatic syncs for the saved update frequency.
      *
      * Falls back to a 24 hour interval for unrecognised frequencies.
      *
      * @since 1.0.0
      *
-     * @param string $frequency One of the UpdateFrequency constants.
-     * @return string Date-time string.
+     * @return int
      */
-    protected function get_next_sync_at(string $frequency)
+    public function get_sync_interval()
     {
+        $frequency = $this->get_active_provider_config()['update_frequency'] ?? null;
+
         switch ($frequency) {
             case UpdateFrequency::EVERY_15_MIN:
-                return Date::now()->add_minutes(15)->to_date_time_string();
+                return 15 * MINUTE_IN_SECONDS;
             case UpdateFrequency::EVERY_30_MIN:
-                return Date::now()->add_minutes(30)->to_date_time_string();
+                return 30 * MINUTE_IN_SECONDS;
             case UpdateFrequency::EVERY_1_HOUR:
-                return Date::now()->add_hour()->to_date_time_string();
+                return HOUR_IN_SECONDS;
             case UpdateFrequency::EVERY_6_HOURS:
-                return Date::now()->add_hours(6)->to_date_time_string();
+                return 6 * HOUR_IN_SECONDS;
             case UpdateFrequency::EVERY_12_HOURS:
-                return Date::now()->add_hours(12)->to_date_time_string();
+                return 12 * HOUR_IN_SECONDS;
             case UpdateFrequency::DAILY_24_HOURS:
             default:
-                return Date::now()->add_day()->to_date_time_string();
+                return DAY_IN_SECONDS;
         }
+    }
+
+    /**
+     * Store a new schedule token and the fingerprint of the configuration it runs with.
+     *
+     * @since 1.0.0
+     *
+     * @return string The new token.
+     */
+    protected function replace_schedule_token()
+    {
+        $token = wp_generate_uuid4();
+
+        Settings::get(OptionKeys::CURRENCY_SETTINGS)->set([
+            'sync_token' => $token,
+            'sync_fingerprint' => $this->get_schedule_fingerprint(),
+        ], false);
+
+        return $token;
+    }
+
+    /**
+     * Get a hash of the settings that define the automatic sync schedule.
+     *
+     * @since 1.0.0
+     *
+     * @return string
+     */
+    protected function get_schedule_fingerprint()
+    {
+        $currency_settings = Settings::get(OptionKeys::CURRENCY_SETTINGS);
+        $active_config = $this->get_active_provider_config();
+
+        return md5((string) wp_json_encode([
+            (bool) $currency_settings->get('is_automatic_update_enabled'),
+            $currency_settings->get('api_provider'),
+            $active_config['api_key'] ?? null,
+            $active_config['update_frequency'] ?? null,
+        ]));
     }
 }

@@ -14,6 +14,7 @@ import Text from '@/components/ui/text';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 type OptionAccordionProps = {
@@ -28,6 +29,7 @@ type OptionAccordionProps = {
   disabled?: boolean;
   expandable?: boolean;
   open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   cssOverride?: CSSObject;
 };
 
@@ -44,10 +46,12 @@ const OptionAccordion = (props: OptionAccordionProps) => {
     disabled = false,
     expandable = true,
     open = false,
+    onOpenChange,
     cssOverride,
   } = props;
 
   const isOpen = open && expandable;
+  const isControlled = isDefined(onOpenChange);
 
   return (
     <div
@@ -60,9 +64,13 @@ const OptionAccordion = (props: OptionAccordionProps) => {
         hideSeparator={true}
         hasBottomSpace={false}
         rightActions={rightActions}
-        defaultValue={isOpen ? 'option-item' : undefined}
+        defaultValue={!isControlled && isOpen ? 'option-item' : undefined}
+        value={isControlled ? (isOpen ? ['option-item'] : []) : undefined}
+        onValueChange={
+          isControlled ? (value) => onOpenChange(value.includes('option-item')) : undefined
+        }
       >
-        <AccordionItem value={isOpen ? 'option-item' : undefined}>
+        <AccordionItem value={isControlled || isOpen ? 'option-item' : undefined}>
           <AccordionTrigger
             cssOverride={mergeCss(styles.trigger, variant === 'shipping' && styles.shippingTrigger)}
             gap={4}

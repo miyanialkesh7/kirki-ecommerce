@@ -137,9 +137,14 @@ const getFirstIncompleteStepId = (steps: SetupStep[]): SetupStepId | '' => {
   return steps.find((step) => !step.is_completed)?.id ?? '';
 };
 
+const isSetupComplete = (steps: SetupStep[]) => {
+  return steps.length > 0 && steps.every((step) => step.is_completed);
+};
+
 export {
   getChecklistProgress,
   getFirstIncompleteStepId,
   getSetupStepDefinition,
+  isSetupComplete,
   type SetupStepAction,
 };

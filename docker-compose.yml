@@ -38,6 +38,7 @@ services:
       DB_HOST: mariadb
       WP_URL: ${WP_URL:-http://localhost:20100}
       KECOM_WEBHOOK_BASE_URL: ${KECOM_WEBHOOK_BASE_URL:-http://localhost:20100}
+      VITE_PORT: ${VITE_PORT:-5173}
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
       XDEBUG_CLIENT_HOST: ${XDEBUG_CLIENT_HOST:-host.docker.internal}
       XDEBUG_CLIENT_PORT: ${XDEBUG_CLIENT_PORT:-9003}
