@@ -17,6 +17,8 @@
  * that country in countries.php.
  */
 
+defined('ABSPATH') || exit;
+
 return [
     'AF' => [
         [

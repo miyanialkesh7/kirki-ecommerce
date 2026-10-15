@@ -1,4 +1,4 @@
-=== Kirki eCommerce – Complete eCommerce for WordPress ===
+=== Kirki eCommerce ===
 Contributors: themeum
 Tags: ecommerce, online store, shopping cart, checkout, payments
 Requires at least: 6.8

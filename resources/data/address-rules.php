@@ -12,6 +12,8 @@
  * not a one-time conversion. Prefer re-importing over editing by hand.
  */
 
+defined('ABSPATH') || exit;
+
 return [
     'AF' => [
         'state' => [
