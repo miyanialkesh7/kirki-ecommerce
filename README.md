@@ -50,6 +50,8 @@ Edit `.env` for custom credentials. Common variables: `NGINX_HTTP_PORT`, `MARIAD
 
 [`orca.yaml`](orca.yaml) gives each Orca worktree its own stack, database and volumes. The setup hook runs `composer install` and then `bin/dev-up`. The archive hook runs `docker compose down -v`, which **deletes that worktree's database and WordPress volume**. You do not edit ports or `.env` in a new worktree.
 
+Orca runs these hooks only when the repository uses the shared `orca.yaml` commands. In Orca, open **Settings → this repository → Hooks** and make sure that the command source is not "local only". With "local only", Orca ignores `orca.yaml` and runs the script saved in your Orca settings, so no Docker stack starts and no stack is deleted. A new worktree reads `orca.yaml` from its own base branch, so the base branch must contain this file.
+
 The first start of a new worktree takes a few minutes (Composer, then the WordPress install). Run `bin/dev-urls` in the worktree to see its addresses. If Orca does not run the archive hook, run `docker compose down -v` in the worktree before you delete it.
 
 ### Project layout

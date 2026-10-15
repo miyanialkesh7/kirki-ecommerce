@@ -3,6 +3,6 @@
 scripts:
   # Runs in the new worktree. composer install comes first because
   # wordpress-init activates the plugin, and that needs vendor/ to exist.
-  setup: composer install && (cd payments/kirki-stripe && composer install) && bin/dev-up
+  setup: composer install && bin/dev-up
   # Runs when the worktree is archived. -v deletes this worktree's database and WordPress volume.
   archive: docker compose down -v
