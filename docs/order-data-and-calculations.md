@@ -380,9 +380,20 @@ Money columns come in pairs (`base_` and `invoiced_`) with the same meaning, so 
 
 | Column | Meaning |
 |---|---|
-| `payment_provider`, `payment_transaction_id`, `payment_metadata` | Which provider, the provider's reference, and a snapshot of the provider (name, icon, offline or not). |
+| `payment_provider`, `payment_transaction_id`, `payment_metadata` | Which provider, the provider's reference, and a snapshot of the provider (id, name, icon, offline or not) under `payment_provider`, and the gateway's own data under `gateway`. |
 | `shipping_method`, `shipping_metadata` | The chosen method id, and a snapshot (id, name, type). |
 | `shipping_carrier`, `shipping_tracking_number`, `shipping_tracking_url` | Tracking details. |
+
+**The payment provider snapshot stays in step with `payment_provider`.** The snapshot is taken when the order is placed. When an admin marks the order as paid with a provider, the store compares it with the provider in the snapshot:
+
+| Mark as paid with | `payment_provider` | `payment_metadata` |
+|---|---|---|
+| A different provider | Changed to the new provider | Replaced with the new provider's snapshot. The old `gateway` data is dropped. |
+| The same provider | Same | **Not touched.** The `gateway` data stays. |
+| No provider (an online gateway webhook does this) | **Not touched** | **Not touched** |
+| An id that is not registered | **Rejected** (422). The order stays unpaid. | Not touched |
+
+A disabled provider is accepted, as it is for a manual order. An order with no provider gets one, and a snapshot, the first time it is marked as paid with a provider.
 
 **Addresses and contact (all copied as text, not linked)**
 
@@ -483,7 +494,7 @@ A refund is **one amount only**. It is not linked to lines, tax or stock.
 |---|---|
 | `order_id` | The order. |
 | `activity_type` | For example `order-placed`, `payment-completed`, `status-changed`, `comment-added`, `partially-refunded`, `refunded`. |
-| `description`, `metadata` | Text and extra data for the entry. |
+| `description`, `metadata` | Text and extra data for the entry. A `payment-completed` entry keeps the provider id and the provider name at the time of payment, so a renamed provider does not change old entries. |
 | `created_by`, `created_at` | Who and when. |
 
 An order **edit does not write a timeline entry today**, and it does not keep the old values. See section 9.
