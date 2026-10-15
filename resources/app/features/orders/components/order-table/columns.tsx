@@ -18,11 +18,9 @@ const OrderCell = ({ item }: { item: OrderListItem }) => {
     <Flex direction="column" gap={1}>
       <Flex gap={1} align="center">
         <Text variant="tiny" color="subdued">
-          {`#${item.order_number}`}
+          {item.order_number}
         </Text>
-        {item.is_manual ? (
-          <Badge variant="secondary">{__('Manual Order', 'kirki-ecommerce')}</Badge>
-        ) : null}
+        {item.is_manual && <Badge>{__('Manual Order', 'kirki-ecommerce')}</Badge>}
       </Flex>
       {customerLabel ? (
         <Text variant="tiny">

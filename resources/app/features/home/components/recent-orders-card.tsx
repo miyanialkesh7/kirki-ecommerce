@@ -81,11 +81,11 @@ const RecentOrdersCard = ({ orders }: RecentOrdersCardProps) => {
                   >
                     <Flex direction="column" gap={1} cssOverride={styles.details}>
                       <Flex align="center" gap={1}>
-                        <Text variant="paragraph" color="primary">
+                        <Text variant="small" color="primary">
                           {order.order_number}
                         </Text>
                         <Text
-                          variant="paragraph"
+                          variant="small"
                           color={FULFILLMENT_TEXT_COLORS[order.fulfillment_status]}
                           truncate
                         >
@@ -95,13 +95,13 @@ const RecentOrdersCard = ({ orders }: RecentOrdersCardProps) => {
                       <Flex align="center" gap={2} cssOverride={styles.meta}>
                         {order.customer_name && (
                           <>
-                            <Text variant="paragraph" color="subdued" truncate>
+                            <Text variant="small" color="subdued" truncate>
                               {order.customer_name}
                             </Text>
                             <span css={scoped(styles.dot)} aria-hidden="true" />
                           </>
                         )}
-                        <Text variant="paragraph" color="secondary" cssOverride={styles.nowrap}>
+                        <Text variant="small" color="secondary" cssOverride={styles.nowrap}>
                           {sprintf(
                             /* translators: %d: number of products in the order */
                             _n('%d Product', '%d Products', order.quantity, 'kirki-ecommerce'),
@@ -111,10 +111,10 @@ const RecentOrdersCard = ({ orders }: RecentOrdersCardProps) => {
                       </Flex>
                     </Flex>
                     <Flex direction="column" gap={1} align="end" cssOverride={styles.summary}>
-                      <Text variant="paragraph" weight="semibold">
+                      <Text variant="small" weight="semibold">
                         {order.invoiced_total_money_object.display}
                       </Text>
-                      <Text variant="paragraph" color="subdued">
+                      <Text variant="small" color="subdued">
                         {formatTimeAgo(order.created_at)}
                       </Text>
                     </Flex>
