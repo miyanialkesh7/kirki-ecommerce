@@ -81,8 +81,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
-    strictPort: false,
+    port: Number(readRootEnv('VITE_PORT') ?? 5173),
+    // Another port would not match the one the plugin loads scripts from.
+    strictPort: true,
     cors: true,
     origin: `http://localhost:${readRootEnv('NGINX_HTTP_PORT') ?? 20100}`,
     fs: {

@@ -47,9 +47,21 @@ If a saved port is busy and this project's own containers do not hold it,
 `bin/dev-up` picks a new port and updates `.env` and `WP_URL` together. This
 handles a stopped worktree whose port another worktree took later.
 
-**3. Compose and `wp-config.php` stay unchanged.**
+**3. Compose and `wp-config.php` keep their defaults.**
 The `20100`-based defaults remain as the fallback. `bin/dev-up` only supplies
-`.env` values. This keeps the change small and keeps the old flow working.
+`.env` values. This keeps the old flow working. The only additions are
+`VITE_PORT` in the `php` service and `KECOM_VITE_DEV_SERVER` in
+`wp-config.php`.
+
+**3a. The Vite port follows the nginx port.**
+`VITE_PORT = 5173 + (NGINX_HTTP_PORT - 20100)`. The dev server does not run
+when `bin/dev-up` runs, so a free-port probe would give two worktrees the same
+port. The nginx port is unique for each running stack, so the offset is too.
+Vite uses `strictPort`: the plugin loads scripts from the saved port, so a
+silent move to another port would break the admin app.
+- Alternative: probe for a free port at `npm run dev` time and tell PHP. Rejected:
+  PHP runs in a container and has no way to learn the new port without a
+  restart or a shared file.
 
 **4. `.env` is created from `.env.example` when it is missing.**
 `bin/dev-up` copies the file, then overwrites only the port and URL keys. It

@@ -14,6 +14,11 @@ Desktop, because the team uses both.
   `KECOM_WEBHOOK_BASE_URL`) in the worktree's `.env`, then runs
   `docker compose up -d`. Later runs reuse the saved ports. A saved port is
   picked again only if another process now holds it.
+- Make the Vite dev server port per worktree too. `bin/dev-up` saves
+  `VITE_PORT` (`5173` plus the nginx port offset). `vite.config.js` reads it
+  with `strictPort`, and `docker/wp-config.php` defines `KECOM_VITE_DEV_SERVER`
+  from it. `EnqueueAdminScripts` uses that constant and not a hard-coded
+  `localhost:5173`.
 - Add `bin/dev-urls`. It prints the site, phpMyAdmin and database addresses
   of the current worktree.
 - Make the Vite dev-server `origin` and the host-only test DB default read the
@@ -24,7 +29,7 @@ Desktop, because the team uses both.
 - Update `README.md`, `.env.example`, `tests/.env.example` and
   `docs/ecommerce/README.md`. Remove the "OrbStack reserves 20000–20001" advice.
 - `docker-compose.yml` and `docker/wp-config.php` keep their `20100`-based
-  defaults. People who do not use `bin/dev-up` see no change.
+  defaults (and `5173` for Vite). People who do not use `bin/dev-up` see no change.
 
 No requirement of the product changes. This is developer tooling only.
 
@@ -41,9 +46,10 @@ None. The change sets `skip_specs: true` because no product behavior changes.
 ## Impact
 
 - New files: `bin/dev-up`, `bin/dev-urls`, `orca.yaml`.
-- Edited files: `resources/app/vite.config.js`, `tests/wp-tests-config.php`,
+- Edited files: `app/Wordpress/Hooks/Actions/EnqueueAdminScripts.php`,
+  `docker-compose.yml`, `docker/wp-config.php`, `resources/app/vite.config.js`, `tests/wp-tests-config.php`,
   `tests/bootstrap.php`, `tests/.env.example`, `.env.example`, `README.md`,
   `docs/ecommerce/README.md`.
-- Not edited: `docker-compose.yml`, `docker/wp-config.php`,
-  `docker/php/docker-entrypoint.sh`.
-- No change to the plugin code, the REST API or the database schema.
+- Not edited: `docker/php/docker-entrypoint.sh`.
+- The only plugin code change is the dev-mode Vite origin in
+  `EnqueueAdminScripts`. No change to the REST API or the database schema.

@@ -42,7 +42,9 @@ On first boot, **`wordpress-init`** downloads WordPress, runs `wp core install`,
 
 Edit `.env` for custom credentials. Common variables: `NGINX_HTTP_PORT`, `MARIADB_PORT`, `WP_URL`, `DB_*`, `XDEBUG_*`. `DB_HOST` is `mariadb` inside containers — not set in `.env`.
 
-`bin/dev-up` owns the port keys and `WP_URL`. It keeps the ports it saved, and picks a new one only if another process now holds it. It also sets `KECOM_WEBHOOK_BASE_URL`, unless you set it to a URL that is not `localhost` (for example a tunnel URL). To fix a port, edit `.env` and keep the port free. Other `bin/dev-up` arguments go to `docker compose up -d`.
+`bin/dev-up` owns the port keys, `VITE_PORT` and `WP_URL`. It keeps the ports it saved, and picks a new one only if another process now holds it. It also sets `KECOM_WEBHOOK_BASE_URL`, unless you set it to a URL that is not `localhost` (for example a tunnel URL). To fix a port, edit `.env` and keep the port free. Other `bin/dev-up` arguments go to `docker compose up -d`.
+
+`VITE_PORT` is the port of the Vite dev server (`npm run dev`). `bin/dev-up` sets it to `5173` plus the offset of `NGINX_HTTP_PORT` from `20100`, so each worktree has its own port and you can run the dev servers of several worktrees at the same time. Vite and the plugin both read the port from `.env`. Vite fails if the port is busy, because the plugin loads its scripts from that exact port. After you change `VITE_PORT`, run `bin/dev-up` again so the `php` container gets the new value.
 
 ### Orca worktrees
 

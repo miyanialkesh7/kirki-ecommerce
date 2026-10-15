@@ -17,6 +17,9 @@
 - [x] 3.2 `tests/wp-tests-config.php`, `tests/.env.example`, `tests/bootstrap.php`: use `MARIADB_PORT` from the root `.env` for the host-only default
 - [ ] 3.3 Verify: `npm run typecheck` in `resources/app/` and `composer test:docker:unit` pass (typecheck, ESLint on `vite.config.js` and 1499 Vitest tests pass; `composer test:docker:unit` needs a running stack; not done)
 
+- [x] 3.4 Per-worktree Vite port: `bin/dev-up` saves `VITE_PORT`; `vite.config.js` reads it with `strictPort`; `docker-compose.yml` passes it to `php`; `docker/wp-config.php` defines `KECOM_VITE_DEV_SERVER`; `EnqueueAdminScripts` reads the constant
+- [ ] 3.5 Verify: run `npm run dev` in two worktrees at the same time; both admin apps load scripts from their own port
+
 ## 4. Orca hooks
 
 - [x] 4.1 Read the Orca docs for the hook file name and keys (docs do not cover them; `orca.yaml` `scripts.setup` / `scripts.archive` taken from Orca issue threads)
