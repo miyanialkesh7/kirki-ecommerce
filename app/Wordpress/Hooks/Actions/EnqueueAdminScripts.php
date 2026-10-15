@@ -19,6 +19,7 @@ use function Kirki\Ecommerce\Framework\app;
  */
 class EnqueueAdminScripts extends BaseHook
 {
+    /** Used when `KECOM_VITE_DEV_SERVER` is not defined. */
     protected const VITE_DEV_SERVER = 'http://localhost:5173';
 
     /**
@@ -85,6 +86,7 @@ class EnqueueAdminScripts extends BaseHook
      */
     protected function enqueue_vite_dev_scripts()
     {
+        $vite_dev_server = $this->get_vite_dev_server();
         $vite_refresh_handle = app()->prefix() . 'vite-refresh';
 
         wp_enqueue_script(
@@ -99,13 +101,13 @@ class EnqueueAdminScripts extends BaseHook
             $vite_refresh_handle,
             'kirkiEcommerceViteRefresh',
             [
-                'refreshUrl' => esc_url_raw(static::VITE_DEV_SERVER . '/@react-refresh'),
+                'refreshUrl' => esc_url_raw($vite_dev_server . '/@react-refresh'),
             ]
         );
 
         wp_enqueue_script(
             app()->prefix() . 'vite-client',
-            static::VITE_DEV_SERVER . '/@vite/client',
+            $vite_dev_server . '/@vite/client',
             [$vite_refresh_handle],
             null,
             true
@@ -113,13 +115,32 @@ class EnqueueAdminScripts extends BaseHook
 
         wp_enqueue_script(
             app()->prefix() . 'app',
-            static::VITE_DEV_SERVER . '/main.tsx',
+            $vite_dev_server . '/main.tsx',
             [app()->prefix() . 'vite-client'],
             null,
             true
         );
 
         add_filter('wp_script_attributes', [$this, 'add_module_type_to_scripts']);
+    }
+
+    /**
+     * Get the origin of the Vite dev server.
+     *
+     * Each Docker stack sets its own port with the `KECOM_VITE_DEV_SERVER` constant,
+     * so several worktrees can run their dev servers at the same time.
+     *
+     * @since 1.0.0
+     *
+     * @return string
+     */
+    protected function get_vite_dev_server()
+    {
+        if (defined('KECOM_VITE_DEV_SERVER') && is_string(KECOM_VITE_DEV_SERVER) && KECOM_VITE_DEV_SERVER !== '') {
+            return untrailingslashit(KECOM_VITE_DEV_SERVER);
+        }
+
+        return static::VITE_DEV_SERVER;
     }
 
     /**
