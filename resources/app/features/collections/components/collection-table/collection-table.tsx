@@ -4,33 +4,39 @@ import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 
 import type { DataTableBulkAction, DataTableSelectionState } from '@/components/data-table';
-import DataTable from '@/components/data-table';
+import DataTable, { DataTableEmptyState } from '@/components/data-table';
 import { actionsColumnMeta } from '@/components/data-table/column-styles';
 import DataTableRowActions from '@/components/data-table/data-table-row-actions';
+import Button from '@/components/ui/button';
 import { RouteConfig } from '@/config/route-config';
 import CollectionTableFilters from '@/features/collections/components/collection-table/collection-table-filters';
 import { collectionColumns } from '@/features/collections/components/collection-table/columns';
 import type { Collection } from '@/features/collections/schemas/catalog/collection';
 import {
   useBulkDeleteCollectionsMutation,
-  useCollectionsQuery,
   useDeleteCollectionMutation,
 } from '@/features/collections/services/collection';
 import { collectionListOptions } from '@/features/collections/types';
 import { useConfirmDelete, useDataTableParams } from '@/hooks';
 import { resolveBulkDeletePayload } from '@/libs/bulk-delete';
+import type { ListingTableProps } from '@/types/pages/common';
 import { __ } from '@/wpi18n';
 
 const collectionBulkActions: DataTableBulkAction[] = [
   { value: 'delete', title: __('Trash', 'kirki-ecommerce'), destructive: true },
 ];
 
-const CollectionTable = () => {
+const CollectionTable = ({ data, isLoading = false }: ListingTableProps<Collection>) => {
   const navigate = useNavigate();
-  const { params, pagination, sorting, onPaginationChange, onSortingChange, selectionResetKey } =
-    useDataTableParams(collectionListOptions);
+  const {
+    pagination,
+    sorting,
+    onPaginationChange,
+    onSortingChange,
+    selectionResetKey,
+    clearFilters,
+  } = useDataTableParams(collectionListOptions);
 
-  const { data, isFetching } = useCollectionsQuery(params);
   const deleteMutation = useDeleteCollectionMutation();
   const bulkDeleteMutation = useBulkDeleteCollectionsMutation();
   const { confirmDelete, confirmDeleteAsync, deleteConfirmation } = useConfirmDelete();
@@ -116,7 +122,7 @@ const CollectionTable = () => {
         onPaginationChange={onPaginationChange}
         sorting={sorting}
         onSortingChange={onSortingChange}
-        isLoading={isFetching}
+        isLoading={isLoading}
         enableRowSelection
         selectionResetKey={selectionResetKey}
         bulkActions={collectionBulkActions}
@@ -124,6 +130,16 @@ const CollectionTable = () => {
         columnPinning={{ right: ['actions'] }}
         onRowClick={handleRowClick}
         toolbar={<CollectionTableFilters />}
+        emptyState={
+          <DataTableEmptyState
+            title={__('No collections found', 'kirki-ecommerce')}
+            actions={
+              <Button variant="secondary" onClick={clearFilters}>
+                {__('Clear Search', 'kirki-ecommerce')}
+              </Button>
+            }
+          />
+        }
       />
       {deleteConfirmation}
     </>

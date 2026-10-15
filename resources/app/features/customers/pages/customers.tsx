@@ -2,14 +2,24 @@ import { useNavigate } from 'react-router';
 
 import Button from '@/components/ui/button';
 import Flex from '@/components/ui/flex';
+import NotFoundState from '@/components/ui/not-found-state';
 import { Page, PageContent, PageHeading } from '@/components/ui/page';
 import { NEW_ITEM_ID } from '@/conf';
 import { RouteConfig } from '@/config/route-config';
 import CustomerTable from '@/features/customers/components/customer-table/customer-table';
+import { useCustomersQuery } from '@/features/customers/services/customer';
+import { customerListOptions } from '@/features/customers/types';
+import { useDataTableParams } from '@/hooks';
+import { CustomerEmptyStateIcon } from '@/icons/empty-state';
 import { __ } from '@/wpi18n';
 
 const Customers = () => {
   const navigate = useNavigate();
+  const { params, hasActiveFilters } = useDataTableParams(customerListOptions);
+
+  const { data, isFetching } = useCustomersQuery(params);
+
+  const hasRecord = !(!isFetching && !hasActiveFilters && data?.total === 0); // @todo: later will use isDefined(data) && isDefined(data.has_record) && data?.has_record
 
   const handleAddNewCustomer = () => {
     void navigate(RouteConfig.Customers.get('CustomerDetail').buildLink({ id: NEW_ITEM_ID }));
@@ -20,9 +30,11 @@ const Customers = () => {
       <PageHeading
         text={__('Customers', 'kirki-ecommerce')}
         actions={
-          <Button variant="primary" onClick={handleAddNewCustomer}>
-            {__('Add Customer', 'kirki-ecommerce')}
-          </Button>
+          hasRecord && (
+            <Button variant="primary" onClick={handleAddNewCustomer}>
+              {__('Add Customer', 'kirki-ecommerce')}
+            </Button>
+          )
         }
       />
 
@@ -61,7 +73,23 @@ const Customers = () => {
               </Flex>
             </CardContent>
           </Card> */}
-          <CustomerTable />
+          {!hasRecord ? (
+            <NotFoundState
+              icon={<CustomerEmptyStateIcon />}
+              text={__('Waiting on customer #1', 'kirki-ecommerce')}
+              description={__(
+                'Your first fan is just an order away. Once customers sign up or make a purchase, their details will live right here.',
+                'kirki-ecommerce',
+              )}
+              actions={
+                <Button variant="primary" onClick={handleAddNewCustomer}>
+                  {__('Add Customer', 'kirki-ecommerce')}
+                </Button>
+              }
+            />
+          ) : (
+            <CustomerTable data={data} isLoading={isFetching} />
+          )}
         </Flex>
       </PageContent>
     </Page>

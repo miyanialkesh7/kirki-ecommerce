@@ -185,7 +185,7 @@ const styles = defineStyles({
     gap: theme.spacing[2],
     padding: `${theme.spacing[9]} ${theme.spacing[0]}`,
     marginTop: theme.spacing[2],
-    backgroundColor: theme.colors.background.surfaceSecondary,
+    backgroundColor: theme.colors.background.solidSurfaceAlt,
     borderRadius: theme.radius.lg,
   },
   emptyStateText: {

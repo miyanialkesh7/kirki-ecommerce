@@ -18,7 +18,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Map, PlusIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -53,9 +53,7 @@ import {
 } from '@/features/settings/payment/services/payment';
 import { useConfirmDelete } from '@/hooks';
 import { getPortalContainer } from '@/libs/portal-container';
-import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
-import { defineStyles, mergeCss } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
 type PaymentMethodsProps = {
@@ -220,18 +218,7 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
               </ActionGroup>
             </Flex>
 
-            {orderedMethods.length === 0 ? (
-              <Card cssOverride={cardStyles.innerDarkCard}>
-                <CardContent
-                  cssOverride={mergeCss(cardStyles.innerDarkContent, styles.emptyStateContent)}
-                >
-                  <Flex direction="column" gap={2} align="center">
-                    <Map size={12} color={theme.colors.text.subdued} />
-                    <Text color="subdued">{__('No payment added yet', 'kirki-ecommerce')}</Text>
-                  </Flex>
-                </CardContent>
-              </Card>
-            ) : (
+            {orderedMethods.length > 0 && (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -295,9 +282,3 @@ const PaymentMethods = (props: PaymentMethodsProps) => {
 PaymentMethods.displayName = 'PaymentMethods';
 
 export default PaymentMethods;
-
-const styles = defineStyles({
-  emptyStateContent: {
-    paddingBlock: theme.spacing[9],
-  },
-});

@@ -13,25 +13,25 @@ const initialState: CategoryFormInput = {
   image: null,
 };
 
-const NewCategory = () => {
+const NewCategoryButton = ({
+  label = __('New Category', 'kirki-ecommerce'),
+}: {
+  label?: string;
+}) => {
   const [openPopup, setOpenPopup] = useState(false);
   return (
     <>
-      <Button
-        variant="primary"
-        onClick={() => setOpenPopup(true)}
-      >
-        {__('New Category', 'kirki-ecommerce')}
+      <Button variant="primary" onClick={() => setOpenPopup(true)}>
+        {label}
       </Button>
 
       {openPopup && (
-        <CategoryAddEditPopover
-          category={initialState}
-          onClose={() => setOpenPopup(false)}
-        />
+        <CategoryAddEditPopover category={initialState} onClose={() => setOpenPopup(false)} />
       )}
     </>
   );
 };
 
-export default NewCategory;
+NewCategoryButton.displayName = 'NewCategoryButton';
+
+export default NewCategoryButton;

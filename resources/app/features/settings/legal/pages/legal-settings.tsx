@@ -8,7 +8,6 @@ import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Container from '@/components/ui/container';
-import EmptyState from '@/components/ui/empty-state';
 import Flex from '@/components/ui/flex';
 import {
   StackedItem,
@@ -164,13 +163,6 @@ const LegalSettings = () => {
               )}
 
               {isLoading && <StackedListSkeleton rowCount={2} actionCount={3} />}
-
-              {!isLoading && consents.length === 0 && (
-                <EmptyState
-                  icon={<ScaleIcon size={20} />}
-                  text={__('Legal consents will be shown here', 'kirki-ecommerce')}
-                />
-              )}
 
               {!isLoading && consents.length > 0 && (
                 <StackedItems>

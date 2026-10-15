@@ -4,34 +4,40 @@ import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 
 import type { DataTableBulkAction, DataTableSelectionState } from '@/components/data-table';
-import DataTable from '@/components/data-table';
+import DataTable, { DataTableEmptyState } from '@/components/data-table';
 import { actionsColumnMeta } from '@/components/data-table/column-styles';
 import DataTableRowActions from '@/components/data-table/data-table-row-actions';
+import Button from '@/components/ui/button';
 import { RouteConfig } from '@/config/route-config';
 import { customerColumns } from '@/features/customers/components/customer-table/columns';
 import CustomerTableFilters from '@/features/customers/components/customer-table/customer-table-filters';
 import type { CustomerListItem } from '@/features/customers/schemas/catalog/customer';
 import {
   useBulkDeleteCustomersMutation,
-  useCustomersQuery,
   useDeleteCustomerMutation,
 } from '@/features/customers/services/customer';
 import type { CustomerListFilter } from '@/features/customers/types';
 import { customerListOptions } from '@/features/customers/types';
 import { useConfirmDelete, useDataTableParams } from '@/hooks';
 import { resolveBulkDeletePayload } from '@/libs/bulk-delete';
+import type { ListingTableProps } from '@/types/pages/common';
 import { __ } from '@/wpi18n';
 
 const customerBulkActions: DataTableBulkAction[] = [
   { value: 'delete', title: __('Delete Permanently', 'kirki-ecommerce'), destructive: true },
 ];
 
-const CustomerTable = () => {
+const CustomerTable = ({ data, isLoading = false }: ListingTableProps<CustomerListItem>) => {
   const navigate = useNavigate();
-  const { params, pagination, sorting, onPaginationChange, onSortingChange, selectionResetKey } =
-    useDataTableParams<CustomerListFilter>(customerListOptions);
+  const {
+    pagination,
+    sorting,
+    onPaginationChange,
+    onSortingChange,
+    selectionResetKey,
+    clearFilters,
+  } = useDataTableParams<CustomerListFilter>(customerListOptions);
 
-  const { data, isFetching } = useCustomersQuery(params);
   const deleteMutation = useDeleteCustomerMutation();
   const bulkDeleteMutation = useBulkDeleteCustomersMutation();
   const { confirmDelete, confirmDeleteAsync, deleteConfirmation } = useConfirmDelete();
@@ -119,7 +125,7 @@ const CustomerTable = () => {
         onPaginationChange={onPaginationChange}
         sorting={sorting}
         onSortingChange={onSortingChange}
-        isLoading={isFetching}
+        isLoading={isLoading}
         enableRowSelection
         selectionResetKey={selectionResetKey}
         bulkActions={customerBulkActions}
@@ -127,6 +133,16 @@ const CustomerTable = () => {
         columnPinning={{ right: ['actions'] }}
         onRowClick={handleRowClick}
         toolbar={<CustomerTableFilters />}
+        emptyState={
+          <DataTableEmptyState
+            title={__('No customers found', 'kirki-ecommerce')}
+            actions={
+              <Button variant="secondary" onClick={clearFilters}>
+                {__('Clear Search', 'kirki-ecommerce')}
+              </Button>
+            }
+          />
+        }
       />
       {deleteConfirmation}
     </>

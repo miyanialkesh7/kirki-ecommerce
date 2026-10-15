@@ -78,7 +78,7 @@ const keyworded: [query: string, expected: string[]][] = [
 
 const literal: [query: string, expected: string[]][] = [
   ['va', ['essentials.variation-library', 'tax.regions']],
-  ['va zo', ['tax.regions']],
+  ['va re', ['tax.regions']],
 ];
 
 const absent = [

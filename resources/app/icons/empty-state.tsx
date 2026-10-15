@@ -19,7 +19,7 @@ export const ProductEmptyStateIcon = ({ height = 56, width = 56 }: IconDimension
       x="10"
       y="14"
       maskUnits="userSpaceOnUse"
-      preserveAlpha="true"
+      style={{ maskType: 'alpha' }}
     >
       <path
         fill="#000"

@@ -12,27 +12,21 @@ const initialState: BrandFormInput = {
   logo: null,
 };
 
-const NewBrand = () => {
+const NewBrandButton = ({ label = __('New Brand', 'kirki-ecommerce') }: { label?: string }) => {
   const [openPopup, setOpenPopup] = useState(false);
   return (
     <>
-      <Button
-        variant="primary"
-        onClick={() => setOpenPopup(true)}
-      >
-        {__('New Brand', 'kirki-ecommerce')}
+      <Button variant="primary" onClick={() => setOpenPopup(true)}>
+        {label}
       </Button>
 
       {openPopup && (
-        <BrandAddEditPopover
-          brand={initialState}
-          onClose={() => setOpenPopup(false)}
-        />
+        <BrandAddEditPopover brand={initialState} onClose={() => setOpenPopup(false)} />
       )}
     </>
   );
 };
 
-NewBrand.displayName = 'NewBrand';
+NewBrandButton.displayName = 'NewBrandButton';
 
-export default NewBrand;
+export default NewBrandButton;

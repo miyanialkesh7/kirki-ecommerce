@@ -6,7 +6,6 @@ import ActionGroup from '@/components/ui/action-group';
 import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import Flex from '@/components/ui/flex';
 import {
   StackedItem,
   StackedItemActions,
@@ -24,7 +23,7 @@ import {
 } from '@/features/settings/essentials/services/schema';
 import StackedListSkeleton from '@/features/settings/skeletons/stacked-list-skeleton';
 import { useConfirmDelete } from '@/hooks';
-import { BoxOpenIcon, EditPenIcon, TrashIcon } from '@/icons/common';
+import { EditPenIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
@@ -98,70 +97,65 @@ const SchemaProfileComponent = () => {
           buttonText={__('Schema', 'kirki-ecommerce')}
           onAdd={() => setShowPopup(true)}
         />
-        <div css={scoped({ marginTop: theme.spacing[5] })}>
+        <div
+          css={scoped({
+            marginTop: schemaProfileList.length === 0 ? theme.spacing[0] : theme.spacing[5],
+          })}
+        >
           {isLoading ? (
             <StackedListSkeleton hasMedia={false} />
-          ) : !schemaProfileList?.length ? (
-            <Card cssOverride={cardStyles.innerDarkCard}>
-              <CardContent cssOverride={mergeCss(cardStyles.innerDarkContent, styles.emptyState)}>
-                <Flex direction="column" gap={2} align="center">
-                  <BoxOpenIcon />
-                  <span css={scoped(styles.emptyStateText)}>
-                    {__('Added schema profiles will appear here', 'kirki-ecommerce')}
-                  </span>
-                </Flex>
-              </CardContent>
-            </Card>
           ) : (
-            <StackedItems>
-              {schemaProfileList.map((item) => (
-                <StackedItem key={item.id} id={String(item.id)}>
-                  <StackedItemMedia>
-                    <ScrollText size={16} />
-                  </StackedItemMedia>
-                  <StackedItemContent>
-                    <StackedItemTitle>
-                      <Text variant="small" weight="medium">
-                        {item.name}
-                      </Text>
-                      {countSchemaProperties(item) > 0 && (
-                        <Badge>
-                          {sprintf(
-                            __('%d Properties', 'kirki-ecommerce'),
-                            countSchemaProperties(item),
-                          )}
-                        </Badge>
-                      )}
-                      {item.is_default && <Badge>{__('Default', 'kirki-ecommerce')}</Badge>}
-                    </StackedItemTitle>
-                  </StackedItemContent>
-                  <StackedItemActions>
-                    <ActionGroup>
-                      <Button
-                        variant="tertiary"
-                        size="icon-sm"
-                        aria-label={__('Delete', 'kirki-ecommerce')}
-                        cssOverride={mergeCss(styles.actionButton, {
-                          '& svg': { color: theme.colors.icon.critical },
-                        })}
-                        onClick={() => handleDeleteSchema(item)}
-                      >
-                        <TrashIcon />
-                      </Button>
-                      <Button
-                        variant="tertiary"
-                        size="icon-sm"
-                        aria-label={__('Edit', 'kirki-ecommerce')}
-                        cssOverride={styles.actionButton}
-                        onClick={() => handleEditSchema(item)}
-                      >
-                        <EditPenIcon />
-                      </Button>
-                    </ActionGroup>
-                  </StackedItemActions>
-                </StackedItem>
-              ))}
-            </StackedItems>
+            schemaProfileList.length > 0 && (
+              <StackedItems>
+                {schemaProfileList.map((item) => (
+                  <StackedItem key={item.id} id={String(item.id)}>
+                    <StackedItemMedia>
+                      <ScrollText size={16} />
+                    </StackedItemMedia>
+                    <StackedItemContent>
+                      <StackedItemTitle>
+                        <Text variant="small" weight="medium">
+                          {item.name}
+                        </Text>
+                        {countSchemaProperties(item) > 0 && (
+                          <Badge>
+                            {sprintf(
+                              __('%d Properties', 'kirki-ecommerce'),
+                              countSchemaProperties(item),
+                            )}
+                          </Badge>
+                        )}
+                        {item.is_default && <Badge>{__('Default', 'kirki-ecommerce')}</Badge>}
+                      </StackedItemTitle>
+                    </StackedItemContent>
+                    <StackedItemActions>
+                      <ActionGroup>
+                        <Button
+                          variant="tertiary"
+                          size="icon-sm"
+                          aria-label={__('Delete', 'kirki-ecommerce')}
+                          cssOverride={mergeCss(styles.actionButton, {
+                            '& svg': { color: theme.colors.icon.critical },
+                          })}
+                          onClick={() => handleDeleteSchema(item)}
+                        >
+                          <TrashIcon />
+                        </Button>
+                        <Button
+                          variant="tertiary"
+                          size="icon-sm"
+                          aria-label={__('Edit', 'kirki-ecommerce')}
+                          cssOverride={styles.actionButton}
+                          onClick={() => handleEditSchema(item)}
+                        >
+                          <EditPenIcon />
+                        </Button>
+                      </ActionGroup>
+                    </StackedItemActions>
+                  </StackedItem>
+                ))}
+              </StackedItems>
+            )
           )}
         </div>
         {showPopup && (
@@ -183,12 +177,6 @@ SchemaProfileComponent.displayName = 'SchemaProfileComponent';
 export default SchemaProfileComponent;
 
 const styles = defineStyles({
-  emptyState: {
-    padding: `${theme.spacing[9]} ${theme.spacing[0]}`,
-  },
-  emptyStateText: {
-    color: theme.colors.text.subdued,
-  },
   actionButton: {
     padding: theme.spacing[1],
   },
