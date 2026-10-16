@@ -4,7 +4,7 @@ import SettingsPageHeader from '@/features/settings/pages/settings-page-header';
 import PaymentMethods from '@/features/settings/payment/components/list/payment-methods';
 import { usePaymentMethodsQuery } from '@/features/settings/payment/services/payment';
 import PaymentSettingsSkeleton from '@/features/settings/payment/skeletons/payment-settings-skeleton';
-import { PaymentIcon } from '@/icons';
+import { PaymentIcon } from '@/icons/common';
 import { __ } from '@/wpi18n';
 
 const PaymentSettings = () => {

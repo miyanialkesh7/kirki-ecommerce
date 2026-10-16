@@ -365,7 +365,7 @@ runs a second pass:
 ```
 "va"     →  Variation Library, Tax Regions, Tax Profiles, ...
 "c"      →  Currency, Checkout, Checkout Configuration, ...
-"va zo"  →  Tax Regions
+"va re"  →  Tax Regions
 "zzzz"   →  nothing
 ```
 
@@ -375,8 +375,8 @@ The rules are deliberately narrow:
   *beginning* with what was typed. "va" reaches **Va**t and **Va**riations, not
   ad**va**nced or pri**va**cy. A two-character substring would otherwise return an
   arbitrary third of the corpus.
-- **Every typed word must be found.** "va zo" needs a word starting with `va`
-  *and* a word starting with `zo` in the same card, so typing more narrows the
+- **Every typed word must be found.** "va re" needs a word starting with `va`
+  *and* a word starting with `re` in the same card, so typing more narrows the
   list rather than growing it.
 - **Ranked by field.** Each matched word scores the strongest boost it was found
   under — so a hit in a card's name sorts above one in its body text. The same

@@ -1,4 +1,4 @@
-import { Box, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import HeaderActionsCard from '@/components/header-actions-card';
@@ -6,7 +6,6 @@ import ActionGroup from '@/components/ui/action-group';
 import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import EmptyState from '@/components/ui/empty-state';
 import {
   StackedItem,
   StackedItemActions,
@@ -24,7 +23,7 @@ import {
   useShippingProfilesQuery,
 } from '@/features/settings/shipping/services/shipping';
 import { useConfirmDelete } from '@/hooks';
-import { EditPenIcon, TrashIcon } from '@/icons';
+import { EditPenIcon, TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, scoped } from '@/theme/mixins';
@@ -89,13 +88,7 @@ const ShippingProfile = () => {
             />
           </CreateProfilePopover>
 
-          {!shippingProfileList?.length ? (
-            <EmptyState
-              icon={<Box color={theme.colors.icon.secondary} />}
-              text={__('Added shipping profiles will appear here', 'kirki-ecommerce')}
-              cssOverride={{ marginTop: theme.spacing[3] }}
-            />
-          ) : (
+          {shippingProfileList.length > 0 && (
             <div css={scoped({ marginTop: theme.spacing[5] })}>
               <StackedItems>
                 {shippingProfileList.map((item) => (
@@ -106,9 +99,7 @@ const ShippingProfile = () => {
                         <Text variant="small" weight="medium">
                           {item.name}
                         </Text>
-                        {item.is_default && (
-                          <Badge>{__('Default', 'kirki-ecommerce')}</Badge>
-                        )}
+                        {item.is_default && <Badge>{__('Default', 'kirki-ecommerce')}</Badge>}
                       </StackedItemTitle>
                     </StackedItemContent>
                     <StackedItemActions>

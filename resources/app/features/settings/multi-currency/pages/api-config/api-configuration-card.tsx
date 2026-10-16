@@ -8,8 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import Flex from '@/components/ui/flex';
 import ProgressBar from '@/components/ui/progressbar';
 import Text from '@/components/ui/text';
-import { formatSyncTime } from '@/features/settings/multi-currency/lib/currency-list';
-import { getProviderConfig } from '@/features/settings/multi-currency/lib/currency-list';
+import {
+  formatSyncTime,
+  getProviderConfig,
+} from '@/features/settings/multi-currency/lib/currency-list';
 import ProviderLogo from '@/features/settings/multi-currency/pages/api-config/provider-logo';
 import type { MultiCurrencySettingsFormInput } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
 import type { CurrencySettings } from '@/schemas/catalog/settings';

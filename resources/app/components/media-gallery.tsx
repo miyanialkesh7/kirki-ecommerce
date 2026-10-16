@@ -26,7 +26,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import Flex from '@/components/ui/flex';
 import Image from '@/components/ui/image';
 import { useMediaLibrary } from '@/hooks';
-import { MoveIcon } from '@/icons';
+import { MoveIcon } from '@/icons/common';
 import type { MediaRef } from '@/schemas/shared/media';
 import { theme } from '@/theme';
 import { defineStyles, flexCenter, mergeCss, scoped, scopedMerge } from '@/theme/mixins';

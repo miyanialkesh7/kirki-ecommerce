@@ -40,7 +40,7 @@ import type {
   SelectProductsMode,
 } from '@/features/products/components/shared/select-products-dialog/types';
 import { useProductsWithVariantsQuery } from '@/features/products/services/product';
-import { BoxIcon, ListFilter } from '@/icons';
+import { BoxIcon, ListFilter } from '@/icons/common';
 import { theme } from '@/theme';
 import { ELLIPSIS, getPageItems } from '@/utils/pagination';
 import { __, _n, sprintf } from '@/wpi18n';

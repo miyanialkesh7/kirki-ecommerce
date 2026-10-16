@@ -1,3 +1,4 @@
+import { PlusIcon } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useState } from 'react';
 
 import Button from '@/components/ui/button';
@@ -18,7 +19,7 @@ import {
   taxRuleConditionOptions,
   taxRuleOperatorOptions,
 } from '@/features/settings/tax/shared/lib/utils';
-import { PlusIcon, TrashIcon } from '@/icons';
+import { TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { uuid } from '@/utils';
@@ -180,7 +181,7 @@ const ConditionRow = (props: ConditionRowProps) => {
             aria-label={__('Add another condition', 'kirki-ecommerce')}
             title={__('Add another condition', 'kirki-ecommerce')}
           >
-            <PlusIcon />
+            <PlusIcon size={16} />
           </Button>
         )}
         {index > 0 && (

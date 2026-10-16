@@ -1,3 +1,5 @@
+import { PlusIcon } from 'lucide-react';
+
 import Button from '@/components/ui/button';
 import {
   Dialog,
@@ -17,7 +19,6 @@ import {
 } from '@/features/settings/multi-currency/contexts/add-currency-dialog-context';
 import CurrencyOptionList from '@/features/settings/multi-currency/pages/add-currency-dialog/currency-option-list';
 import CurrencySearchField from '@/features/settings/multi-currency/pages/add-currency-dialog/currency-search-field';
-import { PlusIcon } from '@/icons';
 import { __ } from '@/wpi18n';
 
 const AddCurrencyDialogPanel = () => {
@@ -27,7 +28,7 @@ const AddCurrencyDialogPanel = () => {
   return (
     <>
       <Button variant="outline" size="icon-sm" onClick={() => setOpenPopup(true)}>
-        <PlusIcon />
+        <PlusIcon size={16} />
       </Button>
       <Dialog
         open={openPopup}

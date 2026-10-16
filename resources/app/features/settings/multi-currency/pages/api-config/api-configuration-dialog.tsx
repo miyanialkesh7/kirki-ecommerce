@@ -25,7 +25,7 @@ import {
   ApiConfigurationFormSchema,
 } from '@/features/settings/multi-currency/schemas/forms/api-configuration-form';
 import type { MultiCurrencySettingsFormInput } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
-import { ConfigureKeyIcon } from '@/icons';
+import { ConfigureKeyIcon } from '@/icons/common';
 import { getDefaults } from '@/libs/zod';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';

@@ -8,7 +8,7 @@ import Image from '@/components/ui/image';
 import Spinner from '@/components/ui/spinner';
 import Text from '@/components/ui/text';
 import { useMediaLibrary } from '@/hooks';
-import { CloudUpload } from '@/icons';
+import { CloudUpload } from '@/icons/common';
 import type { MediaRef } from '@/schemas/shared/media';
 import { uploadMedia } from '@/services/media';
 import { theme } from '@/theme';

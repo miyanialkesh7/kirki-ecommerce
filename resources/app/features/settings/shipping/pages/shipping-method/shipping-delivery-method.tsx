@@ -25,7 +25,7 @@ import {
 } from '@/features/settings/shipping/schemas/forms/shipping-method-form';
 import ShippingDeliveryMethodSkeleton from '@/features/settings/shipping/skeletons/shipping-delivery-method-skeleton';
 import type { ShippingMethodData, ShippingZone } from '@/features/settings/shipping/types';
-import { TruckIcon } from '@/icons';
+import { TruckIcon } from '@/icons/common';
 import type { ErrorResponse } from '@/libs/api';
 import { applyServerErrors } from '@/libs/form-errors';
 import { queryClient } from '@/libs/query-client';

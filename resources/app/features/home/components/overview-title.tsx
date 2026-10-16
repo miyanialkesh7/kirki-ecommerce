@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import Flex from '@/components/ui/flex';
 import Tooltip from '@/components/ui/tooltip';
-import { InfoIcon } from '@/icons';
+import { InfoIcon } from '@/icons/common';
 
 type OverviewTitleProps = {
   info: string;

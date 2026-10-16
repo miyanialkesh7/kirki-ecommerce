@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { CreateProfilePopup } from '@/features/settings/shipping/pages/shipping-profile/create-profile-dialog';
 import { useShippingProfilesQuery } from '@/features/settings/shipping/services/shipping';
-import { PlusCircleIcon } from '@/icons';
+import { PlusCircleIcon } from '@/icons/common';
 import type { SelectOption } from '@/types/components/common';
 import { __ } from '@/wpi18n';
 

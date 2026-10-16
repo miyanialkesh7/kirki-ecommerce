@@ -1,9 +1,7 @@
-import {
-  InputGroup,
-  InputGroupButton,
-  InputGroupInput,
-} from '@/components/ui/input-group';
-import { MinusIcon, PlusIcon } from '@/icons';
+import { PlusIcon } from 'lucide-react';
+
+import { InputGroup, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
+import { MinusIcon } from '@/icons/common';
 import { defineStyles } from '@/theme/mixins';
 import { dispatchToastMessage } from '@/utils/common';
 import { __ } from '@/wpi18n';
@@ -16,7 +14,13 @@ type QuantityStepperProps = {
   onChange: (value: number) => void;
 };
 
-const QuantityStepper = ({ value, min = 1, max, disabledMessage, onChange }: QuantityStepperProps) => {
+const QuantityStepper = ({
+  value,
+  min = 1,
+  max,
+  disabledMessage,
+  onChange,
+}: QuantityStepperProps) => {
   const isDefined = typeof max === 'number';
   const isAtMax = isDefined && value >= max;
 
@@ -64,7 +68,7 @@ const QuantityStepper = ({ value, min = 1, max, disabledMessage, onChange }: Qua
         }}
         aria-label="Increase quantity"
       >
-        <PlusIcon />
+        <PlusIcon size={16} />
       </InputGroupButton>
     </InputGroup>
   );

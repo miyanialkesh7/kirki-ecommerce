@@ -16,7 +16,7 @@ import {
 } from '@/features/products/lib/availability';
 import { getAttributeByValueId } from '@/features/products/lib/utils';
 import { getVariantIndexArray } from '@/features/products/lib/variant-group';
-import { InfoIcon } from '@/icons';
+import { InfoIcon } from '@/icons/common';
 import { __ } from '@/wpi18n';
 
 import GroupPriceCell from './group-price-cell';

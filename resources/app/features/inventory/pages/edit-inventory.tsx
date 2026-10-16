@@ -13,9 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import EmptyState from '@/components/ui/empty-state';
 import Flex from '@/components/ui/flex';
 import { Form } from '@/components/ui/form';
+import NotFoundState from '@/components/ui/not-found-state';
 import { Page, PageContent, PageHeading } from '@/components/ui/page';
 import Text from '@/components/ui/text';
 import {
@@ -151,7 +151,7 @@ const EditInventory = () => {
       <Page containerSize="lg">
         <PageHeading text={__('Inventory', 'kirki-ecommerce')} hasBack onBack={handleBack} />
         <PageContent>
-          <EmptyState text={__('This variant could not be found.', 'kirki-ecommerce')} />
+          <NotFoundState text={__('This variant could not be found.', 'kirki-ecommerce')} />
         </PageContent>
       </Page>
     );

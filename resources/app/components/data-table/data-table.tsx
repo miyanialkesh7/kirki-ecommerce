@@ -47,7 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { ArrowDownFilled, ArrowDownUpFilled, ArrowUpFilled } from '@/icons';
+import { ArrowDownFilled, ArrowDownUpFilled, ArrowUpFilled } from '@/icons/common';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
@@ -336,7 +336,7 @@ const DataTable = <T extends DataTableItem>(props: DataTableProps<T>) => {
 
   return (
     <Flex direction="column" gap={4} cssOverride={{ minHeight: 64 }}>
-      <Card cssOverride={mergeCss(cardStyles.tableCard, noCardShadow && { boxShadow: 'none' })}>
+      <Card cssOverride={cardStyles.tableCard} noShadow={noCardShadow}>
         <CardContent cssOverride={cardStyles.tableContent}>
           {hasSelection ? (
             <DataTableSelectionBar

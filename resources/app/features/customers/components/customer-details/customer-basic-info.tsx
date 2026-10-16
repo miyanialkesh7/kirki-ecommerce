@@ -9,7 +9,7 @@ import Flex from '@/components/ui/flex';
 import Text from '@/components/ui/text';
 import type { CustomerFormInput } from '@/features/customers/schemas/forms/customer-form';
 import { useCheckCustomerEmail } from '@/features/customers/services/customer';
-import { FileTextIcon } from '@/icons';
+import { FileTextIcon } from '@/icons/common';
 import { __ } from '@/wpi18n';
 
 type CustomerBasicInfoProps = {

@@ -11,23 +11,19 @@ const initialState: TagFormInput = {
   description: '',
 };
 
-const NewTag = () => {
+const NewTagButton = ({ label = __('New Tag', 'kirki-ecommerce') }: { label?: string }) => {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <Button variant="primary" onClick={() => setOpen(true)}>
-        {__('New Tag', 'kirki-ecommerce')}
+        {label}
       </Button>
-      <TagAddEditDialog
-        tag={initialState}
-        open={open}
-        onClose={() => setOpen(false)}
-      />
+      <TagAddEditDialog tag={initialState} open={open} onClose={() => setOpen(false)} />
     </>
   );
 };
 
-NewTag.displayName = 'NewTag';
+NewTagButton.displayName = 'NewTagButton';
 
-export default NewTag;
+export default NewTagButton;

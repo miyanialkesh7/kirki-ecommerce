@@ -12,7 +12,7 @@ import {
   getAvailabilityDescription,
 } from '@/features/products/lib/availability';
 import type { ProductListItem, ProductStatus } from '@/features/products/schemas/catalog/product';
-import { InfoIcon } from '@/icons';
+import { InfoIcon } from '@/icons/common';
 import { DATE_FORMATS } from '@/libs/date';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';

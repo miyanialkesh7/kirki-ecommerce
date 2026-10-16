@@ -8,7 +8,7 @@ import type {
   ShippingMethodData,
   ShippingZone,
 } from '@/features/settings/shipping/types';
-import { StoreIcon, TruckIcon, WeightIcon } from '@/icons';
+import { StoreIcon, TruckIcon, WeightIcon } from '@/icons/common';
 import { queryClient } from '@/libs/query-client';
 import { settingsKeys } from '@/libs/query-keys';
 import { getErrorMessage } from '@/services/helpers';
@@ -21,17 +21,9 @@ export const getShippingZoneSummary = (zone: ShippingZone): string => {
 
   return sprintf(
     __('%1$s, %2$s', 'kirki-ecommerce'),
+    sprintf(_n('%d Region', '%d Regions', regionCount, 'kirki-ecommerce'), regionCount),
     sprintf(
-      _n('%d Region', '%d Regions', regionCount, 'kirki-ecommerce'),
-      regionCount,
-    ),
-    sprintf(
-      _n(
-        '%d Shipping Method',
-        '%d Shipping Methods',
-        methodCount,
-        'kirki-ecommerce',
-      ),
+      _n('%d Shipping Method', '%d Shipping Methods', methodCount, 'kirki-ecommerce'),
       methodCount,
     ),
   );

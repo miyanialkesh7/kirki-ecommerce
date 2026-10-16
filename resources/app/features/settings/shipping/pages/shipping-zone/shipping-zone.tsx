@@ -21,7 +21,7 @@ import {
 } from '@/features/settings/shipping/schemas/forms/shipping-zone-form';
 import ShippingZoneSkeleton from '@/features/settings/shipping/skeletons/shipping-zone-skeleton';
 import type { ShippingMethodData, ShippingZone } from '@/features/settings/shipping/types';
-import { TruckIcon } from '@/icons';
+import { TruckIcon } from '@/icons/common';
 import type { ErrorResponse } from '@/libs/api';
 import { applyServerErrors } from '@/libs/form-errors';
 import { getDefaults, pickFormValues } from '@/libs/zod';

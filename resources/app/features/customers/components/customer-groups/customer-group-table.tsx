@@ -6,8 +6,14 @@ import Badge from '@/components/ui/badge';
 import Button from '@/components/ui/button';
 import Flex from '@/components/ui/flex';
 import Input from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ListFilter } from '@/icons';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ListFilter } from '@/icons/common';
 import { theme } from '@/theme';
 import { defineStyles } from '@/theme/mixins';
 import type { SelectOption } from '@/types/components/common';

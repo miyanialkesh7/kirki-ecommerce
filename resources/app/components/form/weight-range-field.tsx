@@ -1,4 +1,5 @@
 import type { CSSObject } from '@emotion/react';
+import { PlusIcon } from 'lucide-react';
 import {
   type FieldArrayPath,
   type FieldPath,
@@ -14,7 +15,7 @@ import Button from '@/components/ui/button';
 import { Field, FieldError } from '@/components/ui/field';
 import Grid from '@/components/ui/grid';
 import Text from '@/components/ui/text';
-import { PlusIcon, TrashIcon } from '@/icons';
+import { TrashIcon } from '@/icons/common';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
@@ -101,7 +102,7 @@ const WeightRangeField = <
         disabled={disabled || (fields.length > 0 && isLastRangeUnbounded)}
         onClick={() => append({ from: null, to: null, base_amount: null } as never)}
       >
-        <PlusIcon />
+        <PlusIcon size={16} />
         {__('Add Another Range', 'kirki-ecommerce')}
       </Button>
       {arrayLevelMessage && <FieldError>{arrayLevelMessage}</FieldError>}

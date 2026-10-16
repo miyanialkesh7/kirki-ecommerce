@@ -1,4 +1,3 @@
-import { Box } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -26,11 +25,11 @@ import {
 } from '@/features/settings/shipping/lib/utils';
 import type { ShippingMethodData, ShippingZone } from '@/features/settings/shipping/types';
 import { useBaseCurrencySymbol, useConfirmDelete } from '@/hooks';
-import { EditPenIcon, TrashIcon } from '@/icons';
+import { EditPenIcon, TrashIcon } from '@/icons/common';
 import type { ShippingSettings } from '@/schemas/catalog/settings';
 import { theme } from '@/theme';
 import { cardStyles } from '@/theme/card-styles';
-import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
+import { defineStyles } from '@/theme/mixins';
 import { uuid } from '@/utils';
 import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
@@ -123,21 +122,7 @@ export const ShippingMethod = ({
             onAdd={handleAddMethod}
           />
 
-          {!shippingMethodList?.length ? (
-            <Card
-              data-search-skip="true"
-              cssOverride={{ ...cardStyles.innerDarkCard, marginTop: theme.spacing[5] }}
-            >
-              <CardContent cssOverride={mergeCss(cardStyles.innerDarkContent, styles.emptyState)}>
-                <Flex direction="column" gap={2} align="center">
-                  <Box size={24} color={theme.colors.icon.disabled} />
-                  <span css={scoped(styles.emptyStateText)}>
-                    {__('Added shipping methods will appear here', 'kirki-ecommerce')}
-                  </span>
-                </Flex>
-              </CardContent>
-            </Card>
-          ) : (
+          {shippingMethodList.length > 0 && (
             <StackedItems cssOverride={{ marginTop: theme.spacing[5] }}>
               {shippingMethodListWithIcon.map((item) => (
                 <StackedItem key={item.id} id={String(item.id)}>
@@ -202,12 +187,6 @@ export const ShippingMethod = ({
 };
 
 const styles = defineStyles({
-  emptyState: {
-    padding: `${theme.spacing[9]} ${theme.spacing[0]}`,
-  },
-  emptyStateText: {
-    color: theme.colors.text.subdued,
-  },
   actionButton: {
     padding: theme.spacing[1],
   },

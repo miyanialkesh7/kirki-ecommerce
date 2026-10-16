@@ -1,4 +1,4 @@
-import { Copy, Plus, TriangleAlertIcon } from 'lucide-react';
+import { Copy, MapPin, Phone, Plus, TriangleAlertIcon, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -9,7 +9,6 @@ import NewAddressDialog from '@/features/orders/components/order-create/customer
 import type { AddressLines } from '@/features/orders/lib/customer-address';
 import type { OrderAddressFormPayload } from '@/features/orders/schemas/forms/order-address-form';
 import type { OrderFormInput } from '@/features/orders/schemas/forms/order-form';
-import { LocationIcon, PhoneIcon, TruckIcon } from '@/icons';
 import { theme } from '@/theme';
 import { defineStyles, flexCenter, scoped } from '@/theme/mixins';
 import { copyToClipboard } from '@/utils';
@@ -52,31 +51,34 @@ const CustomerSummary = ({
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const fullName = [firstName, lastName].filter(Boolean).join(' ');
   const handleAddressSave = (address: OrderAddressFormPayload) => {
-    form.setValues({
-      shipping_first_name: address.first_name,
-      shipping_last_name: address.last_name,
-      shipping_address_line1: address.address_line1,
-      shipping_address_line2: address.address_line2,
-      shipping_city: address.city,
-      shipping_state: address.state,
-      shipping_postal_code: address.postal_code,
-      shipping_country: address.country,
-      shipping_phone: address.phone,
-      shipping_email: address.email,
-      is_billing_same_as_shipping: true,
-      billing_first_name: address.first_name,
-      billing_last_name: address.last_name,
-      billing_address_line1: address.address_line1,
-      billing_address_line2: address.address_line2,
-      billing_city: address.city,
-      billing_state: address.state,
-      billing_postal_code: address.postal_code,
-      billing_country: address.country,
-      billing_phone: address.phone,
-      billing_email: address.email,
-    }, {
-      shouldDirty: true,
-    });
+    form.setValues(
+      {
+        shipping_first_name: address.first_name,
+        shipping_last_name: address.last_name,
+        shipping_address_line1: address.address_line1,
+        shipping_address_line2: address.address_line2,
+        shipping_city: address.city,
+        shipping_state: address.state,
+        shipping_postal_code: address.postal_code,
+        shipping_country: address.country,
+        shipping_phone: address.phone,
+        shipping_email: address.email,
+        is_billing_same_as_shipping: true,
+        billing_first_name: address.first_name,
+        billing_last_name: address.last_name,
+        billing_address_line1: address.address_line1,
+        billing_address_line2: address.address_line2,
+        billing_city: address.city,
+        billing_state: address.state,
+        billing_postal_code: address.postal_code,
+        billing_country: address.country,
+        billing_phone: address.phone,
+        billing_email: address.email,
+      },
+      {
+        shouldDirty: true,
+      },
+    );
   };
   return (
     <Flex direction="column" gap={4}>
@@ -95,7 +97,7 @@ const CustomerSummary = ({
       {phone && (
         <Flex gap={2} align="center">
           <span css={scoped(styles.iconSlot)}>
-            <PhoneIcon />
+            <Phone size={16} color={theme.colors.text.secondary} style={{ opacity: 0.5 }} />
           </span>
           <Text>{phone}</Text>
         </Flex>
@@ -106,7 +108,7 @@ const CustomerSummary = ({
           {isDefined(addresses.billing) && (
             <Flex gap={2} align="flex-start" cssOverride={styles.hoverParent}>
               <span css={scoped(styles.iconSlot)}>
-                <LocationIcon />
+                <MapPin size={16} color={theme.colors.text.secondary} style={{ opacity: 0.5 }} />
               </span>
               <Flex direction="column" gap={2} cssOverride={styles.addressContent}>
                 <Text variant="tiny" color="secondary">
@@ -126,7 +128,7 @@ const CustomerSummary = ({
                 data-hover-address="true"
                 cssOverride={{ ...styles.hoverReveal, color: theme.colors.icon.primary }}
               >
-                <Copy size={16} color={theme.colors.icon.primary} />
+                <Copy size={16} color={theme.colors.icon.secondary} style={{ opacity: 0.5 }} />
               </Button>
             </Flex>
           )}
@@ -134,7 +136,7 @@ const CustomerSummary = ({
           {isDefined(addresses.shipping) && (
             <Flex gap={2} align="flex-start" cssOverride={styles.hoverParent}>
               <span css={scoped(styles.iconSlot)}>
-                <TruckIcon style={{ opacity: 0.5 }} />
+                <Truck size={16} color={theme.colors.text.secondary} style={{ opacity: 0.5 }} />
               </span>
               <Flex direction="column" gap={2} cssOverride={styles.addressContent}>
                 <Text variant="tiny" color="secondary">
@@ -154,7 +156,7 @@ const CustomerSummary = ({
                 data-hover-address="true"
                 cssOverride={styles.hoverReveal}
               >
-                <Copy size={16} />
+                <Copy size={16} color={theme.colors.icon.secondary} style={{ opacity: 0.5 }} />
               </Button>
             </Flex>
           )}
