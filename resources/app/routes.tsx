@@ -1,5 +1,6 @@
 import { createHashRouter } from 'react-router';
 
+import analyticsRoutes from '@/features/analytics/routes';
 import brandsRoutes from '@/features/brands/routes';
 import bulkEditRoutes from '@/features/bulk-edit/routes';
 import categoriesRoutes from '@/features/categories/routes';
@@ -31,6 +32,7 @@ export const router = createHashRouter([
           ...inventoryRoutes,
           ...couponsRoutes,
           ...ordersRoutes,
+          ...analyticsRoutes,
           ...collectionsRoutes,
           ...tagsRoutes,
           ...categoriesRoutes,

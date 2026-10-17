@@ -51,6 +51,8 @@ export const endpoints = {
 
   DASHBOARD_OVERVIEW: '/dashboard/overview',
 
+  ANALYTICS_OVERVIEW: '/analytics/overview',
+
   COUNTRIES: '/countries',
 
   CURRENCIES: '/currencies',
