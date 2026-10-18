@@ -246,6 +246,65 @@ describe('BarChart previous bars', () => {
   });
 });
 
+describe('BarChart stacked bars', () => {
+  afterEach(cleanup);
+
+  const stacked = points.map((point) => ({
+    ...point,
+    value: 5,
+    segments: [3, 2],
+    previous_value: 40,
+    previous_segments: [30, 10],
+  }));
+
+  // Scenario: New vs returning customers
+  it('draws the segments with no comparison mark and rounds only the top segment', () => {
+    renderInRoot(
+      <BarChart
+        label="Customers"
+        points={stacked}
+        formatValue={String}
+        segmentNames={['New', 'Returning']}
+      />,
+    );
+
+    const segments = screen.getAllByTestId('bar-chart-segment');
+
+    expect(segments).toHaveLength(stacked.length * 2);
+    expect(segments[0].getAttribute('d')).not.toContain('A');
+    expect(segments[1].getAttribute('d')).toContain('A');
+    expect(screen.queryByTestId('bar-chart-previous-bar')).not.toBeInTheDocument();
+  });
+
+  it('scales the y-axis to the current totals only', () => {
+    renderInRoot(<BarChart label="Customers" points={stacked} formatValue={String} />);
+
+    const labels = within(screen.getByTestId('chart-y-axis'))
+      .getAllByText(/^\d+$/)
+      .map((label) => label.textContent);
+
+    expect(labels).toEqual(['0', '2', '4', '6', '8']);
+  });
+
+  it('shows the comparison values in the tooltip on hover', () => {
+    renderInRoot(
+      <BarChart
+        label="Customers"
+        points={stacked}
+        formatValue={String}
+        segmentNames={['New', 'Returning']}
+      />,
+    );
+
+    fireEvent.mouseOver(screen.getByTestId('chart-point-1'));
+
+    const tooltip = screen.getByRole('tooltip');
+
+    expect(within(tooltip).getByText('New: 3')).toBeInTheDocument();
+    expect(within(tooltip).getByText('New: 30')).toBeInTheDocument();
+  });
+});
+
 describe('buildScale', () => {
   it('uses round steps of 1, 2.5 or 5 from 0', () => {
     expect(buildScale([70000]).ticks).toEqual([0, 25000, 50000, 75000, 100000]);

@@ -209,7 +209,7 @@ row filling it. On screens narrower than 720px, every card SHALL take a whole ro
 | Average order value over time | half | AOV headline and change; line chart with no area fill, a point on each value and the comparison series |
 | Orders over time | half | Orders headline and change; bar chart with a rounded comparison bar beside each current bar |
 | Orders by fulfillment status | half | Share of each current fulfillment status as one 32px segmented bar and a list with count and percent; headline "N%" with "delivered · M orders" |
-| New vs returning customers | half | Customers headline and change; stacked bars of new and returning per chart point; legend with the two totals |
+| New vs returning customers | half | "N customers" headline and change; stacked bars of new and returning per chart point, with no comparison mark; centered legend "New · N" and "Returning · N" |
 | Sales by coupon code | half | Top 5 codes by orders using code, with discount given |
 | Sales by payment method | half | Top 5 methods by Total sales, with order count |
 | Taxes collected by region | half | Top 5 shipping regions by Total tax |
@@ -415,6 +415,22 @@ percent in a subdued color, with the count and percent aligned to the right.
 
 - **WHEN** Orders by fulfillment status shows 12 orders with 6 delivered
 - **THEN** the headline shows "50%" in bold and "delivered · 12 orders" beside it, above a 32px bar with rounded ends
+
+### Requirement: New vs returning customers bars
+
+The New vs returning customers card SHALL show one stacked bar for each chart
+point, with new customers at the bottom and returning customers on top, and a
+2px gap between the two segments. Only the top of the highest segment SHALL be
+rounded. The chart SHALL NOT draw the comparison values, and the y-axis SHALL
+scale to the current values only. The tooltip SHALL show the new and returning
+values of the point and of its comparison point when the user hovers or focuses
+the point. The headline SHALL show the customers count followed by "customers"
+in a subdued color, and the legend SHALL be centered under the chart.
+
+#### Scenario: New vs returning customers
+
+- **WHEN** a chart point has 3 new and 2 returning customers, and its comparison point has 30 new and 10 returning
+- **THEN** the bar shows 3 new under 2 returning with a rounded top, no comparison mark shows, and the tooltip on hover shows both points
 
 ### Requirement: Comparison legend
 

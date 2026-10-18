@@ -20,6 +20,15 @@ const MAX_BAR_WIDTH = 40;
 const PAIR_BAR_WIDTH_RATIO = 0.3;
 const MAX_PAIR_BAR_WIDTH = 20;
 const PAIR_GAP_RATIO = 0.25;
+const SEGMENT_GAP = 2;
+
+const topRoundedBarPath = (x: number, y: number, width: number, height: number) => {
+  const rx = width / 2;
+  const ry = Math.min(rx, height);
+  const bottom = y + height;
+
+  return `M ${x} ${bottom} V ${y + ry} A ${rx} ${ry} 0 0 1 ${x + width} ${y + ry} V ${bottom} Z`;
+};
 
 const BarChart = (props: BarChartProps) => {
   const {
@@ -40,7 +49,7 @@ const BarChart = (props: BarChartProps) => {
     (point) =>
       point.previous_segments?.reduce((sum, value) => sum + value, 0) ?? point.previous_value,
   );
-  const scale = buildScale([...totals, ...previousTotals]);
+  const scale = buildScale(showPreviousBars ? [...totals, ...previousTotals] : totals);
 
   return (
     <ChartFrame
@@ -97,34 +106,34 @@ const BarChart = (props: BarChartProps) => {
           }
 
           const barWidth = Math.min(layout.slotWidth * BAR_WIDTH_RATIO, MAX_BAR_WIDTH);
-          const center = layout.getX(index);
+          const x = layout.getX(index) - barWidth / 2;
           const segments = point.segments ?? (typeof point.value === 'number' ? [point.value] : []);
+          const lastPosition = segments.reduce(
+            (last, segment, position) => (segment > 0 ? position : last),
+            -1,
+          );
           let running = 0;
 
           return (
             <g key={point.date} aria-hidden="true">
-              {typeof previousTotals[index] === 'number' && (
-                <line
-                  x1={center - barWidth / 2}
-                  x2={center + barWidth / 2}
-                  y1={scale.toY(previousTotals[index])}
-                  y2={scale.toY(previousTotals[index])}
-                  css={scoped(styles.previousMark)}
-                />
-              )}
               {segments.map((segment, position) => {
                 const top = scale.toY(running + segment);
-                const bottom = scale.toY(running);
+                const bottom = scale.toY(running) - (running > 0 ? SEGMENT_GAP : 0);
                 running += segment;
 
+                if (segment <= 0 || bottom <= top) {
+                  return null;
+                }
+
                 return (
-                  <rect
+                  <path
                     key={segmentNames?.[position] ?? position}
-                    x={center - barWidth / 2}
-                    y={Math.min(top, bottom)}
-                    width={barWidth}
-                    height={Math.abs(bottom - top)}
-                    rx={2}
+                    data-testid="bar-chart-segment"
+                    d={
+                      position === lastPosition
+                        ? topRoundedBarPath(x, top, barWidth, bottom - top)
+                        : `M ${x} ${top} H ${x + barWidth} V ${bottom} H ${x} Z`
+                    }
                     css={scoped(styles.bar)}
                     style={
                       segmentColors?.[position] ? { fill: segmentColors[position] } : undefined
@@ -152,9 +161,5 @@ const styles = defineStyles({
   },
   previousBar: {
     fill: theme.colors.analytics.chart.previous,
-  },
-  previousMark: {
-    stroke: theme.colors.analytics.chart.comparisonLine,
-    strokeWidth: 2,
   },
 });

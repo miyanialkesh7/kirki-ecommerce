@@ -164,7 +164,7 @@ Details:
 | Average order value over time | (Gross sales − discounts) ÷ paid orders, for each day, week or month. | Average order value, its change, and a line chart with no area fill and a dot on each point |
 | Orders over time | Orders created in each day, week or month, paid or not. Failed payments are left out. | Orders, items ordered, its change, and a bar chart with a comparison bar beside each bar |
 | Orders by fulfillment status | Orders created in the range, by their fulfillment status now. Failed payments are left out. | A headline such as "50% delivered · 12 orders", a 32px bar with rounded ends and a list with count and percent for each status |
-| New vs returning customers | New: first paid order in the period. Returning: a paid order in the period that was not their first. One customer can be both. | Customers, its change, and stacked bars of new and returning customers |
+| New vs returning customers | New: first paid order in the period. Returning: a paid order in the period that was not their first. One customer can be both. | Customers, its change, and stacked bars of new and returning customers with a rounded top. The comparison shows only in the tooltip. |
 | Sales by coupon code | Paid orders that used each code, and the total discount the code gave. Free-shipping codes show the shipping fee removed. | The top 5 codes by orders, with the discount given |
 | Sales by payment method | Total sales of paid orders, by the payment method used. | The top 5 methods by total sales, with the order count |
 | Taxes collected by region | Product and shipping tax on paid orders, by the shipping address region. | The top 5 regions by total tax, such as "Texas, United States" |

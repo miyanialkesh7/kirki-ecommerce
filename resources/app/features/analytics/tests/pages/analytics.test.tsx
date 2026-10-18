@@ -400,6 +400,18 @@ describe('Analytics cards', () => {
     expect(card.getByText('delivered · 12 orders')).toBeInTheDocument();
   });
 
+  // Scenario: New vs returning customers
+  it('shows the customers headline and the totals legend of New vs returning customers', () => {
+    renderPage();
+
+    const card = within(screen.getByTestId('card-new_vs_returning_customers'));
+
+    expect(card.getByRole('heading', { name: '9' })).toBeInTheDocument();
+    expect(card.getByText(/^customers?$/)).toBeInTheDocument();
+    expect(card.getByText('New · 6')).toBeInTheDocument();
+    expect(card.getByText('Returning · 3')).toBeInTheDocument();
+  });
+
   // Scenario: Stock badge in Sales by product
   it('shows "3 left in stock" in the warning badge for a low-stock top product', () => {
     renderPage();

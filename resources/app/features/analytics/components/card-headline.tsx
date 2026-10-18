@@ -4,17 +4,19 @@ import ChangeBadge from '@/features/analytics/components/change-badge';
 
 type CardHeadlineProps = {
   value: string;
+  unit?: string;
   change?: number | null;
 };
 
 const CardHeadline = (props: CardHeadlineProps) => {
-  const { value, change } = props;
+  const { value, unit, change } = props;
 
   return (
     <Flex align="center" gap={2} wrap="wrap">
       <Text variant="heading4" weight="bold">
         {value}
       </Text>
+      {unit && <Text color="subdued">{unit}</Text>}
       <ChangeBadge change={change} />
     </Flex>
   );

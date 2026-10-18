@@ -8,9 +8,9 @@ import { formatNumber } from '@/features/analytics/lib/format';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
-import { __ } from '@/wpi18n';
+import { __, _n } from '@/wpi18n';
 
-const SEGMENT_COLORS = [theme.colors.analytics.series.primary, theme.colors.analytics.series.secondary];
+const SEGMENT_COLORS = [theme.colors.analytics.series.secondary, theme.colors.analytics.series.primary];
 
 const NewVsReturningCustomersCard = (props: CardProps<'new_vs_returning_customers'>) => {
   const { data, isEmpty } = props;
@@ -27,7 +27,11 @@ const NewVsReturningCustomersCard = (props: CardProps<'new_vs_returning_customer
         <CardEmpty />
       ) : (
         <>
-          <CardHeadline value={formatNumber(data.total.current)} change={data.total.change} />
+          <CardHeadline
+            value={formatNumber(data.total.current)}
+            unit={_n('customer', 'customers', data.total.current ?? 0, 'kirki-ecommerce')}
+            change={data.total.change}
+          />
           <BarChart
             label={definition.title}
             points={data.series.map((point) => ({
@@ -59,8 +63,8 @@ const NewVsReturningCustomersCard = (props: CardProps<'new_vs_returning_customer
                   style={{ backgroundColor: SEGMENT_COLORS[index] }}
                   aria-hidden="true"
                 />
-                <Text variant="small">
-                  {segmentNames[index]}: {formatNumber(total)}
+                <Text variant="small" color="secondary">
+                  {segmentNames[index]} · {formatNumber(total)}
                 </Text>
               </li>
             ))}
@@ -81,7 +85,9 @@ const styles = defineStyles({
     margin: 0,
     padding: 0,
     display: 'flex',
-    gap: theme.spacing[4],
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: theme.spacing[6],
   },
   item: {
     display: 'inline-flex',
@@ -90,8 +96,8 @@ const styles = defineStyles({
     margin: 0,
   },
   dot: {
-    width: '8px',
-    height: '8px',
-    borderRadius: theme.radius.full,
+    width: '12px',
+    height: '12px',
+    borderRadius: theme.radius.sm,
   },
 });
