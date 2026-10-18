@@ -112,6 +112,8 @@ const LowestVariantSchema = z.object({
   status: z.string(),
 });
 
+const HourCountsSchema = z.array(z.array(z.number()).length(24)).length(7);
+
 const AnalyticsCardsSchema = z.object({
   total_sales_over_time: z.object({
     total: MoneyMetricSchema,
@@ -141,6 +143,10 @@ const AnalyticsCardsSchema = z.object({
     series: z.array(CustomerPointSchema),
   }),
   sales_by_coupon_code: z.object({ items: z.array(CouponItemSchema) }),
+  orders_by_time_of_day: z.object({
+    current: HourCountsSchema,
+    previous: HourCountsSchema.nullish(),
+  }),
   sales_by_payment_method: z.object({ items: z.array(PaymentMethodItemSchema) }),
   taxes_by_region: z.object({ items: z.array(TaxRegionItemSchema) }),
   shipping_charges_by_method: z.object({ items: z.array(ShippingMethodItemSchema) }),

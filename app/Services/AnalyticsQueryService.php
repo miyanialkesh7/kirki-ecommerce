@@ -526,9 +526,6 @@ class AnalyticsQueryService
     /**
      * Get the SQL for the store-local day of a UTC time column.
      *
-     * The UTC offsets that apply inside the window come from the time zone transitions, so daylight saving
-     * time and half-hour offsets are exact without the MySQL time zone tables.
-     *
      * @since 1.0.0
      *
      * @param string               $column Time column or expression in UTC.
@@ -537,6 +534,24 @@ class AnalyticsQueryService
      * @return string SQL expression giving a DATE.
      */
     protected function local_date_sql(string $column, array $bounds)
+    {
+        return sprintf('DATE(%s)', $this->local_time_sql($column, $bounds));
+    }
+
+    /**
+     * Get the SQL for the store-local date-time of a UTC time column.
+     *
+     * The UTC offsets that apply inside the window come from the time zone transitions, so daylight saving
+     * time and half-hour offsets are exact without the MySQL time zone tables.
+     *
+     * @since 1.0.0
+     *
+     * @param string               $column Time column or expression in UTC.
+     * @param array<string, mixed> $bounds UTC bounds of the window.
+     *
+     * @return string SQL expression giving a DATETIME.
+     */
+    protected function local_time_sql(string $column, array $bounds)
     {
         $zone = wp_timezone();
         $transitions = $zone->getTransitions($bounds['start_ts'], $bounds['end_ts']);
@@ -553,7 +568,7 @@ class AnalyticsQueryService
         }
 
         if (count($parts) === 1) {
-            return sprintf('DATE(DATE_ADD(%s, INTERVAL %d SECOND))', $column, $parts[0][1]);
+            return sprintf('DATE_ADD(%s, INTERVAL %d SECOND)', $column, $parts[0][1]);
         }
 
         $cases = '';
@@ -562,7 +577,7 @@ class AnalyticsQueryService
             $cases .= sprintf(" WHEN %s < '%s' THEN %d", $column, gmdate('Y-m-d H:i:s', $parts[$index][0]), $parts[$index - 1][1]);
         }
 
-        return sprintf('DATE(DATE_ADD(%s, INTERVAL CASE%s ELSE %d END SECOND))', $column, $cases, $parts[count($parts) - 1][1]);
+        return sprintf('DATE_ADD(%s, INTERVAL CASE%s ELSE %d END SECOND)', $column, $cases, $parts[count($parts) - 1][1]);
     }
 
     /**
@@ -919,6 +934,7 @@ class AnalyticsQueryService
             'orders_by_fulfillment_status' => $this->build_fulfillment_status($range),
             'new_vs_returning_customers' => $this->build_new_vs_returning($current, $previous),
             'sales_by_coupon_code' => ['items' => $this->build_sales_by_coupon($range)],
+            'orders_by_time_of_day' => $this->build_orders_by_time_of_day($range),
             'sales_by_payment_method' => ['items' => $this->build_sales_by_payment_method($range)],
             'taxes_by_region' => ['items' => $this->build_taxes_by_region($range)],
             'shipping_charges_by_method' => ['items' => $this->build_shipping_by_method($range)],
@@ -1449,6 +1465,60 @@ class AnalyticsQueryService
             ),
             $bindings
         );
+    }
+
+    /**
+     * Build the Orders by time of day card: the placed orders by store-local weekday and hour.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $range Resolved range.
+     *
+     * @return array{current: int[][], previous: int[][]|null}
+     */
+    protected function build_orders_by_time_of_day(array $range)
+    {
+        $previous = null;
+
+        if ($range['compare'] !== null) {
+            $previous = $this->query_orders_by_time_of_day($this->utc_bounds($range['compare']['from'], $range['compare']['to']));
+        }
+
+        return [
+            'current' => $this->query_orders_by_time_of_day($this->utc_bounds($range['from'], $range['to'])),
+            'previous' => $previous,
+        ];
+    }
+
+    /**
+     * Count the placed orders of a window by the store-local weekday and hour of their order date.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $bounds UTC bounds of the window.
+     *
+     * @return int[][] 7 rows from Monday to Sunday, each with 24 counts from hour 0 to hour 23.
+     */
+    protected function query_orders_by_time_of_day(array $bounds)
+    {
+        [$scope, $bindings] = $this->placed_scope('o', $bounds);
+        $local_time = $this->local_time_sql('o.created_at', $bounds);
+
+        $rows = DB::connection()->select(
+            "SELECT WEEKDAY({$local_time}) AS weekday, HOUR({$local_time}) AS hour, COUNT(*) AS orders
+                FROM {$this->table('orders')} o
+                WHERE {$scope}
+                GROUP BY weekday, hour",
+            $bindings
+        );
+
+        $counts = array_fill(0, 7, array_fill(0, 24, 0));
+
+        foreach ($rows as $row) {
+            $counts[(int) $row['weekday']][(int) $row['hour']] = (int) $row['orders'];
+        }
+
+        return $counts;
     }
 
     /**

@@ -18,6 +18,8 @@ const CHECKS: Record<EmptyCheckedCard, (cards: AnalyticsCards) => boolean> = {
   new_vs_returning_customers: (cards) =>
     cards.new_vs_returning_customers.series.every((point) => point.new === 0 && point.returning === 0),
   sales_by_coupon_code: (cards) => cards.sales_by_coupon_code.items.length === 0,
+  orders_by_time_of_day: (cards) =>
+    cards.orders_by_time_of_day.current.every((row) => row.every((count) => count === 0)),
   sales_by_payment_method: (cards) => cards.sales_by_payment_method.items.length === 0,
   taxes_by_region: (cards) => cards.taxes_by_region.items.length === 0,
   shipping_charges_by_method: (cards) => cards.shipping_charges_by_method.items.length === 0,

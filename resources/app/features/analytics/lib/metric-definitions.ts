@@ -14,6 +14,7 @@ type MetricKey =
   | 'orders_by_fulfillment_status'
   | 'new_vs_returning_customers'
   | 'sales_by_coupon_code'
+  | 'orders_by_time_of_day'
   | 'sales_by_payment_method'
   | 'taxes_by_region'
   | 'shipping_charges_by_method'
@@ -113,6 +114,13 @@ const getMetricDefinitions = (): Record<MetricKey, MetricDefinition> => ({
     title: __('Sales by coupon code', 'kirki-ecommerce'),
     info: __(
       'Paid orders that used each code, and the total discount the code gave. Free-shipping codes show the shipping fee removed.',
+      'kirki-ecommerce',
+    ),
+  },
+  orders_by_time_of_day: {
+    title: __('Orders by time of day', 'kirki-ecommerce'),
+    info: __(
+      'Orders placed in the range, by the weekday and hour of the store time zone. Failed payments are left out.',
       'kirki-ecommerce',
     ),
   },

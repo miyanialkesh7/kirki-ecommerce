@@ -226,6 +226,72 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "Order late in the evening in a positive offset zone": in Asia/Dhaka, 20:30 UTC on a Thursday is Friday at hour 2.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_time_of_day_uses_the_site_time_zone(): void
+    {
+        $this->set_timezone('Asia/Dhaka');
+        $this->make_sale('2026-10-01 20:30:00', 1000);
+
+        $card = $this->overview_between('2026-10-01', '2026-10-07')['cards']['orders_by_time_of_day'];
+
+        $this->assertSame(1, $card['current'][4][2]);
+        $this->assertSame(1, array_sum(array_map('array_sum', $card['current'])));
+        $this->assertNull($card['previous']);
+    }
+
+    /**
+     * Scenario "Half-hour offset": in Asia/Kolkata, 12:45 UTC on a Monday is Monday at hour 18.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_time_of_day_uses_a_half_hour_offset(): void
+    {
+        $this->set_timezone('Asia/Kolkata');
+        $this->make_sale('2026-10-05 12:45:00', 1000);
+
+        $card = $this->overview_between('2026-10-05', '2026-10-05')['cards']['orders_by_time_of_day'];
+
+        $this->assertSame(1, $card['current'][0][18]);
+    }
+
+    /**
+     * Scenario "Failed order": a failed order counts in no weekday or hour.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_time_of_day_leaves_out_failed_orders(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000, ['payment_status' => PaymentStatus::FAILED]);
+
+        $card = $this->overview_between('2026-10-01', '2026-10-01')['cards']['orders_by_time_of_day'];
+
+        $this->assertSame(0, array_sum(array_map('array_sum', $card['current'])));
+    }
+
+    /**
+     * Scenario "Comparison counts": an order on a Wednesday at 9:10 in the comparison period counts at Wednesday hour 9.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_time_of_day_has_the_comparison_counts(): void
+    {
+        $this->make_sale('2026-09-30 09:10:00', 1000);
+        $this->make_sale('2026-10-01 11:00:00', 1000);
+
+        $card = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['orders_by_time_of_day'];
+
+        $this->assertSame(1, $card['current'][3][11]);
+        $this->assertSame(1, $card['previous'][2][9]);
+    }
+
+    /**
      * Scenario "No sales": Average order value is empty, not zero.
      *
      * @return void

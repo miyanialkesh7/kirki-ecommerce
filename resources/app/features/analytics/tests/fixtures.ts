@@ -65,6 +65,17 @@ const FULFILLMENT_STATUSES = [
   'cancelled',
 ];
 
+/** A 7 × 24 grid of order counts, rows Mon to Sun, with the given [weekday, hour, count] cells. */
+const hourCounts = (cells: [number, number, number][] = []) => {
+  const counts = Array.from({ length: 7 }, () => Array<number>(24).fill(0));
+
+  cells.forEach(([day, hour, count]) => {
+    counts[day][hour] = count;
+  });
+
+  return counts;
+};
+
 const range = { preset: 'last_30', from: '2026-09-15', to: '2026-10-14', days: 30 };
 const compare = { from: '2026-08-16', to: '2026-09-14' };
 
@@ -175,6 +186,18 @@ const buildOverview = (
             change: 33.3,
           },
         ],
+      },
+      orders_by_time_of_day: {
+        current: hourCounts([
+          [0, 20, 1],
+          [1, 9, 3],
+          [1, 10, 3],
+          [4, 18, 5],
+        ]),
+        previous: hourCounts([
+          [1, 9, 4],
+          [4, 18, 2],
+        ]),
       },
       sales_by_payment_method: {
         items: [{ id: 'paypal', name: 'PayPal', orders: 7, total_sales_money_object: money(6601) }],
@@ -292,6 +315,7 @@ const emptyCards = () => {
       series: [countPoint(0, 0, 0), countPoint(1, 0, 0), countPoint(2, 0, 0)],
     },
     sales_by_coupon_code: { items: [] },
+    orders_by_time_of_day: { current: hourCounts(), previous: hourCounts() },
     sales_by_payment_method: { items: [] },
     taxes_by_region: { items: [] },
     shipping_charges_by_method: { items: [] },

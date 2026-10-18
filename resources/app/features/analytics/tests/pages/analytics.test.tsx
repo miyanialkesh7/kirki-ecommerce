@@ -58,6 +58,7 @@ const CARDS = [
   ['orders_by_fulfillment_status', 'Orders by fulfillment status'],
   ['new_vs_returning_customers', 'New vs returning customers'],
   ['sales_by_coupon_code', 'Sales by coupon code'],
+  ['orders_by_time_of_day', 'Orders by time of day'],
   ['sales_by_payment_method', 'Sales by payment method'],
   ['taxes_by_region', 'Taxes collected by region'],
   ['shipping_charges_by_method', 'Shipping charges by method'],
@@ -347,7 +348,7 @@ describe('Analytics key metrics', () => {
 });
 
 describe('Analytics cards', () => {
-  it('shows the 13 cards in order with their titles', () => {
+  it('shows the 14 cards in order with their titles', () => {
     renderPage();
 
     const ids = screen
@@ -446,6 +447,74 @@ describe('Analytics cards', () => {
     expect(card.queryByText('4 orders')).not.toBeInTheDocument();
   });
 
+  // Scenario: Summary line
+  it('shows the busiest hour, the busiest day and the share from the busiest hour on', () => {
+    renderPage();
+
+    const summary = within(screen.getByTestId('time-of-day-summary'));
+
+    expect(summary.getByText('Fri 6pm–7pm')).toBeInTheDocument();
+    expect(summary.getByText('Tuesday')).toBeInTheDocument();
+    expect(summary.getByText('After 6pm')).toBeInTheDocument();
+    expect(summary.getByText('50%')).toBeInTheDocument();
+  });
+
+  it('shows the day totals and a tooltip on each dot in Orders by time of day', () => {
+    renderPage();
+
+    const card = within(screen.getByTestId('card-orders_by_time_of_day'));
+
+    expect(card.getByTestId('dot-grid-row-1')).toHaveTextContent(/6$/);
+
+    fireEvent.mouseEnter(card.getByRole('button', { name: 'Fri 6pm–7pm · 5 orders' }));
+
+    expect(card.getByRole('tooltip')).toHaveTextContent('Fri 6pm–7pm · 5 orders');
+  });
+
+  // Scenario: No comparison
+  it('hides the This period and Change toggle when there is no comparison', () => {
+    const overview = buildOverview({ top: { compare: null } });
+
+    mockData({
+      ...overview,
+      cards: {
+        ...overview.cards,
+        orders_by_time_of_day: { ...overview.cards.orders_by_time_of_day, previous: null },
+      },
+    });
+    renderPage('?compare=none');
+
+    const card = within(screen.getByTestId('card-orders_by_time_of_day'));
+
+    expect(card.queryByRole('tab', { name: 'Change' })).not.toBeInTheDocument();
+    expect(card.getByText('Bigger, darker dot = more')).toBeInTheDocument();
+  });
+
+  // Scenario: Change colors
+  it('shows more orders in purple and fewer orders in gray in the Change view', () => {
+    renderPage();
+
+    const card = within(screen.getByTestId('card-orders_by_time_of_day'));
+
+    fireEvent.mouseDown(card.getByRole('tab', { name: 'Change' }), { button: 0 });
+
+    const more = card.getByRole('button', { name: 'Fri 6pm–7pm · 5 orders, 2 before (+3)' });
+    const fewer = card.getByRole('button', { name: 'Tue 9am–10am · 3 orders, 4 before (-1)' });
+    const moreDot = more.querySelector<HTMLElement>('[data-dot]');
+    const fewerDot = fewer.querySelector<HTMLElement>('[data-dot]');
+
+    expect(moreDot).toHaveAttribute('data-direction', 'up');
+    expect(fewerDot).toHaveAttribute('data-direction', 'down');
+    expect(parseFloat(fewerDot?.style.width ?? '0')).toBeLessThan(
+      parseFloat(moreDot?.style.width ?? '0'),
+    );
+    expect(card.getByText(/^More than /)).toBeInTheDocument();
+
+    fireEvent.focus(more);
+
+    expect(card.getByRole('tooltip')).toHaveTextContent('Fri 6pm–7pm · 5 orders, 2 before (+3)');
+  });
+
   it('shows the live note in Inventory health', () => {
     renderPage();
 
@@ -534,7 +603,7 @@ describe('Analytics page states', () => {
     renderPage();
 
     expect(screen.getAllByTestId('kpi-skeleton')).toHaveLength(4);
-    expect(screen.getAllByTestId('card-skeleton')).toHaveLength(13);
+    expect(screen.getAllByTestId('card-skeleton')).toHaveLength(14);
     expect(screen.queryByTestId('card-total_sales_over_time')).not.toBeInTheDocument();
   });
 

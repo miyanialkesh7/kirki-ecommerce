@@ -11,6 +11,7 @@ import AverageOrderValueOverTimeCard from '@/features/analytics/components/cards
 import FulfillmentStatusCard from '@/features/analytics/components/cards/fulfillment-status-card';
 import InventoryHealthCard from '@/features/analytics/components/cards/inventory-health-card';
 import NewVsReturningCustomersCard from '@/features/analytics/components/cards/new-vs-returning-customers-card';
+import OrdersByTimeOfDayCard from '@/features/analytics/components/cards/orders-by-time-of-day-card';
 import OrdersOverTimeCard from '@/features/analytics/components/cards/orders-over-time-card';
 import {
   SalesByCouponCodeCard,
@@ -44,7 +45,9 @@ import { __ } from '@/wpi18n';
 const KPI_COUNT = 4;
 const CARD_SKELETON_SIZES: ('half' | 'full')[] = [
   'full',
-  ...Array.from({ length: 12 }, () => 'half' as const),
+  ...Array.from({ length: 8 }, () => 'half' as const),
+  'full',
+  ...Array.from({ length: 4 }, () => 'half' as const),
 ];
 
 type ReadyContentProps = {
@@ -161,6 +164,11 @@ const ReadyContent = (props: ReadyContentProps) => {
         <SalesByCouponCodeCard
           data={cards.sales_by_coupon_code}
           isEmpty={isEmpty('sales_by_coupon_code')}
+          {...shared}
+        />
+        <OrdersByTimeOfDayCard
+          data={cards.orders_by_time_of_day}
+          isEmpty={isEmpty('orders_by_time_of_day')}
           {...shared}
         />
         <SalesByPaymentMethodCard
