@@ -5,7 +5,7 @@ import ChangeBadge from '@/features/analytics/components/change-badge';
 import Sparkline from '@/features/analytics/components/charts/sparkline';
 import type { SeriesPoint } from '@/features/analytics/schemas/catalog/analytics';
 import { theme } from '@/theme';
-import { defineStyles } from '@/theme/mixins';
+import { defineStyles, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
 type KpiCardProps = {
@@ -32,16 +32,18 @@ const KpiCard = (props: KpiCardProps) => {
       <Text variant="heading4" weight="bold" truncate>
         {value}
       </Text>
-      <Flex align="center" gap={2} cssOverride={styles.change}>
+      <Flex align="center" justify="space-between" gap={2} cssOverride={styles.change}>
         {hasComparison ? (
-          <ChangeBadge change={change} />
+          <ChangeBadge change={change} variant="text" />
         ) : (
           <Text variant="tiny" color="subdued">
             {__('No comparison', 'kirki-ecommerce')}
           </Text>
         )}
+        <div css={scoped(styles.sparkline)}>
+          <Sparkline points={series} />
+        </div>
       </Flex>
-      <Sparkline points={series} />
     </AnalyticsCard>
   );
 };
@@ -57,6 +59,10 @@ const styles = defineStyles({
     padding: theme.spacing[3],
   },
   change: {
-    minHeight: '22px',
+    minHeight: '32px',
+  },
+  sparkline: {
+    flex: '0 1 120px',
+    minWidth: 0,
   },
 });
