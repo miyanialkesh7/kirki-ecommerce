@@ -194,9 +194,7 @@ describe('Analytics controls', () => {
 
     expect(dateControl).toHaveTextContent('Last 30 days');
     expect(dateControl).toHaveTextContent('Sep 15 – Oct 14, 2026');
-    expect(screen.getByTestId('analytics-compare')).toHaveTextContent(
-      'Aug 16 – Sep 14, 2026',
-    );
+    expect(screen.getByTestId('analytics-compare')).toHaveTextContent('Aug 16 – Sep 14, 2026');
     expect(lastParams()).toMatchObject({ range: 'last_30', compare: 'previous_period' });
   });
 
@@ -396,11 +394,10 @@ describe('Analytics cards', () => {
   it('shows the headline of Orders by fulfillment status', () => {
     renderPage();
 
-    expect(
-      within(screen.getByTestId('card-orders_by_fulfillment_status')).getByText(
-        '50% delivered · 12 orders',
-      ),
-    ).toBeInTheDocument();
+    const card = within(screen.getByTestId('card-orders_by_fulfillment_status'));
+
+    expect(card.getByRole('heading', { name: '50%' })).toBeInTheDocument();
+    expect(card.getByText('delivered · 12 orders')).toBeInTheDocument();
   });
 
   // Scenario: Stock badge in Sales by product

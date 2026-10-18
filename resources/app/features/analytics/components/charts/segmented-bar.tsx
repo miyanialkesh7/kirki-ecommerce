@@ -42,12 +42,13 @@ const styles = defineStyles({
   bar: {
     display: 'flex',
     width: '100%',
-    height: '10px',
-    borderRadius: theme.radius.full,
+    height: '32px',
+    gap: '1px',
+    borderRadius: theme.radius.lg,
     overflow: 'hidden',
-    backgroundColor: theme.colors.analytics.chart.grid,
   },
   segment: {
     height: '100%',
+    minWidth: '4px',
   },
 });

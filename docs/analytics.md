@@ -163,7 +163,7 @@ Details:
 | Sales by category | Net sales of the products in each category. A product in two categories counts in both. | The top 6 categories, each as one bar with net sales and change |
 | Average order value over time | (Gross sales − discounts) ÷ paid orders, for each day, week or month. | Average order value, its change, and a line chart with no area fill and a dot on each point |
 | Orders over time | Orders created in each day, week or month, paid or not. Failed payments are left out. | Orders, items ordered, its change, and a bar chart with a comparison bar beside each bar |
-| Orders by fulfillment status | Orders created in the range, by their fulfillment status now. Failed payments are left out. | A headline such as "50% delivered · 12 orders", a bar and a list with count and percent for each status |
+| Orders by fulfillment status | Orders created in the range, by their fulfillment status now. Failed payments are left out. | A headline such as "50% delivered · 12 orders", a 32px bar with rounded ends and a list with count and percent for each status |
 | New vs returning customers | New: first paid order in the period. Returning: a paid order in the period that was not their first. One customer can be both. | Customers, its change, and stacked bars of new and returning customers |
 | Sales by coupon code | Paid orders that used each code, and the total discount the code gave. Free-shipping codes show the shipping fee removed. | The top 5 codes by orders, with the discount given |
 | Sales by payment method | Total sales of paid orders, by the payment method used. | The top 5 methods by total sales, with the order count |

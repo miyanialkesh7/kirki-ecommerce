@@ -208,7 +208,7 @@ row filling it. On screens narrower than 720px, every card SHALL take a whole ro
 | Sales by category | half | Top 6 categories by Net sales, as one bar each with Net sales and change |
 | Average order value over time | half | AOV headline and change; line chart with no area fill, a point on each value and the comparison series |
 | Orders over time | half | Orders headline and change; bar chart with a rounded comparison bar beside each current bar |
-| Orders by fulfillment status | half | Share of each current fulfillment status as one segmented bar and a list with count and percent; headline "N% delivered · M orders" |
+| Orders by fulfillment status | half | Share of each current fulfillment status as one 32px segmented bar and a list with count and percent; headline "N%" with "delivered · M orders" |
 | New vs returning customers | half | Customers headline and change; stacked bars of new and returning per chart point; legend with the two totals |
 | Sales by coupon code | half | Top 5 codes by orders using code, with discount given |
 | Sales by payment method | half | Top 5 methods by Total sales, with order count |
@@ -401,6 +401,20 @@ chart SHALL show only the current bar.
 
 - **WHEN** Orders over time shows a range with a comparison
 - **THEN** each point has a faded comparison bar on the left and a dark current bar on the right, both with rounded ends
+
+### Requirement: Orders by fulfillment status bar
+
+The Orders by fulfillment status card SHALL show one bar 32px high, with one
+segment for each status that has orders and a 1px gap between segments. Only
+the two ends of the bar SHALL be rounded. The headline SHALL show the delivered
+share in bold, followed by "delivered · M orders" in a subdued color. Each list
+row SHALL show the status color, the status name, the count in bold and the
+percent in a subdued color, with the count and percent aligned to the right.
+
+#### Scenario: Orders by fulfillment status
+
+- **WHEN** Orders by fulfillment status shows 12 orders with 6 delivered
+- **THEN** the headline shows "50%" in bold and "delivered · 12 orders" beside it, above a 32px bar with rounded ends
 
 ### Requirement: Comparison legend
 

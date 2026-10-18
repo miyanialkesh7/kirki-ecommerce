@@ -1,3 +1,4 @@
+import Flex from '@/components/ui/flex';
 import Text from '@/components/ui/text';
 import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import CardEmpty from '@/features/analytics/components/card-empty';
@@ -48,14 +49,18 @@ const FulfillmentStatusCard = (props: CardProps<'orders_by_fulfillment_status'>)
         <CardEmpty />
       ) : (
         <>
-          <Text variant="heading4" weight="bold">
-            {sprintf(
-              /* translators: 1: share of delivered orders, with a percent sign, 2: number of orders */
-              __('%1$s delivered · %2$s orders', 'kirki-ecommerce'),
-              formatShare(data.delivered_percent),
-              formatNumber(data.total_orders),
-            )}
-          </Text>
+          <Flex align="baseline" gap={2} wrap="wrap">
+            <Text variant="heading4" weight="bold">
+              {formatShare(data.delivered_percent)}
+            </Text>
+            <Text color="subdued">
+              {sprintf(
+                /* translators: %s: number of orders */
+                __('delivered · %s orders', 'kirki-ecommerce'),
+                formatNumber(data.total_orders),
+              )}
+            </Text>
+          </Flex>
           <SegmentedBar
             label={definition.title}
             segments={data.items.map((item) => ({
@@ -74,10 +79,11 @@ const FulfillmentStatusCard = (props: CardProps<'orders_by_fulfillment_status'>)
                     style={{ backgroundColor: STATUS_COLORS[item.status] ?? colors.unfulfilled }}
                     aria-hidden="true"
                   />
-                  <Text variant="small">{labels[item.status] ?? item.status}</Text>
+                  <Text color="secondary">{labels[item.status] ?? item.status}</Text>
                 </span>
-                <Text variant="small" color="subdued">
-                  {formatNumber(item.count)} · {formatShare(item.percent)}
+                <Text weight="bold">{formatNumber(item.count)}</Text>
+                <Text color="subdued" cssOverride={styles.percent}>
+                  {formatShare(item.percent)}
                 </Text>
               </li>
             ))}
@@ -99,23 +105,28 @@ const styles = defineStyles({
     padding: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing[2],
+    gap: theme.spacing[3],
   },
   row: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: theme.spacing[3],
+    gap: theme.spacing[6],
     margin: 0,
   },
   label: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: theme.spacing[2],
+    gap: theme.spacing[3],
+    flex: 1,
+    minWidth: 0,
+  },
+  percent: {
+    minWidth: '40px',
+    textAlign: 'right',
   },
   dot: {
-    width: '8px',
-    height: '8px',
+    width: '10px',
+    height: '10px',
     borderRadius: theme.radius.full,
     flexShrink: 0,
   },
