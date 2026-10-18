@@ -166,7 +166,15 @@ const buildOverview = (
         series: [countPoint(0, 2, 1), countPoint(1, 3, 1), countPoint(2, 1, 1)],
       },
       sales_by_coupon_code: {
-        items: [{ code: 'FREESHIP50', orders: 4, discount_given_money_object: money(3200) }],
+        items: [
+          {
+            code: 'FREESHIP50',
+            orders: 4,
+            discount_given_money_object: money(3200),
+            previous_orders: 3,
+            change: 33.3,
+          },
+        ],
       },
       sales_by_payment_method: {
         items: [{ id: 'paypal', name: 'PayPal', orders: 7, total_sales_money_object: money(6601) }],

@@ -8,6 +8,7 @@ type HBarItem = {
   label: string;
   value: number;
   display: string;
+  detail?: string;
   change?: number | null;
 };
 
@@ -33,6 +34,11 @@ const HBarList = (props: HBarListProps) => {
               <Text variant="small" weight="semibold">
                 {item.display}
               </Text>
+              {item.detail && (
+                <Text variant="small" color="subdued">
+                  {item.detail}
+                </Text>
+              )}
               <ChangeBadge change={item.change} />
             </div>
           </div>

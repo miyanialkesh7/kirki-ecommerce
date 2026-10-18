@@ -76,6 +76,8 @@ const CouponItemSchema = z.object({
   code: z.string(),
   orders: z.number(),
   discount_given_money_object: MoneyObjectSchema,
+  previous_orders: z.number().nullish(),
+  change: z.number().nullish(),
 });
 
 const PaymentMethodItemSchema = z.object({

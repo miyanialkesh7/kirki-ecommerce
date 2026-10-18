@@ -2,6 +2,7 @@ import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import CardEmpty from '@/features/analytics/components/card-empty';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
 import RankedList from '@/features/analytics/components/cards/ranked-list';
+import HBarList from '@/features/analytics/components/charts/hbar-list';
 import { formatMoney, formatNumber } from '@/features/analytics/lib/format';
 import { getMetricDefinitions, type MetricKey } from '@/features/analytics/lib/metric-definitions';
 import { __, _n, sprintf } from '@/wpi18n';
@@ -35,18 +36,33 @@ RankedCardShell.displayName = 'RankedCardShell';
 
 const SalesByCouponCodeCard = (props: CardProps<'sales_by_coupon_code'>) => {
   const { data, isEmpty } = props;
+  const definition = getMetricDefinitions().sales_by_coupon_code;
 
   return (
-    <RankedCardShell
-      metric="sales_by_coupon_code"
-      isEmpty={isEmpty}
-      items={data.items.map((item) => ({
-        key: item.code,
-        label: item.code,
-        detail: formatOrders(item.orders),
-        value: formatMoney(item.discount_given_money_object),
-      }))}
-    />
+    <AnalyticsCard
+      title={definition.title}
+      info={definition.info}
+      testId="card-sales_by_coupon_code"
+    >
+      {isEmpty ? (
+        <CardEmpty />
+      ) : (
+        <HBarList
+          items={data.items.map((item) => ({
+            key: item.code,
+            label: item.code,
+            value: item.orders,
+            display: formatNumber(item.orders),
+            detail: sprintf(
+              /* translators: %s: discount amount given by the coupon code */
+              __('%s off', 'kirki-ecommerce'),
+              formatMoney(item.discount_given_money_object),
+            ),
+            change: item.change,
+          }))}
+        />
+      )}
+    </AnalyticsCard>
   );
 };
 

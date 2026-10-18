@@ -1394,31 +1394,61 @@ class AnalyticsQueryService
      */
     protected function build_sales_by_coupon(array $range)
     {
-        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
-        $amount = 'c.base_discount_amount';
+        $rows = $this->query_coupon_orders($range['from'], $range['to'], static::LIST_LIMIT);
 
-        $rows = DB::connection()->select(
-            sprintf(
-                'SELECT c.code AS code, COUNT(*) AS orders, COALESCE(SUM(%s), 0) AS discount_given
-                    FROM %s c INNER JOIN %s o ON o.id = c.order_id
-                    WHERE %s
-                    GROUP BY c.code ORDER BY orders DESC, discount_given DESC, code ASC LIMIT %d',
-                $amount,
-                $this->table('order_coupons'),
-                $this->table('orders'),
-                $scope,
-                static::LIST_LIMIT
-            ),
-            $bindings
-        );
+        if (empty($rows)) {
+            return [];
+        }
 
-        return array_map(function ($row) {
+        $previous = null;
+
+        if ($range['compare'] !== null) {
+            $previous = array_column($this->query_coupon_orders($range['compare']['from'], $range['compare']['to']), 'orders', 'code');
+        }
+
+        return array_map(function ($row) use ($previous) {
+            $previous_orders = $previous === null ? null : (int) ($previous[$row['code']] ?? 0);
+
             return [
                 'code' => $row['code'],
                 'orders' => (int) $row['orders'],
                 'discount_given_money_object' => $this->money((int) $row['discount_given']),
+                'previous_orders' => $previous_orders,
+                'change' => $this->change((int) $row['orders'], $previous_orders),
             ];
         }, $rows);
+    }
+
+    /**
+     * Count the paid orders and the discount given by coupon code in a window.
+     *
+     * @since 1.0.0
+     *
+     * @param string   $from  First day.
+     * @param string   $to    Last day.
+     * @param int|null $limit Most codes to return, or null for all.
+     *
+     * @return array<int, array<string, mixed>> Rows with code, orders and discount_given, most orders first.
+     */
+    protected function query_coupon_orders(string $from, string $to, $limit = null)
+    {
+        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($from, $to));
+        $amount = 'c.base_discount_amount';
+
+        return DB::connection()->select(
+            sprintf(
+                'SELECT c.code AS code, COUNT(*) AS orders, COALESCE(SUM(%s), 0) AS discount_given
+                    FROM %s c INNER JOIN %s o ON o.id = c.order_id
+                    WHERE %s
+                    GROUP BY c.code ORDER BY orders DESC, discount_given DESC, code ASC%s',
+                $amount,
+                $this->table('order_coupons'),
+                $this->table('orders'),
+                $scope,
+                $limit === null ? '' : sprintf(' LIMIT %d', $limit)
+            ),
+            $bindings
+        );
     }
 
     /**

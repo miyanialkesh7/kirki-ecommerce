@@ -207,6 +207,25 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "Coupon growth": a code row has the change of its orders.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_coupon_code_has_the_change_of_its_orders(): void
+    {
+        $this->make_free_shipping_order('2026-09-30 10:00:00');
+        $this->make_free_shipping_order('2026-10-01 09:00:00');
+        $this->make_free_shipping_order('2026-10-01 10:00:00');
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['sales_by_coupon_code']['items'];
+
+        $this->assertSame(2, $items[0]['orders']);
+        $this->assertSame(1, $items[0]['previous_orders']);
+        $this->assertSame(100.0, $items[0]['change']);
+    }
+
+    /**
      * Scenario "No sales": Average order value is empty, not zero.
      *
      * @return void

@@ -433,6 +433,19 @@ describe('Analytics cards', () => {
     expect(card.queryByText('$30.00')).not.toBeInTheDocument();
   });
 
+  // Scenario: Coupon code bars
+  it('shows one bar with orders, discount and growth rate for each code in Sales by coupon code', () => {
+    renderPage();
+
+    const card = within(screen.getByTestId('card-sales_by_coupon_code'));
+
+    expect(card.getByText('FREESHIP50')).toBeInTheDocument();
+    expect(card.getByText('4')).toBeInTheDocument();
+    expect(card.getByText('$32.00 off')).toBeInTheDocument();
+    expect(card.getByTestId('change-badge')).toHaveTextContent('33.3%');
+    expect(card.queryByText('4 orders')).not.toBeInTheDocument();
+  });
+
   it('shows the live note in Inventory health', () => {
     renderPage();
 

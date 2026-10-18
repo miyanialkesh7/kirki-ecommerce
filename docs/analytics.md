@@ -165,7 +165,7 @@ Details:
 | Orders over time | Orders created in each day, week or month, paid or not. Failed payments are left out. | Orders, items ordered, its change, and a bar chart with a comparison bar beside each bar |
 | Orders by fulfillment status | Orders created in the range, by their fulfillment status now. Failed payments are left out. | A headline such as "50% delivered · 12 orders", a 32px bar with rounded ends and a list with count and percent for each status |
 | New vs returning customers | New: first paid order in the period. Returning: a paid order in the period that was not their first. One customer can be both. | Customers, its change, and stacked bars of new and returning customers with a rounded top. The comparison shows only in the tooltip. |
-| Sales by coupon code | Paid orders that used each code, and the total discount the code gave. Free-shipping codes show the shipping fee removed. | The top 5 codes by orders, with the discount given |
+| Sales by coupon code | Paid orders that used each code, and the total discount the code gave. Free-shipping codes show the shipping fee removed. | The top 5 codes by orders, each as one bar with orders, the discount given ("$230.00 off") and the change in orders |
 | Sales by payment method | Total sales of paid orders, by the payment method used. | The top 5 methods by total sales, with the order count |
 | Taxes collected by region | Product and shipping tax on paid orders, by the shipping address region. | The top 5 regions by total tax, such as "Texas, United States" |
 | Shipping charges by method | Shipping charged on paid orders after free-shipping discounts, without tax, by shipping method. | The top 5 methods by shipping charges, with the order count |

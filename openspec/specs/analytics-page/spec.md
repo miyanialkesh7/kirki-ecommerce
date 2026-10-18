@@ -210,7 +210,7 @@ row filling it. On screens narrower than 720px, every card SHALL take a whole ro
 | Orders over time | half | Orders headline and change; bar chart with a rounded comparison bar beside each current bar |
 | Orders by fulfillment status | half | Share of each current fulfillment status as one 32px segmented bar and a list with count and percent; headline "N%" with "delivered · M orders" |
 | New vs returning customers | half | "N customers" headline and change; stacked bars of new and returning per chart point, with no comparison mark; centered legend "New · N" and "Returning · N" |
-| Sales by coupon code | half | Top 5 codes by orders using code, with discount given |
+| Sales by coupon code | half | Top 5 codes by orders using code, as one bar each with orders, "$N off" discount given and the change in orders |
 | Sales by payment method | half | Top 5 methods by Total sales, with order count |
 | Taxes collected by region | half | Top 5 shipping regions by Total tax |
 | Shipping charges by method | half | Top 5 methods by Shipping charges, with order count |
@@ -431,6 +431,20 @@ in a subdued color, and the legend SHALL be centered under the chart.
 
 - **WHEN** a chart point has 3 new and 2 returning customers, and its comparison point has 30 new and 10 returning
 - **THEN** the bar shows 3 new under 2 returning with a rounded top, no comparison mark shows, and the tooltip on hover shows both points
+
+### Requirement: Sales by coupon code bars
+
+The Sales by coupon code card SHALL show the top 5 codes by orders, each as a
+row with the code, the orders count, the discount given as "$N off" in a
+subdued color, the change in orders, and a horizontal bar under the row. The
+bar length SHALL be the code's orders relative to the code with the most
+orders. When no comparison is selected, or the code had no orders in the
+comparison period, the row SHALL show no change.
+
+#### Scenario: Coupon code bars
+
+- **WHEN** FREESHIP50 has 4 orders and $32.00 discount given, and 3 orders in the comparison period
+- **THEN** the row shows "FREESHIP50", "4", "$32.00 off" and a 33.3% up change, with a full-length bar
 
 ### Requirement: Comparison legend
 
