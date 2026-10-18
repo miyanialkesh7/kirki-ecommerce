@@ -1003,6 +1003,87 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "Tax region change": Total tax 600 in the previous period and 750 in the range give a change of 25.0.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_tax_region_has_the_change_of_its_total_tax(): void
+    {
+        foreach (['2026-09-30 10:00:00' => 600, '2026-10-01 10:00:00' => 750] as $paid_at => $tax) {
+            $order = $this->make_sale($paid_at, 1000, ['shipping_country' => 'US', 'shipping_state' => 'TX', 'base_tax_total' => $tax]);
+            OrderTax::create(['order_id' => $order->id, 'type' => OrderTaxType::PRODUCT, 'name' => 'Sales tax', 'rate' => 10, 'invoiced_amount' => $tax, 'base_amount' => $tax]);
+        }
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['taxes_by_region']['items'];
+
+        $this->assertSame(750, $this->minor($items[0]['total_tax_money_object']));
+        $this->assertSame(600, $this->minor($items[0]['previous_total_tax_money_object']));
+        $this->assertSame(25.0, $items[0]['change']);
+    }
+
+    /**
+     * Scenario "Tax region new in the range": a region with no previous tax has previous 0 and no change.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_tax_region_new_in_the_range_has_no_change(): void
+    {
+        $order = $this->make_sale('2026-10-01 10:00:00', 1000, ['shipping_country' => 'CA', 'shipping_state' => 'ON', 'base_tax_total' => 300]);
+        OrderTax::create(['order_id' => $order->id, 'type' => OrderTaxType::PRODUCT, 'name' => 'HST', 'rate' => 13, 'invoiced_amount' => 300, 'base_amount' => 300]);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['taxes_by_region']['items'];
+
+        $this->assertSame(0, $this->minor($items[0]['previous_total_tax_money_object']));
+        $this->assertNull($items[0]['change']);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'none'])['cards']['taxes_by_region']['items'];
+
+        $this->assertNull($items[0]['previous_total_tax_money_object']);
+        $this->assertNull($items[0]['change']);
+    }
+
+    /**
+     * Scenario "Shipping method change": Shipping charges 1000 in the previous period and 1200 in the range give a change of 20.0.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_shipping_method_has_the_change_of_its_shipping_charges(): void
+    {
+        $this->make_sale('2026-09-30 10:00:00', 1000, ['shipping_method' => 'standard', 'base_shipping_total' => 1000]);
+        $this->make_sale('2026-10-01 10:00:00', 1000, ['shipping_method' => 'standard', 'base_shipping_total' => 1200]);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['shipping_charges_by_method']['items'];
+
+        $this->assertSame(1200, $this->minor($items[0]['shipping_charges_money_object']));
+        $this->assertSame(1000, $this->minor($items[0]['previous_shipping_charges_money_object']));
+        $this->assertSame(20.0, $items[0]['change']);
+    }
+
+    /**
+     * Scenario "Shipping method new in the range": a method with no previous orders has previous 0 and no change.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_shipping_method_new_in_the_range_has_no_change(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000, ['shipping_method' => 'express', 'base_shipping_total' => 500]);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['shipping_charges_by_method']['items'];
+
+        $this->assertSame(0, $this->minor($items[0]['previous_shipping_charges_money_object']));
+        $this->assertNull($items[0]['change']);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'none'])['cards']['shipping_charges_by_method']['items'];
+
+        $this->assertNull($items[0]['previous_shipping_charges_money_object']);
+        $this->assertNull($items[0]['change']);
+    }
+
+    /**
      * Scenario "Returning only": Lena's first paid order is Sep 3 and her second Sep 20; range Sep 15 - Oct 14.
      *
      * @return void

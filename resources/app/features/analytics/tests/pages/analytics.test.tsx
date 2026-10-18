@@ -476,6 +476,25 @@ describe('Analytics cards', () => {
     expect(badges[1]).toHaveAttribute('data-direction', 'down');
   });
 
+  // Scenario: Tax region bars, Shipping method bars
+  it('shows one bar with value, secondary data and growth rate in Taxes collected by region and Shipping charges by method', () => {
+    renderPage();
+
+    const taxes = within(screen.getByTestId('card-taxes_by_region'));
+    const shipping = within(screen.getByTestId('card-shipping_charges_by_method'));
+
+    expect(taxes.getByText('Texas, United States')).toBeInTheDocument();
+    expect(taxes.getByText('$6.01')).toBeInTheDocument();
+    expect(taxes.getByText('Product $5.00 · Shipping $1.01')).toBeInTheDocument();
+    expect(taxes.getByTestId('change-badge')).toHaveTextContent('25.0%');
+    expect(taxes.getByTestId('change-badge')).toHaveAttribute('data-direction', 'up');
+    expect(shipping.getByText('Standard')).toBeInTheDocument();
+    expect(shipping.getByText('$8.00')).toBeInTheDocument();
+    expect(shipping.getByText('7 orders')).toBeInTheDocument();
+    expect(shipping.getByTestId('change-badge')).toHaveTextContent('10.0%');
+    expect(shipping.getByTestId('change-badge')).toHaveAttribute('data-direction', 'down');
+  });
+
   // Scenario: Summary line
   it('shows the busiest hour, the busiest day and the share from the busiest hour on', () => {
     renderPage();

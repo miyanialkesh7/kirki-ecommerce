@@ -96,6 +96,8 @@ const TaxRegionItemSchema = z.object({
   product_tax_money_object: MoneyObjectSchema,
   shipping_tax_money_object: MoneyObjectSchema,
   total_tax_money_object: MoneyObjectSchema,
+  previous_total_tax_money_object: MoneyObjectSchema.nullish(),
+  change: z.number().nullish(),
 });
 
 const ShippingMethodItemSchema = z.object({
@@ -103,6 +105,8 @@ const ShippingMethodItemSchema = z.object({
   name: z.string(),
   orders: z.number(),
   shipping_charges_money_object: MoneyObjectSchema,
+  previous_shipping_charges_money_object: MoneyObjectSchema.nullish(),
+  change: z.number().nullish(),
 });
 
 const LowestVariantSchema = z.object({

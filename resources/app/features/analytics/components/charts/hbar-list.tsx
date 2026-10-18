@@ -9,6 +9,7 @@ type HBarItem = {
   value: number;
   display: string;
   detail?: string;
+  note?: string;
   change?: number | null;
   onSelect?: () => void;
 };
@@ -48,6 +49,11 @@ const HBarRow = (props: HBarRowProps) => {
       <div css={scoped(styles.track)} aria-hidden="true">
         <div css={scoped(styles.bar)} style={{ width: toPercent(item.value, max) }} />
       </div>
+      {item.note && (
+        <Text variant="tiny" color="subdued">
+          {item.note}
+        </Text>
+      )}
     </>
   );
 };

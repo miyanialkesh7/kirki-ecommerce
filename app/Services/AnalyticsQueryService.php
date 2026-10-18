@@ -1826,21 +1826,12 @@ class AnalyticsQueryService
      */
     protected function build_shipping_by_method(array $range)
     {
-        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
+        $rows = $this->query_shipping_method_charges($range['from'], $range['to'], static::LIST_LIMIT);
+        $previous = null;
 
-        $rows = DB::connection()->select(
-            sprintf(
-                'SELECT o.shipping_method AS id, COUNT(*) AS orders, COALESCE(SUM(%1$s), 0) AS shipping_charges
-                    FROM %2$s o
-                    WHERE %3$s AND o.shipping_method IS NOT NULL
-                    GROUP BY o.shipping_method ORDER BY shipping_charges DESC, orders DESC, id ASC LIMIT %4$d',
-                $this->shipping_sql('o'),
-                $this->table('orders'),
-                $scope,
-                static::LIST_LIMIT
-            ),
-            $bindings
-        );
+        if ($range['compare'] !== null && !empty($rows)) {
+            $previous = array_column($this->query_shipping_method_charges($range['compare']['from'], $range['compare']['to']), 'shipping_charges', 'id');
+        }
 
         $current_names = [];
 
@@ -1852,15 +1843,49 @@ class AnalyticsQueryService
         $items = [];
 
         foreach ($rows as $row) {
+            $shipping_charges = (int) $row['shipping_charges'];
+            $previous_shipping_charges = $previous === null ? null : (int) ($previous[$row['id']] ?? 0);
             $items[] = [
                 'id' => $row['id'],
                 'name' => $current_names[$row['id']] ?? ($saved_names[$row['id']] ?? $row['id']),
                 'orders' => (int) $row['orders'],
-                'shipping_charges_money_object' => $this->money((int) $row['shipping_charges']),
+                'shipping_charges_money_object' => $this->money($shipping_charges),
+                'previous_shipping_charges_money_object' => $previous_shipping_charges === null ? null : $this->money($previous_shipping_charges),
+                'change' => $this->change($shipping_charges, $previous_shipping_charges),
             ];
         }
 
         return $items;
+    }
+
+    /**
+     * Sum the Shipping charges and count the sales orders by shipping method in a window.
+     *
+     * @since 1.0.0
+     *
+     * @param string   $from  First day.
+     * @param string   $to    Last day.
+     * @param int|null $limit Most methods to return, or null for all.
+     *
+     * @return array<int, array<string, mixed>> Rows with id, orders and shipping_charges, most Shipping charges first.
+     */
+    protected function query_shipping_method_charges(string $from, string $to, $limit = null)
+    {
+        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($from, $to));
+
+        return DB::connection()->select(
+            sprintf(
+                'SELECT o.shipping_method AS id, COUNT(*) AS orders, COALESCE(SUM(%1$s), 0) AS shipping_charges
+                    FROM %2$s o
+                    WHERE %3$s AND o.shipping_method IS NOT NULL
+                    GROUP BY o.shipping_method ORDER BY shipping_charges DESC, orders DESC, id ASC%4$s',
+                $this->shipping_sql('o'),
+                $this->table('orders'),
+                $scope,
+                $limit === null ? '' : sprintf(' LIMIT %d', $limit)
+            ),
+            $bindings
+        );
     }
 
     /**
@@ -1918,10 +1943,51 @@ class AnalyticsQueryService
      */
     protected function build_taxes_by_region(array $range)
     {
-        $amount = 't.base_amount';
-        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
+        $rows = $this->query_region_taxes($range['from'], $range['to'], static::LIST_LIMIT);
+        $previous = null;
 
-        $rows = DB::connection()->select(
+        if ($range['compare'] !== null && !empty($rows)) {
+            $previous = [];
+
+            foreach ($this->query_region_taxes($range['compare']['from'], $range['compare']['to']) as $row) {
+                $previous[$row['country'] . '|' . $row['state']] = (int) $row['total_tax'];
+            }
+        }
+
+        return array_map(function ($row) use ($previous) {
+            $total_tax = (int) $row['total_tax'];
+            $previous_total_tax = $previous === null ? null : ($previous[$row['country'] . '|' . $row['state']] ?? 0);
+
+            return [
+                'country' => $row['country'],
+                'state' => $row['state'],
+                'name' => $this->get_region_name($row['country'], $row['state']),
+                'product_tax_money_object' => $this->money((int) $row['product_tax']),
+                'shipping_tax_money_object' => $this->money((int) $row['shipping_tax']),
+                'total_tax_money_object' => $this->money($total_tax),
+                'previous_total_tax_money_object' => $previous_total_tax === null ? null : $this->money($previous_total_tax),
+                'change' => $this->change($total_tax, $previous_total_tax),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * Sum the product, shipping and total tax of the sales orders by shipping region in a window.
+     *
+     * @since 1.0.0
+     *
+     * @param string   $from  First day.
+     * @param string   $to    Last day.
+     * @param int|null $limit Most regions to return, or null for all.
+     *
+     * @return array<int, array<string, mixed>> Rows with country, state, product_tax, shipping_tax and total_tax, most Total tax first.
+     */
+    protected function query_region_taxes(string $from, string $to, $limit = null)
+    {
+        $amount = 't.base_amount';
+        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($from, $to));
+
+        return DB::connection()->select(
             sprintf(
                 "SELECT COALESCE(o.shipping_country, '') AS country, COALESCE(o.shipping_state, '') AS state,
                         COALESCE(SUM(CASE WHEN t.type = %%s THEN %1\$s ELSE 0 END), 0) AS product_tax,
@@ -1929,26 +1995,15 @@ class AnalyticsQueryService
                         COALESCE(SUM(%1\$s), 0) AS total_tax
                     FROM %2\$s t INNER JOIN %3\$s o ON o.id = t.order_id
                     WHERE %4\$s
-                    GROUP BY country, state ORDER BY total_tax DESC, country ASC, state ASC LIMIT %5\$d",
+                    GROUP BY country, state ORDER BY total_tax DESC, country ASC, state ASC%5\$s",
                 $amount,
                 $this->table('order_taxes'),
                 $this->table('orders'),
                 $scope,
-                static::LIST_LIMIT
+                $limit === null ? '' : sprintf(' LIMIT %d', $limit)
             ),
             array_merge([OrderTaxType::PRODUCT, OrderTaxType::SHIPPING], $bindings)
         );
-
-        return array_map(function ($row) {
-            return [
-                'country' => $row['country'],
-                'state' => $row['state'],
-                'name' => $this->get_region_name($row['country'], $row['state']),
-                'product_tax_money_object' => $this->money((int) $row['product_tax']),
-                'shipping_tax_money_object' => $this->money((int) $row['shipping_tax']),
-                'total_tax_money_object' => $this->money((int) $row['total_tax']),
-            ];
-        }, $rows);
     }
 
     /**
