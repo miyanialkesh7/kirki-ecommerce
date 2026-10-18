@@ -6,7 +6,6 @@ import {
   buildScale,
   getXLabelIndexes,
 } from '@/features/analytics/components/charts/chart-geometry';
-import DotChart from '@/features/analytics/components/charts/dot-chart';
 import LineChart from '@/features/analytics/components/charts/line-chart';
 
 import { renderInRoot } from '../helpers';
@@ -30,7 +29,6 @@ const formatValue = (value: number) => `$${(value / 100).toFixed(2)}`;
 const charts = [
   ['LineChart', LineChart],
   ['BarChart', BarChart],
-  ['DotChart', DotChart],
 ] as const;
 
 describe.each(charts)('%s tooltip', (_name, Chart) => {
@@ -188,6 +186,34 @@ describe.each(charts)('%s axes', (_name, Chart) => {
 
     expect(within(tooltip).getByText('Oct 3 – span')).toBeInTheDocument();
     expect(within(tooltip).getByText('Sep 3 – span')).toBeInTheDocument();
+  });
+});
+
+describe('LineChart points', () => {
+  afterEach(cleanup);
+
+  it('shows the area and only the last point by default', () => {
+    renderInRoot(<LineChart label="Total sales" points={points} formatValue={formatValue} />);
+
+    expect(screen.queryAllByTestId('line-chart-point')).toHaveLength(0);
+    expect(screen.getByTestId('line-chart-last-point')).toBeInTheDocument();
+    expect(screen.getByTestId('line-chart-area')).toBeInTheDocument();
+  });
+
+  // Scenario: Average order value over time
+  it('shows a point on every current value and no area when set', () => {
+    renderInRoot(
+      <LineChart
+        label="Average order value"
+        points={points}
+        formatValue={formatValue}
+        showPoints
+        showArea={false}
+      />,
+    );
+
+    expect(screen.getAllByTestId('line-chart-point')).toHaveLength(points.length);
+    expect(screen.queryByTestId('line-chart-area')).not.toBeInTheDocument();
   });
 });
 

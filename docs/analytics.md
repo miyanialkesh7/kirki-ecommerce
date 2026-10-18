@@ -83,7 +83,8 @@ page and its data endpoint, `GET /analytics/overview`.
   "$1K", "$1.5K" or "$110K". Count charts show "1.2K" with no currency.
 - The Total sales, Average order value and Orders charts show a legend with
   the range and the comparison range. The Total sales line has a filled area
-  and a dot on its last point.
+  and a dot on its last point. The Average order value line has no filled area
+  and a dot on each point.
 
 ---
 
@@ -159,7 +160,7 @@ Details:
 | Total sales breakdown | Gross sales − discounts − returns = net sales. Net sales + shipping + taxes = total sales. Paid orders, by paid date. | Gross sales, Discounts, Returns, Net sales, Shipping charges, Taxes and Total sales, each with its change |
 | Sales by product | Top products by net sales: item totals after discounts, without tax, for orders paid in the range. Stock is live. | The top 5 products with thumbnail, stock left, units sold, net sales and change |
 | Sales by category | Net sales of the products in each category. A product in two categories counts in both. | The top 6 categories, each as one bar with net sales and change |
-| Average order value over time | (Gross sales − discounts) ÷ paid orders, for each day, week or month. | Average order value, its change, and a dot chart |
+| Average order value over time | (Gross sales − discounts) ÷ paid orders, for each day, week or month. | Average order value, its change, and a line chart with no area fill and a dot on each point |
 | Orders over time | Orders created in each day, week or month, paid or not. Failed payments are left out. | Orders, items ordered, its change, and a bar chart |
 | Orders by fulfillment status | Orders created in the range, by their fulfillment status now. Failed payments are left out. | A headline such as "50% delivered · 12 orders", a bar and a list with count and percent for each status |
 | New vs returning customers | New: first paid order in the period. Returning: a paid order in the period that was not their first. One customer can be both. | Customers, its change, and stacked bars of new and returning customers |

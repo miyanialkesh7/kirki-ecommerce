@@ -71,13 +71,20 @@ const findLastIndex = (values: (number | null | undefined)[]) => {
   return -1;
 };
 
-const LineChart = (props: ChartProps) => {
+type LineChartProps = ChartProps & {
+  showPoints?: boolean;
+  showArea?: boolean;
+};
+
+const LineChart = (props: LineChartProps) => {
   const {
     label,
     points,
     formatValue = defaultFormatValue,
     formatAxisValue = formatCompactNumber,
     legend,
+    showPoints = false,
+    showArea = true,
   } = props;
   const { activeIndex, getHandlers } = useActivePoint();
   const scale = buildScale(points.flatMap((point) => [point.value, point.previous_value]));
@@ -103,11 +110,13 @@ const LineChart = (props: ChartProps) => {
 
         return (
           <g aria-hidden="true">
-            <path
-              data-testid="line-chart-area"
-              d={buildAreaPath(currentSegments, scale.toY(0))}
-              css={scoped(styles.area)}
-            />
+            {showArea && (
+              <path
+                data-testid="line-chart-area"
+                d={buildAreaPath(currentSegments, scale.toY(0))}
+                css={scoped(styles.area)}
+              />
+            )}
             <path
               d={buildLinePath(getSegments(previousValues, layout, scale.toY))}
               css={scoped(styles.previousLine)}
@@ -122,13 +131,26 @@ const LineChart = (props: ChartProps) => {
                 css={scoped(styles.crosshair)}
               />
             )}
-            {typeof lastValue === 'number' && (
+            {showPoints &&
+              currentValues.map((value, index) =>
+                typeof value === 'number' ? (
+                  <circle
+                    key={points[index].date}
+                    data-testid="line-chart-point"
+                    cx={layout.getX(index)}
+                    cy={scale.toY(value)}
+                    r={3.5}
+                    css={scoped(styles.dot)}
+                  />
+                ) : null,
+              )}
+            {!showPoints && typeof lastValue === 'number' && (
               <circle
                 data-testid="line-chart-last-point"
                 cx={layout.getX(lastIndex)}
                 cy={scale.toY(lastValue)}
                 r={4}
-                css={scoped(styles.lastDot)}
+                css={scoped(styles.dot)}
               />
             )}
             {activeIndex !== null && typeof activeValue === 'number' && (
@@ -172,7 +194,7 @@ const styles = defineStyles({
     stroke: theme.colors.analytics.chart.crosshair,
     strokeWidth: 1,
   },
-  lastDot: {
+  dot: {
     fill: theme.colors.analytics.chart.primary,
   },
   activeDot: {

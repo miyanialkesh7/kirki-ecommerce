@@ -2,7 +2,7 @@ import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import CardEmpty from '@/features/analytics/components/card-empty';
 import CardHeadline from '@/features/analytics/components/card-headline';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
-import DotChart from '@/features/analytics/components/charts/dot-chart';
+import LineChart from '@/features/analytics/components/charts/line-chart';
 import { toChartLegend, toChartPoints } from '@/features/analytics/lib/chart-points';
 import { formatMoney } from '@/features/analytics/lib/format';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
@@ -25,12 +25,14 @@ const AverageOrderValueOverTimeCard = (props: CardProps<'average_order_value_ove
             value={formatMoney(data.total.current_money_object)}
             change={data.total.change}
           />
-          <DotChart
+          <LineChart
             label={definition.title}
             points={toChartPoints(data.series)}
             formatValue={formatMinor}
             formatAxisValue={formatMinorShort}
             legend={toChartLegend(range, compareRange)}
+            showPoints
+            showArea={false}
           />
         </>
       )}
