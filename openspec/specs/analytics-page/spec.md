@@ -131,12 +131,13 @@ or no end. The calendar SHALL NOT allow a day after today.
 ### Requirement: Customize button
 
 The controls row SHALL show a "Customize" button with a sliders icon on the
-right side. The button SHALL be enabled and SHALL NOT do anything when selected.
+right side. Selecting it SHALL open the Customize sheet (see the
+analytics-customize capability).
 
 #### Scenario: Select Customize
 
 - **WHEN** the merchant selects Customize
-- **THEN** nothing on the page changes
+- **THEN** the "Customize analytics" sheet opens from the right
 
 ### Requirement: Analytics colors only in graphs
 
@@ -157,13 +158,21 @@ triggers SHALL use the design-system white background.
 
 ### Requirement: Key metrics row
 
-The page SHALL show the key metrics Gross sales, Orders, Average order value and
-Returning customer rate, in this order. Each key metric SHALL show its label, its
-value for the range, its change against the comparison and a sparkline of the
-range at the chart granularity, with the comparison series as a second line. The
-change and the sparkline SHALL be on one row under the value, the change on the
-left and the sparkline on the right. When there is no comparison, the change
-SHALL read "No comparison". A key metric SHALL NOT be a link.
+The page SHALL show the key metrics that are on, in the saved order. The key
+metrics SHALL be Gross sales, Orders, Average order value, Returning customer
+rate, Net sales, Total sales, Items ordered, Discounts, New customers,
+Customers and Shipping charges. The row SHALL show at most 4 key metrics on
+each line and put the next ones on the next lines. Each key metric SHALL take
+1/4 of the row width, also on a line that is not full. Below 1100px the row
+SHALL show 2 on each line, and below 600px 1 on each line. Each key metric SHALL
+show its label, its value for the range, its change against the comparison and
+a sparkline of the range at the chart granularity, with the comparison series as
+a second line. The change and the sparkline SHALL be on one row under the value,
+the change on the left and the sparkline on the right. When there is no
+comparison, the change SHALL read "No comparison". A key metric SHALL NOT be a
+link. Money key metrics (Gross sales, Average order value, Net sales, Total
+sales, Discounts, Shipping charges) SHALL show as money, Returning customer rate
+as a percent, and the others as numbers.
 
 #### Scenario: Change colors
 
@@ -174,6 +183,16 @@ SHALL read "No comparison". A key metric SHALL NOT be a link.
 
 - **WHEN** Orders went down by 4.0%
 - **THEN** the change shows "4.0%" with a trending-down icon in the critical text color, with no background
+
+#### Scenario: Five key metrics on a wide screen
+
+- **WHEN** 5 key metrics are on and the screen is 1400px wide
+- **THEN** the first line shows 4 key metrics, and the second line shows 1 key metric with 1/4 of the row width
+
+#### Scenario: Saved order
+
+- **WHEN** the saved order puts Orders before Gross sales
+- **THEN** the row shows Orders first
 
 ### Requirement: Change shown as colored text
 
@@ -196,9 +215,10 @@ background. Status badges, such as the stock badge, SHALL keep their background.
 
 ### Requirement: Cards
 
-Below the key metrics, the page SHALL show these cards, in this order, at most
-two in a row, with "full" cards taking a whole row and a card left alone in a
-row filling it. On screens narrower than 720px, every card SHALL take a whole row.
+Below the key metrics, the page SHALL show the cards that are on, in the saved
+order, at most two in a row, with "full" cards taking a whole row and a half
+card left alone in a row filling it. The default order is the order of this
+table. A card's width SHALL NOT change when other cards are hidden or moved. On screens narrower than 720px, every card SHALL take a whole row.
 
 | Card | Width | Shows |
 |---|---|---|
@@ -242,12 +262,12 @@ No card, card row, breakdown line or chart SHALL open another page.
 
 #### Scenario: Orders by time of day row
 
-- **WHEN** the page shows its cards on a wide screen
+- **WHEN** the page shows its cards in the default order on a wide screen
 - **THEN** Orders by time of day takes a whole row directly after the row of New vs returning customers and Sales by coupon code
 
 #### Scenario: Sales by location row
 
-- **WHEN** the page shows its cards on a wide screen
+- **WHEN** the page shows its cards in the default order on a wide screen
 - **THEN** Sales by location takes a whole row directly after Orders by time of day
 
 #### Scenario: Payment method row
@@ -270,6 +290,16 @@ No card, card row, breakdown line or chart SHALL open another page.
 - **WHEN** the page shows the Inventory health card
 - **THEN** it shows the 3 count tiles, the out-of-stock and low-stock variants with a status badge, and the live note with its indicator
 
+#### Scenario: Hidden neighbor
+
+- **WHEN** the merchant hides Total sales breakdown in the default order on a wide screen
+- **THEN** Sales by product and Sales by category share a row, and Sales by coupon code, now alone in its row before Orders by time of day, fills the row
+
+#### Scenario: Half card next to a full card
+
+- **WHEN** the saved order puts Sales by product directly between Total sales over time and Orders by time of day
+- **THEN** Sales by product fills its row
+
 ### Requirement: Info tooltip on every metric
 
 Every key metric and every card SHALL have an info icon right after its title.
@@ -286,6 +316,13 @@ the value is calculated, with this text (translatable):
 | Orders | Orders created in the range, paid or not. Failed payments are left out. |
 | Average order value | (Gross sales − discounts) ÷ number of orders paid in the range. Shipping and tax are left out. |
 | Returning customer rate | Customers with a paid order in the range that was not their first paid order, ÷ all customers with a paid order in the range. |
+| Net sales | Gross sales − discounts − returns, for orders paid in the range. Refunds are subtracted on the day they completed. |
+| Total sales | Net sales + shipping + taxes, for orders paid in the range. |
+| Items ordered | Items in the orders created in the range, paid or not. Failed payments are left out. |
+| Discounts | Discounts on item prices in orders paid in the range. Free-shipping discounts are left out. |
+| New customers | Customers whose first paid order is in the range. |
+| Customers | Different customers with a paid order in the range. |
+| Shipping charges | Shipping charged on paid orders after free-shipping discounts, without tax. |
 | Total sales over time | Net sales + shipping + taxes, by the day each order was paid. Refunds are subtracted on the day they completed. |
 | Total sales breakdown | Gross sales − discounts − returns = net sales. Net sales + shipping + taxes = total sales. Paid orders, by paid date. |
 | Sales by product | Top products by net sales: item totals after discounts, without tax, for orders paid in the range. Stock is live. |
@@ -768,14 +805,16 @@ range.
 
 ### Requirement: Page states
 
-The page SHALL request the key metrics and each card separately, and SHALL
-send all the requests at the same time. While the data of a part loads, that
-part SHALL show its skeleton in its final position and size: four key metric
-skeletons for the key metrics row, and one card skeleton for each card. When
+The page SHALL request the key metrics and each card that is on separately,
+and SHALL send all the requests at the same time. The page SHALL NOT request
+the data of a card that is hidden. When the merchant turns a hidden card on,
+the page SHALL request its data and show its skeleton until it comes. While the data of a part loads, that part SHALL show its
+skeleton in its final position and size: one skeleton for each key metric that
+is on, and one card skeleton for each card that is on. When
 the data of a part comes, that part SHALL show its data, and the parts that
 still load SHALL keep their skeletons. When the request of one part fails,
 only that part SHALL show an error with a retry action, and a retry SHALL
-request only that part again. When the requests of all parts fail, the page
+request only that part again. When the requests of all the parts that are on fail, the page
 SHALL show the shared query error state with a retry action that requests all
 parts again. When the store has no sales orders and no placed orders at all,
 the page SHALL show the banner "Your store has no orders yet. Analytics fills
@@ -817,3 +856,13 @@ show "No data for this date range".
 
 - **WHEN** the merchant changes the date range
 - **THEN** every part shows its skeleton and requests its data for the new range again
+
+#### Scenario: Hidden card is not requested
+
+- **WHEN** Sales by coupon code is hidden and the page opens
+- **THEN** the page does not request `sales_by_coupon_code`
+
+#### Scenario: Turn a card on
+
+- **WHEN** the merchant checks Sales by coupon code in the sheet
+- **THEN** the card shows a skeleton in its position and then its data

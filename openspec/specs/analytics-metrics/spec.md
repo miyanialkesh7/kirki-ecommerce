@@ -597,7 +597,13 @@ SHALL return the data of one metric key. The keys SHALL be `kpis`,
 `sales_by_payment_method`, `taxes_by_region`, `shipping_charges_by_method` and
 `inventory_health`. The response SHALL have `meta` and `data`. `meta` SHALL
 contain `range`, `compare`, `granularity`, `base_currency_code` and
-`has_orders`. `data` SHALL contain only the metrics of that key. An unknown
+`has_orders`. `data` SHALL contain only the metrics of that key. The `kpis` key SHALL
+contain the key metrics Gross sales, Orders, Average order value, Returning
+customer rate, Net sales, Total sales, Items ordered, Discounts, New customers,
+Customers and Shipping charges, as in "Sales metrics", "Placed order metrics"
+and "Customer metrics". Each key metric SHALL have its value, its comparison
+value, its change and a series at the chart granularity. Money key metrics
+SHALL have a money object. An unknown
 key SHALL return a 404 response. Every money metric SHALL use the `base_`
 columns of the counted orders and the base currency. The response SHALL NOT
 include a `currencies` list. A `currency` parameter SHALL be ignored. Only
@@ -632,7 +638,7 @@ parameters SHALL return a 422 response with a field error.
 #### Scenario: Key metrics key
 
 - **WHEN** the merchant requests `GET /analytics/metrics/kpis`
-- **THEN** `data` has `gross_sales`, `orders`, `average_order_value` and `returning_customer_rate`, each with its series
+- **THEN** `data` has `gross_sales`, `orders`, `average_order_value`, `returning_customer_rate`, `net_sales`, `total_sales`, `items_ordered`, `discounts`, `new_customers`, `customers` and `shipping_charges`, each with its change and its series
 
 #### Scenario: Unknown key
 
@@ -643,6 +649,11 @@ parameters SHALL return a 422 response with a field error.
 
 - **WHEN** a client requests `GET /analytics/overview`
 - **THEN** the response is 404
+
+#### Scenario: Items ordered series
+
+- **WHEN** the range has 2 placed orders with 3 and 2 items on Sep 3 and 1 placed order with 4 items on Sep 4, at day granularity
+- **THEN** `items_ordered` is 9, and its series has 5 on Sep 3 and 4 on Sep 4
 
 ### Requirement: Regions endpoint
 

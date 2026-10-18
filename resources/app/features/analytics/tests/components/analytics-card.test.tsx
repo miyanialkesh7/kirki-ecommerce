@@ -1,8 +1,9 @@
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import AnalyticsCardTitle from '@/features/analytics/components/analytics-card-title';
+import { CardMenuContext } from '@/features/analytics/components/card-menu';
 
 import { effectiveOpacity, getOpacityRules, renderInRoot } from '../helpers';
 
@@ -117,6 +118,113 @@ describe('AnalyticsCard', () => {
 
     expect(
       rules.some((rule) => rule.opacity === '1' && /hover:\s*none/.test(rule.media ?? '')),
+    ).toBe(true);
+  });
+});
+
+describe('AnalyticsCard menu', () => {
+  beforeAll(() => {
+    Element.prototype.hasPointerCapture = vi.fn(() => false);
+    Element.prototype.setPointerCapture = vi.fn();
+    Element.prototype.releasePointerCapture = vi.fn();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  const renderWithMenu = (canHide: boolean) => {
+    const onHide = vi.fn();
+
+    renderInRoot(
+      <CardMenuContext.Provider value={{ canHide, onHide }}>
+        <AnalyticsCard title="Orders" info={INFO}>
+          <p>Body</p>
+        </AnalyticsCard>
+      </CardMenuContext.Provider>,
+    );
+
+    return { onHide };
+  };
+
+  const openMenu = () => {
+    const trigger = screen.getByRole('button', { name: 'More actions for Orders' });
+
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+
+    return trigger;
+  };
+
+  it('has no menu without a menu context', () => {
+    renderCard();
+
+    expect(
+      screen.queryByRole('button', { name: 'More actions for Orders' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('has only the Hide from page item, and hides the card on select', () => {
+    const { onHide } = renderWithMenu(true);
+
+    openMenu();
+
+    expect(screen.getAllByRole('menuitem')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Hide from page' }));
+
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables Hide from page for the last item of a group', () => {
+    const { onHide } = renderWithMenu(false);
+
+    openMenu();
+    const item = screen.getByRole('menuitem', { name: 'Hide from page' });
+
+    expect(item).toHaveAttribute('data-disabled');
+
+    fireEvent.click(item);
+
+    expect(onHide).not.toHaveBeenCalled();
+  });
+
+  // Scenario: Button is hidden until hover
+  it('hides the menu button while the pointer is away', () => {
+    renderWithMenu(true);
+
+    expect(effectiveOpacity(screen.getByRole('button', { name: 'More actions for Orders' }))).toBe(
+      0,
+    );
+  });
+
+  it('shows the menu button when the card has keyboard focus', () => {
+    renderWithMenu(true);
+    const trigger = screen.getByRole('button', { name: 'More actions for Orders' });
+
+    act(() => trigger.focus());
+
+    expect(effectiveOpacity(trigger)).toBe(1);
+  });
+
+  it('shows the menu button while the menu is open', () => {
+    renderWithMenu(true);
+    const trigger = openMenu();
+
+    expect(trigger).toHaveAttribute('data-state', 'open');
+    expect(effectiveOpacity(trigger)).toBe(1);
+  });
+
+  // Scenario: Touch device
+  it('shows the menu button on devices without hover', () => {
+    renderWithMenu(true);
+
+    expect(
+      getOpacityRules().some(
+        (rule) =>
+          rule.selector.includes('data-card-menu') &&
+          rule.opacity === '1' &&
+          /hover:\s*none/.test(rule.media ?? ''),
+      ),
     ).toBe(true);
   });
 });

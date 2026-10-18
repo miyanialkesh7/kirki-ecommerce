@@ -306,22 +306,24 @@ class AnalyticsQueryService
             $point_sales = array_merge($this->empty_sales(), $sales_by_bucket[$key] ?? [], $customers_by_bucket[$key] ?? []);
             $point_returns = (int) ($returns_by_bucket[$key] ?? 0);
             $point_placed = (int) ($placed_by_bucket[$key]['orders'] ?? 0);
+            $point_items = (int) ($placed_by_bucket[$key]['items_ordered'] ?? 0);
 
             $series[] = [
                 'date' => $bucket['start'],
                 'label' => $bucket['label'],
                 'span_label' => $bucket['span_label'],
-                'metrics' => $this->summarize($point_sales, $point_returns, $point_placed),
+                'metrics' => $this->summarize($point_sales, $point_returns, $point_placed, $point_items),
             ];
         }
 
         $totals_sales = array_merge($this->empty_sales(), $this->sum_rows($sales_by_bucket), $customer_totals);
+        $items_ordered = (int) array_sum(array_column($placed_by_bucket, 'items_ordered'));
 
         return [
             'from' => $from,
             'to' => $to,
-            'totals' => $this->summarize($totals_sales, (int) array_sum($returns_by_bucket), (int) array_sum(array_column($placed_by_bucket, 'orders'))),
-            'items_ordered' => (int) array_sum(array_column($placed_by_bucket, 'items_ordered')),
+            'totals' => $this->summarize($totals_sales, (int) array_sum($returns_by_bucket), (int) array_sum(array_column($placed_by_bucket, 'orders')), $items_ordered),
+            'items_ordered' => $items_ordered,
             'series' => $series,
         ];
     }
@@ -356,10 +358,11 @@ class AnalyticsQueryService
      * @param array<string, int> $sales   Sales sums of the period.
      * @param int                $returns Returns of the period.
      * @param int                $placed  Placed orders of the period.
+     * @param int                $items   Items ordered in the placed orders of the period.
      *
      * @return array<string, int|float|null>
      */
-    protected function summarize(array $sales, int $returns, int $placed)
+    protected function summarize(array $sales, int $returns, int $placed, int $items)
     {
         $net_sales = $sales['gross'] - $sales['discounts'] - $returns;
         $paid_orders = $sales['paid_orders'];
@@ -374,6 +377,7 @@ class AnalyticsQueryService
             'total_sales' => $net_sales + $sales['shipping'] + $sales['taxes'],
             'paid_orders' => $paid_orders,
             'orders' => $placed,
+            'items_ordered' => $items,
             'average_order_value' => $paid_orders > 0 ? $this->divide_half_up($sales['gross'] - $sales['discounts'], $paid_orders) : null,
             'customers' => $sales['customers'],
             'new_customers' => $sales['new_customers'],
@@ -1054,6 +1058,34 @@ class AnalyticsQueryService
             'returning_customer_rate' => array_merge(
                 $this->count_metric($now['returning_customer_rate'], $before['returning_customer_rate'] ?? null, $compared),
                 ['series' => $this->build_series($current, $previous, 'returning_customer_rate')]
+            ),
+            'net_sales' => array_merge(
+                $this->money_metric($now['net_sales'], $before['net_sales'] ?? null, $compared),
+                ['series' => $this->build_series($current, $previous, 'net_sales')]
+            ),
+            'total_sales' => array_merge(
+                $this->money_metric($now['total_sales'], $before['total_sales'] ?? null, $compared),
+                ['series' => $this->build_series($current, $previous, 'total_sales')]
+            ),
+            'items_ordered' => array_merge(
+                $this->count_metric($now['items_ordered'], $before['items_ordered'] ?? null, $compared),
+                ['series' => $this->build_series($current, $previous, 'items_ordered')]
+            ),
+            'discounts' => array_merge(
+                $this->money_metric($now['discounts'], $before['discounts'] ?? null, $compared),
+                ['series' => $this->build_series($current, $previous, 'discounts')]
+            ),
+            'new_customers' => array_merge(
+                $this->count_metric($now['new_customers'], $before['new_customers'] ?? null, $compared),
+                ['series' => $this->build_series($current, $previous, 'new_customers')]
+            ),
+            'customers' => array_merge(
+                $this->count_metric($now['customers'], $before['customers'] ?? null, $compared),
+                ['series' => $this->build_series($current, $previous, 'customers')]
+            ),
+            'shipping_charges' => array_merge(
+                $this->money_metric($now['shipping'], $before['shipping'] ?? null, $compared),
+                ['series' => $this->build_series($current, $previous, 'shipping')]
             ),
         ];
     }

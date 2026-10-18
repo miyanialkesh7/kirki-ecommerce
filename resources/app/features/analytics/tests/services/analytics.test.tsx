@@ -40,6 +40,8 @@ const respondWithOverview = (requested: URL[] = []) => {
   );
 };
 
+const ALL_KEYS = new Set(METRIC_KEYS);
+
 const allSucceeded = (result: { current: ReturnType<typeof useAnalyticsMetricQueries> }) => {
   return METRIC_KEYS.every((key) => result.current[key].isSuccess);
 };
@@ -54,9 +56,12 @@ describe('useAnalyticsMetricQueries', () => {
     respondWithOverview(requested);
     const client = createClient();
 
-    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
-      wrapper: createWrapper(client),
-    });
+    const { result } = renderHook(
+      () => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS, ALL_KEYS),
+      {
+        wrapper: createWrapper(client),
+      },
+    );
     await waitFor(() => expect(allSucceeded(result)).toBe(true));
 
     expect(requested.map((url) => url.pathname.split('/').pop()).sort()).toEqual(
@@ -72,9 +77,12 @@ describe('useAnalyticsMetricQueries', () => {
     respondWithOverview(requested);
     const client = createClient();
 
-    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
-      wrapper: createWrapper(client),
-    });
+    const { result } = renderHook(
+      () => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS, ALL_KEYS),
+      {
+        wrapper: createWrapper(client),
+      },
+    );
     await waitFor(() => expect(allSucceeded(result)).toBe(true));
 
     for (const url of requested) {
@@ -96,7 +104,7 @@ describe('useAnalyticsMetricQueries', () => {
       compare: 'none',
     } as const;
 
-    const { result } = renderHook(() => useAnalyticsMetricQueries(params), {
+    const { result } = renderHook(() => useAnalyticsMetricQueries(params, ALL_KEYS), {
       wrapper: createWrapper(client),
     });
     await waitFor(() => expect(allSucceeded(result)).toBe(true));
@@ -112,12 +120,12 @@ describe('useAnalyticsMetricQueries', () => {
     const client = createClient();
     const wrapper = createWrapper(client);
 
-    const first = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
+    const first = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS, ALL_KEYS), {
       wrapper,
     });
     await waitFor(() => expect(allSucceeded(first.result)).toBe(true));
     const second = renderHook(
-      () => useAnalyticsMetricQueries({ ...DEFAULT_ANALYTICS_PARAMS, range: 'last_7' }),
+      () => useAnalyticsMetricQueries({ ...DEFAULT_ANALYTICS_PARAMS, range: 'last_7' }, ALL_KEYS),
       { wrapper },
     );
     await waitFor(() => expect(allSucceeded(second.result)).toBe(true));
@@ -142,13 +150,39 @@ describe('useAnalyticsMetricQueries', () => {
     );
     const client = createClient();
 
-    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
-      wrapper: createWrapper(client),
-    });
+    const { result } = renderHook(
+      () => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS, ALL_KEYS),
+      {
+        wrapper: createWrapper(client),
+      },
+    );
     await waitFor(() => expect(result.current.taxes_by_region.isError).toBe(true));
     await waitFor(() => expect(result.current.kpis.isSuccess).toBe(true));
 
     expect(result.current.sales_by_product.isSuccess).toBe(true);
+  });
+
+  // Scenario: Hidden card is not requested
+  it('does not request a key that is not enabled', async () => {
+    const requested: URL[] = [];
+    respondWithOverview(requested);
+    const client = createClient();
+    const enabled = new Set(METRIC_KEYS.filter((key) => key !== 'sales_by_coupon_code'));
+
+    const { result } = renderHook(
+      () => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS, enabled),
+      {
+        wrapper: createWrapper(client),
+      },
+    );
+    await waitFor(() => expect(result.current.kpis.isSuccess).toBe(true));
+    await waitFor(() => expect(requested).toHaveLength(METRIC_KEYS.length - 1));
+
+    expect(requested.map((url) => url.pathname.split('/').pop())).not.toContain(
+      'sales_by_coupon_code',
+    );
+    expect(result.current.sales_by_coupon_code.isError).toBe(false);
+    expect(result.current.sales_by_coupon_code.data).toBeUndefined();
   });
 
   // Scenario: First visit (no preparation step, so no polling)
@@ -156,9 +190,12 @@ describe('useAnalyticsMetricQueries', () => {
     respondWithOverview();
     const client = createClient();
 
-    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
-      wrapper: createWrapper(client),
-    });
+    const { result } = renderHook(
+      () => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS, ALL_KEYS),
+      {
+        wrapper: createWrapper(client),
+      },
+    );
     await waitFor(() => expect(allSucceeded(result)).toBe(true));
 
     for (const query of client.getQueryCache().getAll()) {

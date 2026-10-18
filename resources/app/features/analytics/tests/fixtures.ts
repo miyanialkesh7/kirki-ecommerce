@@ -130,6 +130,25 @@ const buildOverview = (
         ...countMetric(33.3, null, null),
         series: series([20, 30, 40], [10, 10, 10]),
       },
+      net_sales: {
+        ...moneyMetric(5200, 4800, 8.3),
+        series: series([900, 1900, 2400], [800, 1700, 2300]),
+      },
+      total_sales: {
+        ...moneyMetric(6601, 6000, 10),
+        series: series([1000, 2200, 3401], [900, 1900, 3200]),
+      },
+      items_ordered: { ...countMetric(30, 28, 7.1), series: series([8, 10, 12], [9, 9, 10]) },
+      discounts: {
+        ...moneyMetric(1000, 700, 42.9),
+        series: series([100, 300, 600], [100, 200, 400]),
+      },
+      new_customers: { ...countMetric(8, 6, 33.3), series: series([2, 3, 3], [2, 2, 2]) },
+      customers: { ...countMetric(10, 9, 11.1), series: series([3, 3, 4], [3, 3, 3]) },
+      shipping_charges: {
+        ...moneyMetric(800, 750, 6.7),
+        series: series([200, 300, 300], [250, 250, 250]),
+      },
       ...overrides.kpis,
     },
     cards: {
@@ -319,6 +338,13 @@ const buildEmptyStoreOverview = () => {
         ...countMetric(null, null, null),
         series: series([null, null, null], zeros),
       },
+      net_sales: { ...moneyMetric(0, 0, null), series: series(zeros, zeros) },
+      total_sales: { ...moneyMetric(0, 0, null), series: series(zeros, zeros) },
+      items_ordered: { ...countMetric(0, 0, null), series: series(zeros, zeros) },
+      discounts: { ...moneyMetric(0, 0, null), series: series(zeros, zeros) },
+      new_customers: { ...countMetric(0, 0, null), series: series(zeros, zeros) },
+      customers: { ...countMetric(0, 0, null), series: series(zeros, zeros) },
+      shipping_charges: { ...moneyMetric(0, 0, null), series: series(zeros, zeros) },
     },
     cards: emptyCards(),
   });

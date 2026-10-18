@@ -194,6 +194,13 @@ const AnalyticsKpisSchema = z.object({
   orders: CountKpiSchema,
   average_order_value: MoneyKpiSchema,
   returning_customer_rate: CountKpiSchema,
+  net_sales: MoneyKpiSchema,
+  total_sales: MoneyKpiSchema,
+  items_ordered: CountKpiSchema,
+  discounts: MoneyKpiSchema,
+  new_customers: CountKpiSchema,
+  customers: CountKpiSchema,
+  shipping_charges: MoneyKpiSchema,
 });
 
 const AnalyticsMetaSchema = z.object({

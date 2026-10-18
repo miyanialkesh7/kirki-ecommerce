@@ -151,7 +151,7 @@ const styles = defineStyles({
     width: '8px',
     height: '8px',
     borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.analytics.status.goodText,
+    backgroundColor: theme.colors.text.success,
     '&::after': {
       content: '""',
       position: 'absolute',

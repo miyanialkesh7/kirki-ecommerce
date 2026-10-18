@@ -1,7 +1,8 @@
 # Analytics
 
-A page that shows how the store performs over time. It has four key metrics
-and fifteen cards. Each number has a date range, a comparison with an earlier
+A page that shows how the store performs over time. It has eleven key metrics
+(four are on by default) and fifteen cards. You choose which of them show, and
+in which order. Each number has a date range, a comparison with an earlier
 period, and an info icon that tells how the number is calculated. Open it with
 **eCommerce → Analytics**.
 
@@ -30,8 +31,8 @@ Only users with the `manage_options` capability (administrators) can open the
 page and its data endpoints, `GET /analytics/metrics/{key}` and
 `GET /analytics/regions`.
 
-The page sends one request for each part, all at the same time, so each part
-shows as soon as its own data comes:
+The page sends one request for each part that is on, all at the same time, so
+each part shows as soon as its own data comes. A hidden card sends no request:
 
 - `{key}` is `kpis` (the key metrics row) or one of the 15 card keys:
   `total_sales_over_time`, `total_sales_breakdown`, `sales_by_product`,
@@ -76,7 +77,27 @@ shows as soon as its own data comes:
   under each option, and the footer shows the selected comparison range.
   **Custom** opens Start and End fields and a calendar with two months; it
   starts at the previous period. Select **Apply** to use the selection.
-- **Customize** is on the right of the controls. It does nothing yet.
+- **Customize** is on the right of the controls. It opens the "Customize
+  analytics" panel from the right side of the screen:
+  - The **Key metrics** group lists the 11 key metrics and the **Cards** group
+    lists the 15 cards. Check or clear an item to show or hide it. The page
+    changes at once.
+  - Drag an item by its handle (⠿) to change its place in its group. With the
+    keyboard, tab to the handle, press Space, move with the arrow keys and
+    press Space again. An item cannot move to the other group.
+  - At least one key metric and one card stay on. The last item that is on in
+    a group cannot be cleared.
+  - Cards marked **Full width** always take a whole row. A half card that is
+    alone in its row fills the row.
+  - **Reset to default** shows the first 4 key metrics and all cards in their
+    first order. **Done** closes the panel.
+- Each key metric and card has a **⋯** menu at its top right, shown on hover or
+  keyboard focus (always on touch devices). Its one item, **Hide from page**,
+  hides that part, the same as clearing it in the panel.
+- The choice of parts and their order is kept in the browser's local storage
+  (`kirki-ecommerce:analytics:layout`). It applies each time the page opens in
+  that browser. A part that a later version adds shows at the end of its
+  group.
 - All money is in the store's base currency. There is no currency filter.
 - The selection is kept in the page address (`#/analytics?range=...`), so a
   reload or a shared link shows the same view.
@@ -146,8 +167,11 @@ shows as soon as its own data comes:
 
 ## 4. Key metrics
 
-Each key metric shows its value for the range, a change against the comparison
-and a small chart of the range beside the change. The change is
+The key metrics row shows the key metrics that are on, in their order, 4 in
+each row (2 on screens narrower than 1100px, 1 below 600px). Each key metric
+takes a quarter of the row, also on a last row that is not full. Each key
+metric shows its value for the range, a change against the comparison and a
+small chart of the range beside the change. The change is
 `(current − comparison) ÷ comparison`, rounded to one decimal. When the
 comparison value is 0, or there is no comparison, the page shows no
 percentage. With no comparison, each key metric reads "No comparison".
@@ -162,6 +186,17 @@ it went down, and grey when it did not change.
 | Orders | Orders created in the range, paid or not. Failed payments are left out. |
 | Average order value | (Gross sales − discounts) ÷ number of orders paid in the range. Shipping and tax are left out. |
 | Returning customer rate | Customers with a paid order in the range that was not their first paid order, ÷ all customers with a paid order in the range. |
+| Net sales | Gross sales − discounts − returns, for orders paid in the range. Refunds are subtracted on the day they completed. |
+| Total sales | Net sales + shipping + taxes, for orders paid in the range. |
+| Items ordered | Items in the orders created in the range, paid or not. Failed payments are left out. |
+| Discounts | Discounts on item prices in orders paid in the range. Free-shipping discounts are left out. |
+| New customers | Customers whose first paid order is in the range. |
+| Customers | Different customers with a paid order in the range. |
+| Shipping charges | Shipping charged on paid orders after free-shipping discounts, without tax. |
+
+The first four are on by default. The `kpis` response always has all eleven,
+each with its value, comparison, change and series, so turning one on sends no
+new request.
 
 Details:
 
@@ -253,9 +288,9 @@ tables as they are at that moment.
   key metrics and five cards (Total sales over time, Total sales breakdown,
   Average order value over time, Orders over time and New vs returning
   customers) read the same totals and series, and each of their requests
-  calculates them again. A page load makes 16 requests, and a browser sends
-  about 6 at a time to one site over HTTP/1.1, so the last cards can wait for
-  a free connection.
+  calculates them again. A page load with every card on makes 16 requests, and
+  a browser sends about 6 at a time to one site over HTTP/1.1, so the last
+  cards can wait for a free connection. Hidden cards send no request.
 
 For developers, the filter `kirki_ecommerce_analytics_today` (a `Y-m-d` date
 that replaces today) is used by the tests.
@@ -324,6 +359,10 @@ The names are familiar, but the numbers do not match one-to-one:
   default. Here the map has countries only, and a selected country lists its
   top 5 regions. Sales by location always uses the shipping address, else the
   billing address, with no choice of address.
+- **The layout is kept in the browser.** The shown parts and their order are
+  kept in each browser's local storage, not on the server. Another browser, or
+  another admin on another computer, sees the default layout, and two admins on
+  one browser share one layout.
 - **Base currency only.** All amounts are in the store's base currency. There is
   no filter for the currency the customer paid in, and no view of the amounts in
   that currency.

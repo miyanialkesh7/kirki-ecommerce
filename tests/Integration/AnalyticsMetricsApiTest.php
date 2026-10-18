@@ -239,11 +239,13 @@ class AnalyticsMetricsApiTest extends RestTestCase
         $this->assertSame('day', $data['granularity']);
         $this->assertArrayNotHasKey('granularity_size', $data);
 
-        $this->assertSame(['gross_sales', 'orders', 'average_order_value', 'returning_customer_rate'], array_keys($data['kpis']));
-        $this->assert_money_metric($data['kpis']['gross_sales']);
-        $this->assert_money_metric($data['kpis']['average_order_value']);
-        $this->assert_count_metric($data['kpis']['orders']);
-        $this->assert_count_metric($data['kpis']['returning_customer_rate']);
+        $this->assertSame(['gross_sales', 'orders', 'average_order_value', 'returning_customer_rate', 'net_sales', 'total_sales', 'items_ordered', 'discounts', 'new_customers', 'customers', 'shipping_charges'], array_keys($data['kpis']));
+        foreach (['gross_sales', 'average_order_value', 'net_sales', 'total_sales', 'discounts', 'shipping_charges'] as $key) {
+            $this->assert_money_metric($data['kpis'][$key]);
+        }
+        foreach (['orders', 'returning_customer_rate', 'items_ordered', 'new_customers', 'customers'] as $key) {
+            $this->assert_count_metric($data['kpis'][$key]);
+        }
         $this->assertCount(30, $data['kpis']['gross_sales']['series']);
         $this->assertSame(['date', 'label', 'span_label', 'value', 'previous_date', 'previous_label', 'previous_span_label', 'previous_value'], array_keys($data['kpis']['gross_sales']['series'][0]));
 
@@ -323,7 +325,7 @@ class AnalyticsMetricsApiTest extends RestTestCase
     }
 
     /**
-     * Scenario "Key metrics key": the data has the four key metrics, each with its series.
+     * Scenario "Key metrics key": the data has the eleven key metrics, each with its series.
      *
      * @return void
      * @since 1.0.0
@@ -334,9 +336,11 @@ class AnalyticsMetricsApiTest extends RestTestCase
 
         $data = $this->metric('kpis')['data'];
 
-        $this->assertSame(['gross_sales', 'orders', 'average_order_value', 'returning_customer_rate'], array_keys($data));
+        $this->assertSame(['gross_sales', 'orders', 'average_order_value', 'returning_customer_rate', 'net_sales', 'total_sales', 'items_ordered', 'discounts', 'new_customers', 'customers', 'shipping_charges'], array_keys($data));
         $this->assertSame(1, $data['orders']['current']);
-        $this->assertCount(30, $data['orders']['series']);
+        foreach ($data as $metric) {
+            $this->assertCount(30, $metric['series']);
+        }
     }
 
     /**

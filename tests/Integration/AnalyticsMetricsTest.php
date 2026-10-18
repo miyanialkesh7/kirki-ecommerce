@@ -600,6 +600,24 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "Items ordered series": the key metric sums items_count, and each chart point sums its day.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_items_ordered_key_metric_has_a_series_by_day(): void
+    {
+        $this->make_order(['payment_status' => PaymentStatus::UNPAID, 'items_count' => 3], [], null, '2026-09-03 10:00:00');
+        $this->make_order(['payment_status' => PaymentStatus::UNPAID, 'items_count' => 2], [], null, '2026-09-03 11:00:00');
+        $this->make_order(['payment_status' => PaymentStatus::UNPAID, 'items_count' => 4], [], null, '2026-09-04 10:00:00');
+
+        $items_ordered = $this->overview_between('2026-09-03', '2026-09-04')['kpis']['items_ordered'];
+
+        $this->assertSame(9, $items_ordered['current']);
+        $this->assertSame([5, 4], array_column($items_ordered['series'], 'value'));
+    }
+
+    /**
      * Scenario "Returned order": a placed order with fulfillment status returned counts under Returned.
      *
      * @return void

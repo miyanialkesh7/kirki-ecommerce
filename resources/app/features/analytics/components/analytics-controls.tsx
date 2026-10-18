@@ -1,10 +1,5 @@
 import { format, parseISO, startOfDay, startOfMonth, subMonths } from 'date-fns';
-import {
-  ArrowLeftRight,
-  Calendar as CalendarIcon,
-  ChevronDown,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { ArrowLeftRight, Calendar as CalendarIcon, ChevronDown, Settings2 } from 'lucide-react';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
@@ -21,6 +16,8 @@ import RangeFooter from '@/components/ui/calendar/range-footer';
 import Flex from '@/components/ui/flex';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import Text from '@/components/ui/text';
+import CustomizeSheet from '@/features/analytics/components/customize-sheet';
+import type { AnalyticsLayoutControls } from '@/features/analytics/hooks/use-analytics-layout';
 import {
   type CompareKey,
   COMPARISONS,
@@ -41,9 +38,13 @@ import { __, sprintf } from '@/wpi18n';
 const ISO_DAY = 'yyyy-MM-dd';
 const DISPLAY_FORMAT = 'MMM d, yyyy';
 
-type AnalyticsControlsProps = {
+type ControlProps = {
   params: AnalyticsParams;
   onChange: (params: AnalyticsParams) => void;
+};
+
+type AnalyticsControlsProps = ControlProps & {
+  layoutControls: AnalyticsLayoutControls;
 };
 
 type PendingCompare = {
@@ -108,7 +109,7 @@ const ControlTrigger = (props: ControlTriggerProps) => {
 
 ControlTrigger.displayName = 'ControlTrigger';
 
-const DateRangeControl = (props: AnalyticsControlsProps) => {
+const DateRangeControl = (props: ControlProps) => {
   const { params, onChange } = props;
   const today = startOfDay(new Date());
   const range = getAppliedRange(params, today);
@@ -188,7 +189,7 @@ const CompareOption = (props: CompareOptionProps) => {
 
 CompareOption.displayName = 'CompareOption';
 
-const CompareControl = (props: AnalyticsControlsProps) => {
+const CompareControl = (props: ControlProps) => {
   const { params, onChange } = props;
   const today = startOfDay(new Date());
   const range = getAppliedRange(params, today);
@@ -336,7 +337,7 @@ const CompareControl = (props: AnalyticsControlsProps) => {
 CompareControl.displayName = 'CompareControl';
 
 const AnalyticsControls = (props: AnalyticsControlsProps) => {
-  const { params, onChange } = props;
+  const { params, onChange, layoutControls } = props;
 
   return (
     <Flex align="center" justify="space-between" gap={2} wrap="wrap">
@@ -344,10 +345,12 @@ const AnalyticsControls = (props: AnalyticsControlsProps) => {
         <DateRangeControl params={params} onChange={onChange} />
         <CompareControl params={params} onChange={onChange} />
       </Flex>
-      <Button variant="outline" cssOverride={styles.trigger}>
-        <SlidersHorizontal size={14} aria-hidden="true" />
-        {__('Customize', 'kirki-ecommerce')}
-      </Button>
+      <CustomizeSheet layoutControls={layoutControls}>
+        <Button variant="outline" cssOverride={styles.trigger}>
+          <Settings2 aria-hidden="true" />
+          {__('Customize', 'kirki-ecommerce')}
+        </Button>
+      </CustomizeSheet>
     </Flex>
   );
 };

@@ -531,6 +531,7 @@ const theme = {
     dialogContent: 1001,
     fullscreen: 10000, // full-screen takeovers such as onboarding — clears #adminmenuback (9990)
     dropdown: 100000, // select / popover / dropdown-menu content — clears #wpadminbar (99999)
+    sheet: 100000, // side sheets cover #wpadminbar; menus opened inside a sheet mount later, so they stack above it
     tooltip: 100100, // must float above dialogs and dropdowns
     toast: 100200, // persistent app notifications — always on top
   },

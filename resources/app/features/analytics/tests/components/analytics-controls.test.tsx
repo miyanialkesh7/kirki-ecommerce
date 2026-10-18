@@ -2,6 +2,7 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AnalyticsControls from '@/features/analytics/components/analytics-controls';
+import { DEFAULT_LAYOUT } from '@/features/analytics/lib/layout';
 import { type AnalyticsParams, DEFAULT_ANALYTICS_PARAMS } from '@/features/analytics/lib/url-state';
 
 import { renderInRoot } from '../helpers';
@@ -27,7 +28,16 @@ const renderControls = (params: Partial<AnalyticsParams> = {}) => {
   const onChange = vi.fn();
 
   renderInRoot(
-    <AnalyticsControls params={{ ...DEFAULT_ANALYTICS_PARAMS, ...params }} onChange={onChange} />,
+    <AnalyticsControls
+      params={{ ...DEFAULT_ANALYTICS_PARAMS, ...params }}
+      onChange={onChange}
+      layoutControls={{
+        layout: DEFAULT_LAYOUT,
+        setVisible: vi.fn(),
+        move: vi.fn(),
+        reset: vi.fn(),
+      }}
+    />,
   );
 
   return { onChange };
@@ -258,13 +268,13 @@ describe('Analytics comparison control', () => {
 });
 
 describe('Analytics controls row', () => {
-  it('has a Customize button that does nothing', () => {
+  it('opens the Customize sheet from the Customize button', () => {
     const { onChange } = renderControls();
 
     fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
 
     expect(onChange).not.toHaveBeenCalled();
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Customize analytics' })).toBeInTheDocument();
   });
 
   it('has no currency control', () => {

@@ -5,6 +5,13 @@ type MetricKey =
   | 'orders'
   | 'average_order_value'
   | 'returning_customer_rate'
+  | 'net_sales'
+  | 'total_sales'
+  | 'items_ordered'
+  | 'discounts'
+  | 'new_customers'
+  | 'customers'
+  | 'shipping_charges'
   | 'total_sales_over_time'
   | 'total_sales_breakdown'
   | 'sales_by_product'
@@ -52,6 +59,46 @@ const getMetricDefinitions = (): Record<MetricKey, MetricDefinition> => ({
     title: __('Returning customer rate', 'kirki-ecommerce'),
     info: __(
       'Customers with a paid order in the range that was not their first paid order, ÷ all customers with a paid order in the range.',
+      'kirki-ecommerce',
+    ),
+  },
+  net_sales: {
+    title: __('Net sales', 'kirki-ecommerce'),
+    info: __(
+      'Gross sales − discounts − returns, for orders paid in the range. Refunds are subtracted on the day they completed.',
+      'kirki-ecommerce',
+    ),
+  },
+  total_sales: {
+    title: __('Total sales', 'kirki-ecommerce'),
+    info: __('Net sales + shipping + taxes, for orders paid in the range.', 'kirki-ecommerce'),
+  },
+  items_ordered: {
+    title: __('Items ordered', 'kirki-ecommerce'),
+    info: __(
+      'Items in the orders created in the range, paid or not. Failed payments are left out.',
+      'kirki-ecommerce',
+    ),
+  },
+  discounts: {
+    title: __('Discounts', 'kirki-ecommerce'),
+    info: __(
+      'Discounts on item prices in orders paid in the range. Free-shipping discounts are left out.',
+      'kirki-ecommerce',
+    ),
+  },
+  new_customers: {
+    title: __('New customers', 'kirki-ecommerce'),
+    info: __('Customers whose first paid order is in the range.', 'kirki-ecommerce'),
+  },
+  customers: {
+    title: __('Customers', 'kirki-ecommerce'),
+    info: __('Different customers with a paid order in the range.', 'kirki-ecommerce'),
+  },
+  shipping_charges: {
+    title: __('Shipping charges', 'kirki-ecommerce'),
+    info: __(
+      'Shipping charged on paid orders after free-shipping discounts, without tax.',
       'kirki-ecommerce',
     ),
   },

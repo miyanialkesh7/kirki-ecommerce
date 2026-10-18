@@ -1,6 +1,8 @@
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { STORAGE_KEY } from '@/features/analytics/hooks/use-analytics-layout';
+import { type AnalyticsLayout, DEFAULT_LAYOUT } from '@/features/analytics/lib/layout';
 import Analytics from '@/features/analytics/pages/analytics';
 import { METRIC_KEYS } from '@/features/analytics/schemas/catalog/analytics';
 
@@ -205,6 +207,7 @@ const TOOLTIPS: [string, string, string][] = [
 const renderPage = (search = '') => renderPageAt(`/analytics${search}`, <Analytics />);
 
 beforeEach(() => {
+  window.localStorage.clear();
   useAnalyticsMetricQueries.mockReset();
   refetch.mockReset();
   for (const key of Object.keys(refetches)) {
@@ -840,5 +843,246 @@ describe('Analytics page states', () => {
 
     expect(screen.queryByText(/Your store has no orders yet/)).not.toBeInTheDocument();
     expect(screen.queryByTestId('card-empty')).not.toBeInTheDocument();
+  });
+});
+
+const saveLayout = (layout: AnalyticsLayout) => {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+};
+
+const withVisible = (
+  layout: AnalyticsLayout,
+  changes: Partial<Record<string, boolean>>,
+): AnalyticsLayout => ({
+  kpis: layout.kpis.map((item) => ({ ...item, visible: changes[item.key] ?? item.visible })),
+  cards: layout.cards.map((item) => ({ ...item, visible: changes[item.key] ?? item.visible })),
+});
+
+const lastEnabledKeys = () => {
+  const calls = useAnalyticsMetricQueries.mock.calls as unknown[][];
+
+  return [...(calls[calls.length - 1]?.[1] as Set<string>)];
+};
+
+const kpiTestIds = () =>
+  Array.from(document.querySelectorAll('[data-testid^="kpi-"]')).map((node) =>
+    node.getAttribute('data-testid'),
+  );
+
+const cardTestIds = () =>
+  Array.from(document.querySelectorAll('[data-testid^="card-"]'))
+    .map((node) => node.getAttribute('data-testid') ?? '')
+    .filter((id) => /^card-[a-z_]+$/.test(id) && id !== 'card-skeleton' && id !== 'card-empty');
+
+const openCardMenu = (title: string) => {
+  fireEvent.pointerDown(screen.getByRole('button', { name: `More actions for ${title}` }), {
+    button: 0,
+    ctrlKey: false,
+  });
+};
+
+const openCustomize = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'Customize' }));
+
+  return screen.getByRole('dialog', { name: 'Customize analytics' });
+};
+
+describe('Analytics customize', () => {
+  beforeAll(() => {
+    Element.prototype.hasPointerCapture = vi.fn(() => false);
+    Element.prototype.setPointerCapture = vi.fn();
+    Element.prototype.releasePointerCapture = vi.fn();
+  });
+
+  it('shows the default 4 key metrics and requests every card by default', () => {
+    renderPage();
+
+    expect(kpiTestIds()).toEqual(KPI_TESTS_IDS);
+    expect(lastEnabledKeys().sort()).toEqual([...METRIC_KEYS].sort());
+  });
+
+  // Scenario: Hidden card is not requested
+  it('does not show or request a hidden card', () => {
+    saveLayout(withVisible(DEFAULT_LAYOUT, { sales_by_coupon_code: false }));
+    renderPage();
+
+    expect(screen.queryByTestId('card-sales_by_coupon_code')).not.toBeInTheDocument();
+    expect(lastEnabledKeys()).not.toContain('sales_by_coupon_code');
+    expect(lastEnabledKeys()).toContain('kpis');
+  });
+
+  // Scenario: Turn a card on
+  it('requests a card and shows its skeleton when the merchant turns it on', () => {
+    saveLayout(withVisible(DEFAULT_LAYOUT, { sales_by_coupon_code: false }));
+    mockData(buildOverview(), { sales_by_coupon_code: { isPending: true } });
+    renderPage();
+
+    expect(screen.queryAllByTestId('card-skeleton')).toHaveLength(0);
+
+    const sheet = openCustomize();
+    fireEvent.click(within(sheet).getByRole('checkbox', { name: 'Sales by coupon code' }));
+
+    expect(lastEnabledKeys()).toContain('sales_by_coupon_code');
+    expect(screen.getAllByTestId('card-skeleton')).toHaveLength(1);
+  });
+
+  // Scenario: Saved order
+  it('shows the key metrics and cards in the saved order', () => {
+    saveLayout({
+      kpis: [DEFAULT_LAYOUT.kpis[1], DEFAULT_LAYOUT.kpis[0], ...DEFAULT_LAYOUT.kpis.slice(2)],
+      cards: [DEFAULT_LAYOUT.cards[14], ...DEFAULT_LAYOUT.cards.slice(0, 14)],
+    });
+    renderPage();
+
+    expect(kpiTestIds().slice(0, 2)).toEqual(['kpi-orders', 'kpi-gross_sales']);
+    expect(cardTestIds()[0]).toBe('card-inventory_health');
+  });
+
+  // Scenario: Five key metrics on a wide screen
+  it('shows extra key metrics in a 4-column grid with their values', () => {
+    saveLayout(withVisible(DEFAULT_LAYOUT, { net_sales: true }));
+    renderPage();
+
+    const netSales = screen.getByTestId('kpi-net_sales');
+
+    expect(kpiTestIds()).toEqual([...KPI_TESTS_IDS, 'kpi-net_sales']);
+    expect(within(netSales).getByText('Net sales')).toBeInTheDocument();
+    expect(window.getComputedStyle(netSales.parentElement as Element).gridTemplateColumns).toBe(
+      'repeat(4, minmax(0, 1fr))',
+    );
+  });
+
+  it('formats each new key metric as money or a number', () => {
+    saveLayout(
+      withVisible(DEFAULT_LAYOUT, {
+        net_sales: true,
+        total_sales: true,
+        items_ordered: true,
+        discounts: true,
+        new_customers: true,
+        customers: true,
+        shipping_charges: true,
+      }),
+    );
+    renderPage();
+
+    expect(within(screen.getByTestId('kpi-items_ordered')).getByText('30')).toBeInTheDocument();
+    expect(within(screen.getByTestId('kpi-new_customers')).getByText('8')).toBeInTheDocument();
+    expect(within(screen.getByTestId('kpi-customers')).getByText('10')).toBeInTheDocument();
+    expect(within(screen.getByTestId('kpi-net_sales')).getByText(/\$52\.00/)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('kpi-shipping_charges')).getByText(/\$8\.00/),
+    ).toBeInTheDocument();
+  });
+
+  it('shows one key metric skeleton for each key metric that is on', () => {
+    saveLayout(withVisible(DEFAULT_LAYOUT, { net_sales: true, customers: true }));
+    mockQuery({ isLoading: true, isPending: true });
+    renderPage();
+
+    expect(screen.getAllByTestId('kpi-skeleton')).toHaveLength(6);
+  });
+
+  // Scenario: Hide a key metric
+  it('hides a key metric from its menu and clears its checkbox', () => {
+    renderPage();
+
+    openCardMenu('Gross sales');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Hide from page' }));
+
+    expect(screen.queryByTestId('kpi-gross_sales')).not.toBeInTheDocument();
+
+    const sheet = openCustomize();
+
+    expect(within(sheet).getByRole('checkbox', { name: 'Gross sales' })).not.toBeChecked();
+  });
+
+  it('hides a card from its menu and stops requesting it', () => {
+    renderPage();
+
+    openCardMenu('Sales by coupon code');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Hide from page' }));
+
+    expect(screen.queryByTestId('card-sales_by_coupon_code')).not.toBeInTheDocument();
+    expect(lastEnabledKeys()).not.toContain('sales_by_coupon_code');
+  });
+
+  it('gives a card that shows an error the menu', () => {
+    mockData(buildOverview(), { taxes_by_region: { isError: true, error: new Error('Server') } });
+    renderPage();
+
+    expect(
+      within(screen.getByTestId('card-error-taxes_by_region')).getByRole('button', {
+        name: 'More actions for Taxes collected by region',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  // Scenario: Last key metric
+  it('locks the last key metric that is on', () => {
+    saveLayout(
+      withVisible(DEFAULT_LAYOUT, {
+        gross_sales: false,
+        average_order_value: false,
+        returning_customer_rate: false,
+      }),
+    );
+    renderPage();
+
+    openCardMenu('Orders');
+
+    expect(screen.getByRole('menuitem', { name: 'Hide from page' })).toHaveAttribute(
+      'data-disabled',
+    );
+
+    fireEvent.keyDown(screen.getByRole('menuitem', { name: 'Hide from page' }), { key: 'Escape' });
+    const sheet = openCustomize();
+
+    expect(within(sheet).getByRole('checkbox', { name: 'Orders' })).toBeDisabled();
+    expect(within(sheet).getByRole('checkbox', { name: 'Sales by product' })).toBeEnabled();
+  });
+
+  // Scenario: Hidden neighbor
+  it('lets a half card fill its row when its neighbor is hidden', () => {
+    saveLayout(withVisible(DEFAULT_LAYOUT, { total_sales_breakdown: false }));
+    renderPage();
+
+    const coupon = screen.getByTestId('card-sales_by_coupon_code');
+
+    expect(coupon).toHaveAttribute('data-size', 'half');
+    expect(window.getComputedStyle(coupon).flexGrow).toBe('1');
+  });
+
+  // Scenario: Reset
+  it('restores the default layout on Reset to default', () => {
+    saveLayout(
+      withVisible(
+        {
+          kpis: [DEFAULT_LAYOUT.kpis[1], DEFAULT_LAYOUT.kpis[0], ...DEFAULT_LAYOUT.kpis.slice(2)],
+          cards: DEFAULT_LAYOUT.cards,
+        },
+        { sales_by_product: false, taxes_by_region: false, inventory_health: false },
+      ),
+    );
+    renderPage();
+
+    const sheet = openCustomize();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Reset to default' }));
+
+    expect(kpiTestIds()).toEqual(KPI_TESTS_IDS);
+    expect(screen.getByTestId('card-sales_by_product')).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? 'null')).toEqual(DEFAULT_LAYOUT);
+  });
+
+  // Scenario: Layout persists
+  it('keeps a hidden card hidden when the page opens again', () => {
+    const { unmount } = renderPage();
+
+    openCardMenu('Sales by coupon code');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Hide from page' }));
+    unmount();
+    renderPage();
+
+    expect(screen.queryByTestId('card-sales_by_coupon_code')).not.toBeInTheDocument();
   });
 });

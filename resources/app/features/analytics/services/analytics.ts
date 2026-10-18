@@ -45,12 +45,16 @@ type AnalyticsMetricQueries = {
   [K in AnalyticsMetricKey]: UseQueryResult<AnalyticsMetric<K>>;
 };
 
-const useAnalyticsMetricQueries = (params: AnalyticsParams) => {
+const useAnalyticsMetricQueries = (
+  params: AnalyticsParams,
+  enabledKeys: ReadonlySet<AnalyticsMetricKey>,
+) => {
   return useQueries({
     queries: METRIC_KEYS.map((key) => ({
       queryKey: analyticsKeys.metric(key, params),
       queryFn: () => getAnalyticsMetric(key, params),
       staleTime: 0,
+      enabled: enabledKeys.has(key),
     })),
     combine: (results) => {
       return Object.fromEntries(

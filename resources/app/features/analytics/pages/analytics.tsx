@@ -10,41 +10,27 @@ import Text from '@/components/ui/text';
 import AnalyticsControls from '@/features/analytics/components/analytics-controls';
 import { CardSkeleton, KpiSkeleton } from '@/features/analytics/components/analytics-skeletons';
 import CardError from '@/features/analytics/components/card-error';
-import AverageOrderValueOverTimeCard from '@/features/analytics/components/cards/average-order-value-over-time-card';
-import FulfillmentStatusCard from '@/features/analytics/components/cards/fulfillment-status-card';
-import InventoryHealthCard from '@/features/analytics/components/cards/inventory-health-card';
-import NewVsReturningCustomersCard from '@/features/analytics/components/cards/new-vs-returning-customers-card';
-import OrdersByTimeOfDayCard from '@/features/analytics/components/cards/orders-by-time-of-day-card';
-import OrdersOverTimeCard from '@/features/analytics/components/cards/orders-over-time-card';
-import {
-  SalesByCouponCodeCard,
-  SalesByPaymentMethodCard,
-  ShippingChargesByMethodCard,
-  TaxesByRegionCard,
-} from '@/features/analytics/components/cards/ranked-list-cards';
-import SalesByCategoryCard from '@/features/analytics/components/cards/sales-by-category-card';
-import SalesByLocationCard from '@/features/analytics/components/cards/sales-by-location-card';
-import SalesByProductCard from '@/features/analytics/components/cards/sales-by-product-card';
-import TotalSalesBreakdownCard from '@/features/analytics/components/cards/total-sales-breakdown-card';
-import TotalSalesOverTimeCard from '@/features/analytics/components/cards/total-sales-over-time-card';
+import { CardMenuContext } from '@/features/analytics/components/card-menu';
 import KpiCard from '@/features/analytics/components/kpi-card';
-import { type EmptyCheckedCard, hasNoCardData } from '@/features/analytics/lib/empty-cards';
-import { formatMoney, formatNumber, formatPercent } from '@/features/analytics/lib/format';
-import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import {
-  createCompactMinorFormatter,
-  createMinorFormatter,
-} from '@/features/analytics/lib/money-format';
+  type AnalyticsLayoutControls,
+  canHideItem,
+  useAnalyticsLayout,
+} from '@/features/analytics/hooks/use-analytics-layout';
+import { CARD_REGISTRY, type CardSize } from '@/features/analytics/lib/card-registry';
+import { formatMoney, formatNumber, formatPercent } from '@/features/analytics/lib/format';
+import type { CardKey, KpiKey } from '@/features/analytics/lib/layout';
+import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import {
   type AnalyticsParams,
   parseAnalyticsParams,
   serializeAnalyticsParams,
 } from '@/features/analytics/lib/url-state';
 import {
-  type AnalyticsCards,
   type AnalyticsKpis,
   type AnalyticsMeta,
   type AnalyticsMetric,
+  type AnalyticsMetricKey,
   METRIC_KEYS,
 } from '@/features/analytics/schemas/catalog/analytics';
 import {
@@ -55,27 +41,34 @@ import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
-const KPI_COUNT = 4;
-
-const sharedCardProps = (meta: AnalyticsMeta) => {
-  const currencyCode = meta.base_currency_code ?? 'USD';
-
-  return {
-    formatMinor: createMinorFormatter(currencyCode),
-    formatMinorShort: createCompactMinorFormatter(currencyCode),
-    range: meta.range ? { from: meta.range.from, to: meta.range.to } : null,
-    compareRange: meta.compare ?? null,
-  };
+const KPI_VALUE_FORMATTERS: { [K in KpiKey]: (metric: AnalyticsKpis[K]) => string } = {
+  gross_sales: (metric) => formatMoney(metric.current_money_object),
+  orders: (metric) => formatNumber(metric.current),
+  average_order_value: (metric) => formatMoney(metric.current_money_object),
+  returning_customer_rate: (metric) => formatPercent(metric.current),
+  net_sales: (metric) => formatMoney(metric.current_money_object),
+  total_sales: (metric) => formatMoney(metric.current_money_object),
+  items_ordered: (metric) => formatNumber(metric.current),
+  discounts: (metric) => formatMoney(metric.current_money_object),
+  new_customers: (metric) => formatNumber(metric.current),
+  customers: (metric) => formatNumber(metric.current),
+  shipping_charges: (metric) => formatMoney(metric.current_money_object),
 };
 
-type CardSlotProps<K extends keyof AnalyticsCards> = {
+const formatKpiValue = <K extends KpiKey>(key: K, kpis: AnalyticsKpis) => {
+  const format = KPI_VALUE_FORMATTERS[key];
+
+  return format(kpis[key]);
+};
+
+type CardSlotProps<K extends CardKey> = {
   cardKey: K;
-  size: 'half' | 'full';
+  size: CardSize;
   query: UseQueryResult<AnalyticsMetric<K>>;
   children: (data: AnalyticsMetric<K>['data'], meta: AnalyticsMeta) => ReactNode;
 };
 
-const CardSlot = <K extends keyof AnalyticsCards>(props: CardSlotProps<K>) => {
+const CardSlot = <K extends CardKey>(props: CardSlotProps<K>) => {
   const { cardKey, size, query, children } = props;
 
   if (query.isError) {
@@ -100,10 +93,13 @@ CardSlot.displayName = 'CardSlot';
 
 type KpiRowProps = {
   query: UseQueryResult<AnalyticsMetric<'kpis'>>;
+  layoutControls: AnalyticsLayoutControls;
 };
 
 const KpiRow = (props: KpiRowProps) => {
-  const { query } = props;
+  const { query, layoutControls } = props;
+  const { layout, setVisible } = layoutControls;
+  const visibleKpis = layout.kpis.filter((item) => item.visible);
 
   if (query.isError) {
     return (
@@ -118,8 +114,8 @@ const KpiRow = (props: KpiRowProps) => {
   if (!query.data) {
     return (
       <div css={scoped(styles.kpis)}>
-        {Array.from({ length: KPI_COUNT }, (_, index) => (
-          <KpiSkeleton key={index} />
+        {visibleKpis.map((item) => (
+          <KpiSkeleton key={item.key} />
         ))}
       </div>
     );
@@ -131,64 +127,70 @@ const KpiRow = (props: KpiRowProps) => {
 
   return (
     <div css={scoped(styles.kpis)}>
-      <KpiCard
-        metricKey="gross_sales"
-        title={definitions.gross_sales.title}
-        info={definitions.gross_sales.info}
-        value={formatMoney(kpis.gross_sales.current_money_object)}
-        change={kpis.gross_sales.change}
-        hasComparison={hasComparison}
-        series={kpis.gross_sales.series}
-      />
-      <KpiCard
-        metricKey="orders"
-        title={definitions.orders.title}
-        info={definitions.orders.info}
-        value={formatNumber(kpis.orders.current)}
-        change={kpis.orders.change}
-        hasComparison={hasComparison}
-        series={kpis.orders.series}
-      />
-      <KpiCard
-        metricKey="average_order_value"
-        title={definitions.average_order_value.title}
-        info={definitions.average_order_value.info}
-        value={formatMoney(kpis.average_order_value.current_money_object)}
-        change={kpis.average_order_value.change}
-        hasComparison={hasComparison}
-        series={kpis.average_order_value.series}
-      />
-      <KpiCard
-        metricKey="returning_customer_rate"
-        title={definitions.returning_customer_rate.title}
-        info={definitions.returning_customer_rate.info}
-        value={formatPercent(kpis.returning_customer_rate.current)}
-        change={kpis.returning_customer_rate.change}
-        hasComparison={hasComparison}
-        series={kpis.returning_customer_rate.series}
-      />
+      {visibleKpis.map(({ key }) => (
+        <CardMenuContext.Provider
+          key={key}
+          value={{
+            canHide: canHideItem(layout.kpis, key),
+            onHide: () => setVisible('kpis', key, false),
+          }}
+        >
+          <KpiCard
+            metricKey={key}
+            title={definitions[key].title}
+            info={definitions[key].info}
+            value={formatKpiValue(key, kpis)}
+            change={kpis[key].change}
+            hasComparison={hasComparison}
+            series={kpis[key].series}
+          />
+        </CardMenuContext.Provider>
+      ))}
     </div>
   );
 };
 
 KpiRow.displayName = 'KpiRow';
 
+type RegisteredCardProps<K extends CardKey> = {
+  cardKey: K;
+  query: UseQueryResult<AnalyticsMetric<K>>;
+  params: AnalyticsParams;
+  layoutControls: AnalyticsLayoutControls;
+};
+
+const RegisteredCard = <K extends CardKey>(props: RegisteredCardProps<K>) => {
+  const { cardKey, query, params, layoutControls } = props;
+  const { layout, setVisible } = layoutControls;
+  const entry = CARD_REGISTRY[cardKey];
+
+  return (
+    <CardMenuContext.Provider
+      value={{
+        canHide: canHideItem(layout.cards, cardKey),
+        onHide: () => setVisible('cards', cardKey, false),
+      }}
+    >
+      <CardSlot cardKey={cardKey} size={entry.size} query={query}>
+        {(data, meta) => entry.render(data, meta, params)}
+      </CardSlot>
+    </CardMenuContext.Provider>
+  );
+};
+
+RegisteredCard.displayName = 'RegisteredCard';
+
 type MetricsContentProps = {
   queries: AnalyticsMetricQueries;
   params: AnalyticsParams;
+  layoutControls: AnalyticsLayoutControls;
 };
 
 const MetricsContent = (props: MetricsContentProps) => {
-  const { queries, params } = props;
+  const { queries, params, layoutControls } = props;
 
   const firstMeta = METRIC_KEYS.map((key) => queries[key].data?.meta).find((meta) => !!meta);
-  const isEmpty = <K extends EmptyCheckedCard>(
-    key: K,
-    data: AnalyticsCards[K],
-    meta: AnalyticsMeta,
-  ) => {
-    return meta.has_orders === false || hasNoCardData(key, data);
-  };
+  const visibleCards = layoutControls.layout.cards.filter((item) => item.visible);
 
   return (
     <>
@@ -202,158 +204,17 @@ const MetricsContent = (props: MetricsContentProps) => {
           </Text>
         </div>
       )}
-      <KpiRow query={queries.kpis} />
+      <KpiRow query={queries.kpis} layoutControls={layoutControls} />
       <div css={scoped(styles.cards)}>
-        <CardSlot cardKey="total_sales_over_time" size="full" query={queries.total_sales_over_time}>
-          {(data, meta) => (
-            <TotalSalesOverTimeCard
-              data={data}
-              isEmpty={isEmpty('total_sales_over_time', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="total_sales_breakdown" size="half" query={queries.total_sales_breakdown}>
-          {(data, meta) => (
-            <TotalSalesBreakdownCard
-              data={data}
-              isEmpty={isEmpty('total_sales_breakdown', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="sales_by_product" size="half" query={queries.sales_by_product}>
-          {(data, meta) => (
-            <SalesByProductCard
-              data={data}
-              isEmpty={isEmpty('sales_by_product', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="sales_by_category" size="half" query={queries.sales_by_category}>
-          {(data, meta) => (
-            <SalesByCategoryCard
-              data={data}
-              isEmpty={isEmpty('sales_by_category', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot
-          cardKey="average_order_value_over_time"
-          size="half"
-          query={queries.average_order_value_over_time}
-        >
-          {(data, meta) => (
-            <AverageOrderValueOverTimeCard
-              data={data}
-              isEmpty={isEmpty('average_order_value_over_time', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="orders_over_time" size="half" query={queries.orders_over_time}>
-          {(data, meta) => (
-            <OrdersOverTimeCard
-              data={data}
-              isEmpty={isEmpty('orders_over_time', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot
-          cardKey="orders_by_fulfillment_status"
-          size="half"
-          query={queries.orders_by_fulfillment_status}
-        >
-          {(data, meta) => (
-            <FulfillmentStatusCard
-              data={data}
-              isEmpty={isEmpty('orders_by_fulfillment_status', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot
-          cardKey="new_vs_returning_customers"
-          size="half"
-          query={queries.new_vs_returning_customers}
-        >
-          {(data, meta) => (
-            <NewVsReturningCustomersCard
-              data={data}
-              isEmpty={isEmpty('new_vs_returning_customers', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="sales_by_coupon_code" size="half" query={queries.sales_by_coupon_code}>
-          {(data, meta) => (
-            <SalesByCouponCodeCard
-              data={data}
-              isEmpty={isEmpty('sales_by_coupon_code', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="orders_by_time_of_day" size="full" query={queries.orders_by_time_of_day}>
-          {(data, meta) => (
-            <OrdersByTimeOfDayCard
-              data={data}
-              isEmpty={isEmpty('orders_by_time_of_day', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="sales_by_location" size="full" query={queries.sales_by_location}>
-          {(data, meta) => (
-            <SalesByLocationCard
-              data={data}
-              isEmpty={isEmpty('sales_by_location', data, meta)}
-              params={params}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot
-          cardKey="sales_by_payment_method"
-          size="half"
-          query={queries.sales_by_payment_method}
-        >
-          {(data, meta) => (
-            <SalesByPaymentMethodCard
-              data={data}
-              isEmpty={isEmpty('sales_by_payment_method', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="taxes_by_region" size="half" query={queries.taxes_by_region}>
-          {(data, meta) => (
-            <TaxesByRegionCard
-              data={data}
-              isEmpty={isEmpty('taxes_by_region', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot
-          cardKey="shipping_charges_by_method"
-          size="half"
-          query={queries.shipping_charges_by_method}
-        >
-          {(data, meta) => (
-            <ShippingChargesByMethodCard
-              data={data}
-              isEmpty={isEmpty('shipping_charges_by_method', data, meta)}
-              {...sharedCardProps(meta)}
-            />
-          )}
-        </CardSlot>
-        <CardSlot cardKey="inventory_health" size="half" query={queries.inventory_health}>
-          {(data) => <InventoryHealthCard data={data} />}
-        </CardSlot>
+        {visibleCards.map(({ key }) => (
+          <RegisteredCard
+            key={key}
+            cardKey={key}
+            query={queries[key] as UseQueryResult<AnalyticsMetric<typeof key>>}
+            params={params}
+            layoutControls={layoutControls}
+          />
+        ))}
       </div>
     </>
   );
@@ -364,15 +225,25 @@ MetricsContent.displayName = 'MetricsContent';
 const Analytics = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useMemo(() => parseAnalyticsParams(searchParams), [searchParams]);
-  const queries = useAnalyticsMetricQueries(params);
-  const hasAllFailed = METRIC_KEYS.every((key) => queries[key].isError);
+  const layoutControls = useAnalyticsLayout();
+  const { layout } = layoutControls;
+  const enabledKeys = useMemo(
+    () =>
+      new Set<AnalyticsMetricKey>([
+        'kpis',
+        ...layout.cards.filter((item) => item.visible).map((item) => item.key),
+      ]),
+    [layout.cards],
+  );
+  const queries = useAnalyticsMetricQueries(params, enabledKeys);
+  const hasAllFailed = [...enabledKeys].every((key) => queries[key].isError);
 
   const handleChange = (next: AnalyticsParams) => {
     setSearchParams(serializeAnalyticsParams(next));
   };
 
   const handleRetryAll = () => {
-    METRIC_KEYS.forEach((key) => void queries[key].refetch());
+    enabledKeys.forEach((key) => void queries[key].refetch());
   };
 
   return (
@@ -380,11 +251,15 @@ const Analytics = () => {
       <PageHeading text={__('Analytics', 'kirki-ecommerce')} />
       <PageContent>
         <Flex direction="column" gap={4} cssOverride={styles.content}>
-          <AnalyticsControls params={params} onChange={handleChange} />
+          <AnalyticsControls
+            params={params}
+            onChange={handleChange}
+            layoutControls={layoutControls}
+          />
           {hasAllFailed ? (
             <QueryErrorState onRetry={handleRetryAll} />
           ) : (
-            <MetricsContent queries={queries} params={params} />
+            <MetricsContent queries={queries} params={params} layoutControls={layoutControls} />
           )}
         </Flex>
       </PageContent>
