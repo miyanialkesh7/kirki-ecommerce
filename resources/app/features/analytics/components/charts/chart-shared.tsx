@@ -193,7 +193,7 @@ const TooltipValues = (props: TooltipValuesProps) => {
 
 TooltipValues.displayName = 'TooltipValues';
 
-type ChartLegendSample = 'line' | 'bar';
+type ChartLegendSample = 'line' | 'bar' | 'pairedBar';
 
 type ChartLegendProps = {
   legend: ChartLegendRange;
@@ -334,6 +334,13 @@ const styles = defineStyles({
       borderRadius: '2px',
       backgroundColor: theme.colors.analytics.chart.primary,
     },
+    pairedBar: {
+      ...sampleBase,
+      width: '8px',
+      height: '14px',
+      borderRadius: '4px',
+      backgroundColor: theme.colors.analytics.chart.primary,
+    },
   },
   previousSamples: {
     line: {
@@ -346,6 +353,13 @@ const styles = defineStyles({
       width: '10px',
       height: '2px',
       backgroundColor: theme.colors.analytics.chart.comparisonLine,
+    },
+    pairedBar: {
+      ...sampleBase,
+      width: '8px',
+      height: '14px',
+      borderRadius: '4px',
+      backgroundColor: theme.colors.analytics.chart.previous,
     },
   },
   svg: {

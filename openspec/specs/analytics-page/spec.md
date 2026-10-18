@@ -207,7 +207,7 @@ row filling it. On screens narrower than 720px, every card SHALL take a whole ro
 | Sales by product | half | Top 5 products by Net sales: thumbnail, name, stock left, units sold, Net sales and change |
 | Sales by category | half | Top 6 categories by Net sales, as one bar each with Net sales and change |
 | Average order value over time | half | AOV headline and change; line chart with no area fill, a point on each value and the comparison series |
-| Orders over time | half | Orders headline and change; bar chart with the comparison series |
+| Orders over time | half | Orders headline and change; bar chart with a rounded comparison bar beside each current bar |
 | Orders by fulfillment status | half | Share of each current fulfillment status as one segmented bar and a list with count and percent; headline "N% delivered · M orders" |
 | New vs returning customers | half | Customers headline and change; stacked bars of new and returning per chart point; legend with the two totals |
 | Sales by coupon code | half | Top 5 codes by orders using code, with discount given |
@@ -388,6 +388,19 @@ show a dot on each point of the current-period line.
 
 - **WHEN** Average order value over time shows a range
 - **THEN** the chart is a line chart with no area fill, and each current point has a dot
+
+### Requirement: Orders over time bars
+
+The Orders over time chart SHALL show, for each point, the comparison bar and
+the current bar side by side, with the comparison bar on the left. The current
+bar SHALL use the primary chart color and the comparison bar a faded tint of
+it. Each bar SHALL have fully rounded ends. When there is no comparison, the
+chart SHALL show only the current bar.
+
+#### Scenario: Orders over time
+
+- **WHEN** Orders over time shows a range with a comparison
+- **THEN** each point has a faded comparison bar on the left and a dark current bar on the right, both with rounded ends
 
 ### Requirement: Comparison legend
 

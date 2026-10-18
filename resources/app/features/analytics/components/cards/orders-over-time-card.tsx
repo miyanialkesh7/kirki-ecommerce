@@ -33,6 +33,7 @@ const OrdersOverTimeCard = (props: CardProps<'orders_over_time'>) => {
             points={toChartPoints(data.series)}
             formatValue={formatNumber}
             legend={toChartLegend(range, compareRange)}
+            showPreviousBars
           />
         </>
       )}

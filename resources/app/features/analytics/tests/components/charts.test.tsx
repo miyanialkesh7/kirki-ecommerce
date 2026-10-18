@@ -217,6 +217,35 @@ describe('LineChart points', () => {
   });
 });
 
+describe('BarChart previous bars', () => {
+  afterEach(cleanup);
+
+  it('shows a mark for the comparison by default', () => {
+    renderInRoot(<BarChart label="Orders" points={points} formatValue={formatValue} />);
+
+    expect(screen.queryAllByTestId('bar-chart-previous-bar')).toHaveLength(0);
+  });
+
+  // Scenario: Orders over time
+  it('shows a rounded comparison bar beside each current bar when set', () => {
+    renderInRoot(
+      <BarChart label="Orders" points={points} formatValue={formatValue} showPreviousBars />,
+    );
+
+    const previous = screen.getAllByTestId('bar-chart-previous-bar');
+    const current = screen.getAllByTestId('bar-chart-current-bar');
+
+    expect(previous).toHaveLength(points.length);
+    expect(current).toHaveLength(points.length);
+    expect(Number(previous[0].getAttribute('x'))).toBeLessThan(
+      Number(current[0].getAttribute('x')),
+    );
+    expect(current[0].getAttribute('rx')).toBe(
+      String(Number(current[0].getAttribute('width')) / 2),
+    );
+  });
+});
+
 describe('buildScale', () => {
   it('uses round steps of 1, 2.5 or 5 from 0', () => {
     expect(buildScale([70000]).ticks).toEqual([0, 25000, 50000, 75000, 100000]);
