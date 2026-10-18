@@ -161,9 +161,6 @@ const TOOLTIPS: [string, string, string][] = [
   ],
 ];
 
-const ROUNDING_NOTE =
-  'Converted amounts are rounded per order, so lines can differ from the total by a few cents.';
-
 const renderPage = (search = '') => renderPageAt(`/analytics${search}`, <Analytics />);
 
 beforeEach(() => {
@@ -188,7 +185,7 @@ describe('Analytics page header', () => {
 });
 
 describe('Analytics controls', () => {
-  it('starts with Last 30 days with its dates, Previous period and no currency control', () => {
+  it('starts with Last 30 days with its dates and Previous period', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 9, 14, 12, 0, 0));
     renderPage();
@@ -197,61 +194,46 @@ describe('Analytics controls', () => {
 
     expect(dateControl).toHaveTextContent('Last 30 days');
     expect(dateControl).toHaveTextContent('Sep 15 – Oct 14, 2026');
-    expect(screen.getByTestId('analytics-compare')).toHaveTextContent('Previous period');
-    expect(lastParams()).toMatchObject({
-      range: 'last_30',
-      compare: 'previous_period',
-      currency: null,
-    });
+    expect(screen.getByTestId('analytics-compare')).toHaveTextContent(
+      'Aug 16 – Sep 14, 2026',
+    );
+    expect(lastParams()).toMatchObject({ range: 'last_30', compare: 'previous_period' });
   });
 
-  // Scenario: Single-currency store
-  it('hides the currency control when the store sells in one currency', () => {
+  // Scenario: No currency control
+  it('shows no currency control', () => {
     renderPage();
 
     expect(screen.queryByTestId('analytics-currency')).not.toBeInTheDocument();
   });
 
-  it('shows the currency control, with a tooltip that says it does not convert, when the store sells in more than one currency', () => {
-    mockData(buildOverview({ top: { currencies: ['USD', 'EUR'] } }));
+  it('shows the Customize button', () => {
     renderPage();
 
-    expect(screen.getByTestId('analytics-currency')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /filters orders by their currency.*does not convert/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Customize' })).toBeInTheDocument();
   });
 
   // Scenario: Change the range
-  it('reloads every metric for Last 7 days when the merchant selects it', () => {
+  it('reloads every metric for Last 7 days when the merchant applies it', () => {
     renderPage();
 
     fireEvent.click(screen.getByTestId('analytics-date-range'));
     fireEvent.click(screen.getByRole('button', { name: 'Last 7 days' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     expect(lastParams()).toMatchObject({ range: 'last_7' });
     expect(screen.getByTestId('location')).toHaveTextContent('range=last_7');
   });
 
-  it('reloads with no comparison when the merchant selects it', () => {
+  it('reloads with no comparison when the merchant applies it', () => {
     renderPage();
 
     fireEvent.click(screen.getByTestId('analytics-compare'));
     fireEvent.click(screen.getByRole('button', { name: 'No comparison' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     expect(lastParams()).toMatchObject({ compare: 'none' });
     expect(screen.getByTestId('location')).toHaveTextContent('compare=none');
-  });
-
-  it('reloads with the currency the merchant selects', () => {
-    mockData(buildOverview({ top: { currencies: ['USD', 'EUR'] } }));
-    renderPage();
-
-    fireEvent.click(screen.getByTestId('analytics-currency'));
-    fireEvent.click(screen.getByRole('button', { name: 'EUR' }));
-
-    expect(lastParams()).toMatchObject({ currency: 'EUR' });
-    expect(screen.getByTestId('location')).toHaveTextContent('currency=EUR');
   });
 
   // Scenario: Reload keeps the selection
@@ -490,25 +472,6 @@ describe('Analytics info tooltips', () => {
 
     expect(effectiveOpacity(icon)).toBe(1);
     expect((await screen.findAllByRole('tooltip'))[0]).toHaveTextContent(TOOLTIPS[7][2]);
-  });
-});
-
-describe('Analytics rounding note', () => {
-  // Scenario: EUR selected
-  it('shows the rounding note in the breakdown card when a non-base currency is selected', () => {
-    mockData(buildOverview({ top: { currencies: ['USD', 'EUR'] } }));
-    renderPage('?currency=EUR');
-
-    expect(
-      within(screen.getByTestId('card-total_sales_breakdown')).getByText(ROUNDING_NOTE),
-    ).toBeInTheDocument();
-  });
-
-  it('does not show the rounding note for the base currency', () => {
-    mockData(buildOverview({ top: { currencies: ['USD', 'EUR'] } }));
-    renderPage();
-
-    expect(screen.queryByText(ROUNDING_NOTE)).not.toBeInTheDocument();
   });
 });
 

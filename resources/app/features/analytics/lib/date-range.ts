@@ -1,4 +1,4 @@
-import { addDays, format, parseISO, subDays, subYears } from 'date-fns';
+import { addDays, differenceInCalendarDays, format, parseISO, subDays, subYears } from 'date-fns';
 
 import { __ } from '@/wpi18n';
 
@@ -32,7 +32,7 @@ const getRangePresetLabel = (preset: RangeKey) => {
     last_12_months: __('Last 12 months', 'kirki-ecommerce'),
     month_to_date: __('Month to date', 'kirki-ecommerce'),
     year_to_date: __('Year to date', 'kirki-ecommerce'),
-    custom: __('Custom range', 'kirki-ecommerce'),
+    custom: __('Custom', 'kirki-ecommerce'),
   };
 
   return labels[preset];
@@ -42,7 +42,7 @@ const getCompareLabel = (compare: CompareKey) => {
   const labels: Record<CompareKey, string> = {
     previous_period: __('Previous period', 'kirki-ecommerce'),
     previous_year: __('Previous year', 'kirki-ecommerce'),
-    custom: __('Custom range', 'kirki-ecommerce'),
+    custom: __('Custom', 'kirki-ecommerce'),
     none: __('No comparison', 'kirki-ecommerce'),
   };
 
@@ -74,12 +74,44 @@ const resolvePresetRange = (preset: RangePreset, today: Date): DayRange => {
   }
 };
 
+const findRangePreset = (range: DayRange, today: Date): RangePreset | null => {
+  return (
+    RANGE_PRESETS.find((preset) => {
+      const presetRange = resolvePresetRange(preset, today);
+
+      return presetRange.from === range.from && presetRange.to === range.to;
+    }) ?? null
+  );
+};
+
+const resolveComparisonRange = (compare: CompareKey, range: DayRange): DayRange | null => {
+  const from = parseISO(range.from);
+  const to = parseISO(range.to);
+
+  if (compare === 'previous_period') {
+    const previousTo = subDays(from, 1);
+    const days = differenceInCalendarDays(to, from);
+
+    return { from: format(subDays(previousTo, days), ISO_DAY), to: format(previousTo, ISO_DAY) };
+  }
+
+  if (compare === 'previous_year') {
+    return { from: format(subYears(from, 1), ISO_DAY), to: format(subYears(to, 1), ISO_DAY) };
+  }
+
+  return null;
+};
+
 const formatRangeDates = (from: string, to: string) => {
   const start = parseISO(from);
   const end = parseISO(to);
 
   if (from === to) {
     return format(end, 'MMM d, yyyy');
+  }
+
+  if (format(start, 'yyyy-MM') === format(end, 'yyyy-MM')) {
+    return `${format(start, 'MMM d')} – ${format(end, 'd, yyyy')}`;
   }
 
   if (start.getFullYear() === end.getFullYear()) {
@@ -91,10 +123,12 @@ const formatRangeDates = (from: string, to: string) => {
 
 export {
   COMPARISONS,
+  findRangePreset,
   formatRangeDates,
   getCompareLabel,
   getRangePresetLabel,
   RANGE_PRESETS,
+  resolveComparisonRange,
   resolvePresetRange,
 };
 export type { CompareKey, DayRange, RangeKey, RangePreset };

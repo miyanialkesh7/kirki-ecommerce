@@ -143,12 +143,5 @@ const getMetricDefinitions = (): Record<MetricKey, MetricDefinition> => ({
   },
 });
 
-const getCurrencyFilterInfo = () => {
-  return __(
-    'Filters orders by their currency. It does not convert amounts between currencies.',
-    'kirki-ecommerce',
-  );
-};
-
-export { getCurrencyFilterInfo, getMetricDefinitions };
+export { getMetricDefinitions };
 export type { MetricDefinition, MetricKey };

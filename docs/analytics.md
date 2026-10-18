@@ -37,18 +37,26 @@ page and its data endpoint, `GET /analytics/overview`.
 |---|---|---|
 | Date range | Today, Yesterday, Last 7 days, Last 30 days, Last 90 days, Last 12 months, Month to date, Year to date, or a custom range | Last 30 days |
 | Comparison | Previous period, Previous year, a custom range, or No comparison | Previous period |
-| Currency | The currencies of the orders. Shown only when the store has orders in more than one currency. | The base currency |
 
+- The **date range** control shows the preset name and the dates, for example
+  "Last 7 days Oct 8 – 14, 2026". It opens a panel with the presets on the
+  left, read-only Start and End fields, and a calendar with two months. Select
+  a preset or two days in the calendar, then select **Apply**. **Cancel**,
+  Escape, or a click outside the panel keeps the current range. When the
+  selected days match no preset, the **Custom** item is active. You cannot
+  select a day after today.
 - A range includes its first and last day. "Today" is today in the site time
   zone. A custom range cannot end after today.
 - **Previous period** is the same number of days, ending the day before the
   range starts. **Previous year** is the same dates one year earlier (Feb 29
   moves to Feb 28).
-- The **currency** control filters orders by their currency. It does not convert
-  amounts. With a currency selected, money uses the amounts that customers saw
-  in that currency. The Total sales breakdown card then shows a note that
-  converted amounts are rounded per order, so lines can differ from the total
-  by a few cents.
+- The **comparison** control shows "Compare:" and the comparison dates, or "No
+  comparison". Its panel shows the dates of Previous period and Previous year
+  under each option, and the footer shows the selected comparison range.
+  **Custom** opens Start and End fields and a calendar with two months; it
+  starts at the previous period. Select **Apply** to use the selection.
+- **Customize** is on the right of the controls. It does nothing yet.
+- All money is in the store's base currency. There is no currency filter.
 - The selection is kept in the page address (`#/analytics?range=...`), so a
   reload or a shared link shows the same view.
 - A chart shows one point for each day when the range has 31 days or fewer, one
@@ -239,6 +247,6 @@ The names are familiar, but the numbers do not match one-to-one:
   Shipping, so it is subtracted twice. This page uses the formula in section 5,
   so Home and Analytics can show different Net sales until the Home page is
   corrected.
-- **Currency filter does not convert.** It shows the orders that were placed in
-  one currency, with their own amounts. It does not convert orders placed in other
-  currencies.
+- **Base currency only.** All amounts are in the store's base currency. There is
+  no filter for the currency the customer paid in, and no view of the amounts in
+  that currency.

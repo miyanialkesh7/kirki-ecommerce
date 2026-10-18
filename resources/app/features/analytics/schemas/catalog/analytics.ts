@@ -163,7 +163,6 @@ const AnalyticsOverviewSchema = z.object({
     .nullish(),
   compare: z.object({ from: z.string(), to: z.string() }).nullish(),
   granularity: z.string().nullish(),
-  currencies: z.array(z.string()).nullish(),
   base_currency_code: z.string().nullish(),
   has_orders: z.boolean().nullish(),
   kpis: AnalyticsKpisSchema,

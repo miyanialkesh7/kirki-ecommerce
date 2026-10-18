@@ -4,7 +4,6 @@ namespace Kirki\Ecommerce\App\Http\Requests\Analytics;
 
 defined('ABSPATH') || exit;
 
-use Brick\Money\Currency;
 use Kirki\Ecommerce\App\Services\AnalyticsRangeResolver;
 use Kirki\Ecommerce\Framework\Exceptions\ValidationException;
 use Kirki\Ecommerce\Framework\Http\Request;
@@ -13,7 +12,7 @@ use Kirki\Ecommerce\Framework\Sanitizer;
 use function Kirki\Ecommerce\Framework\app;
 
 /**
- * Validates and sanitizes the range, comparison and currency of an analytics overview request.
+ * Validates and sanitizes the range and comparison of an analytics overview request.
  *
  * @since 1.0.0
  */
@@ -33,7 +32,6 @@ class AnalyticsOverviewRequest extends Request
             'compare' => 'nullable|string|in:' . implode(',', AnalyticsRangeResolver::COMPARISONS),
             'compare_from' => 'nullable|string',
             'compare_to' => 'nullable|string',
-            'currency' => 'nullable|string|size:3',
         ];
     }
 
@@ -51,7 +49,6 @@ class AnalyticsOverviewRequest extends Request
             'compare' => Sanitizer::TEXT,
             'compare_from' => Sanitizer::TEXT,
             'compare_to' => Sanitizer::TEXT,
-            'currency' => Sanitizer::TEXT,
         ];
     }
 
@@ -75,41 +72,9 @@ class AnalyticsOverviewRequest extends Request
             $errors = $this->validate_custom_comparison($errors);
         }
 
-        $errors = $this->validate_currency($errors);
-
         if (!empty($errors)) {
             throw ValidationException::with_errors($errors);
         }
-    }
-
-    /**
-     * Check that the currency filter, when set, is a known ISO 4217 code.
-     *
-     * @since 1.0.0
-     *
-     * @param array<string, string[]> $errors Errors found so far.
-     *
-     * @return array<string, string[]>
-     */
-    protected function validate_currency(array $errors)
-    {
-        $currency = (string) $this->input('currency');
-
-        if ($currency === '') {
-            return $errors;
-        }
-
-        try {
-            if (!preg_match('/^[A-Za-z]{3}$/', $currency)) {
-                throw new \InvalidArgumentException('The currency code must be 3 letters.');
-            }
-
-            Currency::of(strtoupper($currency));
-        } catch (\Exception $exception) {
-            $errors['currency'] = [__('Enter a known currency code.', 'kirki-ecommerce')];
-        }
-
-        return $errors;
     }
 
     /**

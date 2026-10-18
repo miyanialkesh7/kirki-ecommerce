@@ -1,204 +1,333 @@
-import { format, parseISO } from 'date-fns';
-import { Calendar as CalendarIcon, ChevronDown, Info } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { format, parseISO, startOfDay, startOfMonth, subMonths } from 'date-fns';
+import {
+  ArrowLeftRight,
+  Calendar as CalendarIcon,
+  ChevronDown,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
 import Button from '@/components/ui/button';
-import Calendar from '@/components/ui/calendar/calendar';
+import {
+  Calendar,
+  DateRangePicker,
+  type DateRangePreset,
+  type DateRangeValue,
+} from '@/components/ui/calendar';
+import { pickerPanelCss } from '@/components/ui/calendar/calendar-styles';
+import RangeFields from '@/components/ui/calendar/range-fields';
+import RangeFooter from '@/components/ui/calendar/range-footer';
 import Flex from '@/components/ui/flex';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import Text from '@/components/ui/text';
-import Tooltip from '@/components/ui/tooltip';
 import {
   type CompareKey,
+  COMPARISONS,
+  type DayRange,
+  findRangePreset,
   formatRangeDates,
   getCompareLabel,
   getRangePresetLabel,
   RANGE_PRESETS,
+  resolveComparisonRange,
   resolvePresetRange,
 } from '@/features/analytics/lib/date-range';
-import { getCurrencyFilterInfo } from '@/features/analytics/lib/metric-definitions';
 import type { AnalyticsParams } from '@/features/analytics/lib/url-state';
 import { theme } from '@/theme';
-import { defineStyles, scoped, uiFocusRing } from '@/theme/mixins';
-import { __ } from '@/wpi18n';
+import { defineStyles, scoped } from '@/theme/mixins';
+import { __, sprintf } from '@/wpi18n';
 
-const DAY_FORMAT = 'yyyy-MM-dd';
+const ISO_DAY = 'yyyy-MM-dd';
+const DISPLAY_FORMAT = 'MMM d, yyyy';
 
 type AnalyticsControlsProps = {
   params: AnalyticsParams;
   onChange: (params: AnalyticsParams) => void;
-  currencies: string[];
-  baseCurrency: string | null;
 };
 
-type OptionListProps = {
-  children: ReactNode;
-};
-
-const OptionList = (props: OptionListProps) => {
-  return <div css={scoped(styles.options)}>{props.children}</div>;
-};
-
-OptionList.displayName = 'OptionList';
-
-type OptionProps = {
-  label: string;
-  isSelected: boolean;
-  onSelect: () => void;
-};
-
-const Option = (props: OptionProps) => {
-  const { label, isSelected, onSelect } = props;
-
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      aria-current={isSelected ? 'true' : undefined}
-      cssOverride={{ ...styles.option, ...(isSelected ? styles.selectedOption : {}) }}
-      onClick={onSelect}
-    >
-      {label}
-    </Button>
-  );
-};
-
-Option.displayName = 'Option';
-
-type CustomRangeProps = {
+type PendingCompare = {
+  compare: CompareKey;
   from: string | null;
   to: string | null;
-  onApply: (from: string, to: string) => void;
 };
 
-const CustomRange = (props: CustomRangeProps) => {
-  const { from, to, onApply } = props;
-  const [isOpen, setIsOpen] = useState(false);
-  const selected: DateRange | undefined = from
-    ? { from: parseISO(from), to: to ? parseISO(to) : undefined }
-    : undefined;
-
-  if (!isOpen) {
-    return (
-      <Option label={getRangePresetLabel('custom')} isSelected={false} onSelect={() => setIsOpen(true)} />
-    );
+const toDayRange = (range: DateRange | undefined): DayRange | null => {
+  if (!range?.from || !range.to) {
+    return null;
   }
 
-  return (
-    <Calendar
-      mode="range"
-      numberOfMonths={1}
-      selected={selected}
-      disabled={{ after: new Date() }}
-      onSelect={(range) => {
-        if (range?.from && range.to) {
-          onApply(format(range.from, DAY_FORMAT), format(range.to, DAY_FORMAT));
-        }
-      }}
-    />
-  );
+  return { from: format(range.from, ISO_DAY), to: format(range.to, ISO_DAY) };
 };
 
-CustomRange.displayName = 'CustomRange';
+const getAppliedRange = (params: AnalyticsParams, today: Date): DayRange => {
+  if (params.range === 'custom' && params.from && params.to) {
+    return { from: params.from, to: params.to };
+  }
 
-type ControlTriggerProps = {
-  testId: string;
-  children: ReactNode;
+  return resolvePresetRange(params.range === 'custom' ? 'last_30' : params.range, today);
+};
+
+const getCompareRange = (pending: PendingCompare, range: DayRange): DayRange | null => {
+  if (pending.compare !== 'custom') {
+    return resolveComparisonRange(pending.compare, range);
+  }
+
+  if (!pending.from || !pending.to) {
+    return null;
+  }
+
+  return { from: pending.from, to: pending.to };
+};
+
+const ANALYTICS_PRESETS: DateRangePreset[] = RANGE_PRESETS.map((preset) => ({
+  key: preset,
+  label: getRangePresetLabel(preset),
+  getRange: (today) => {
+    const range = resolvePresetRange(preset, today);
+
+    return { from: parseISO(range.from), to: parseISO(range.to) };
+  },
+}));
+
+type ControlTriggerProps = ComponentProps<typeof Button> & {
+  icon: ReactNode;
 };
 
 const ControlTrigger = (props: ControlTriggerProps) => {
+  const { icon, children, ...rest } = props;
+
   return (
-    <PopoverTrigger asChild>
-      <Button variant="outline" data-testid={props.testId} cssOverride={styles.trigger}>
-        {props.children}
-        <ChevronDown size={14} aria-hidden="true" />
-      </Button>
-    </PopoverTrigger>
+    <Button variant="outline" cssOverride={styles.trigger} {...rest}>
+      {icon}
+      {children}
+      <ChevronDown size={14} aria-hidden="true" />
+    </Button>
   );
 };
 
 ControlTrigger.displayName = 'ControlTrigger';
 
-const DateRangeControl = (props: Pick<AnalyticsControlsProps, 'params' | 'onChange'>) => {
+const DateRangeControl = (props: AnalyticsControlsProps) => {
   const { params, onChange } = props;
-  const [isOpen, setIsOpen] = useState(false);
-  const range =
-    params.range === 'custom' && params.from && params.to
-      ? { from: params.from, to: params.to }
-      : resolvePresetRange(params.range === 'custom' ? 'last_30' : params.range, new Date());
+  const today = startOfDay(new Date());
+  const range = getAppliedRange(params, today);
+  const label = getRangePresetLabel(params.range);
 
-  const select = (next: Partial<AnalyticsParams>) => {
-    onChange({ ...params, ...next });
-    setIsOpen(false);
+  const handleChange = (value: DateRangeValue | null) => {
+    const next = toDayRange(
+      value ? { from: value.from ?? undefined, to: value.to ?? undefined } : undefined,
+    );
+
+    if (!next) {
+      return;
+    }
+
+    const preset = findRangePreset(next, today);
+
+    if (preset) {
+      onChange({ ...params, range: preset, from: null, to: null });
+      return;
+    }
+
+    onChange({ ...params, range: 'custom', from: next.from, to: next.to });
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <ControlTrigger testId="analytics-date-range">
-        <CalendarIcon size={14} aria-hidden="true" />
-        <span>{getRangePresetLabel(params.range)}</span>
-        <Text variant="tiny" color="subdued">
-          {formatRangeDates(range.from, range.to)}
-        </Text>
-      </ControlTrigger>
-      <PopoverContent align="start">
-        <OptionList>
-          {RANGE_PRESETS.map((preset) => (
-            <Option
-              key={preset}
-              label={getRangePresetLabel(preset)}
-              isSelected={params.range === preset}
-              onSelect={() => select({ range: preset, from: null, to: null })}
-            />
-          ))}
-          <CustomRange
-            from={params.from}
-            to={params.to}
-            onApply={(from, to) => select({ range: 'custom', from, to })}
-          />
-        </OptionList>
-      </PopoverContent>
-    </Popover>
+    <DateRangePicker
+      value={{ from: parseISO(range.from), to: parseISO(range.to) }}
+      onChange={handleChange}
+      presets={ANALYTICS_PRESETS}
+      customPresetLabel={getRangePresetLabel('custom')}
+      confirm
+      maxDate={today}
+      displayFormat={DISPLAY_FORMAT}
+      trigger={
+        <ControlTrigger
+          data-testid="analytics-date-range"
+          icon={<CalendarIcon size={14} aria-hidden="true" />}
+        >
+          <span css={scoped(styles.strong)}>{label}</span>
+          <Text variant="small" color="subdued">
+            {formatRangeDates(range.from, range.to)}
+          </Text>
+        </ControlTrigger>
+      }
+    />
   );
 };
 
 DateRangeControl.displayName = 'DateRangeControl';
 
-const COMPARE_OPTIONS: CompareKey[] = ['previous_period', 'previous_year', 'none'];
+type CompareOptionProps = {
+  label: string;
+  detail: string | null;
+  isSelected: boolean;
+  onSelect: () => void;
+};
 
-const CompareControl = (props: Pick<AnalyticsControlsProps, 'params' | 'onChange'>) => {
+const CompareOption = (props: CompareOptionProps) => {
+  const { label, detail, isSelected, onSelect } = props;
+
+  return (
+    <Button
+      variant={isSelected ? 'secondary' : 'ghost'}
+      aria-pressed={isSelected}
+      cssOverride={styles.option}
+      onClick={onSelect}
+    >
+      <span>{label}</span>
+      {detail && (
+        <Text variant="small" color="subdued">
+          {detail}
+        </Text>
+      )}
+    </Button>
+  );
+};
+
+CompareOption.displayName = 'CompareOption';
+
+const CompareControl = (props: AnalyticsControlsProps) => {
   const { params, onChange } = props;
+  const today = startOfDay(new Date());
+  const range = getAppliedRange(params, today);
+  const applied: PendingCompare = {
+    compare: params.compare,
+    from: params.compare_from,
+    to: params.compare_to,
+  };
+  const appliedRange = getCompareRange(applied, range);
   const [isOpen, setIsOpen] = useState(false);
+  const [pending, setPending] = useState<PendingCompare>(applied);
+  const pendingRange = getCompareRange(pending, range);
 
-  const select = (next: Partial<AnalyticsParams>) => {
-    onChange({ ...params, ...next });
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setPending(applied);
+    }
+
+    setIsOpen(nextOpen);
+  };
+
+  const selectOption = (compare: CompareKey) => {
+    if (compare !== 'custom') {
+      setPending({ compare, from: null, to: null });
+      return;
+    }
+
+    const start =
+      applied.compare === 'custom' && appliedRange
+        ? appliedRange
+        : resolveComparisonRange('previous_period', range);
+
+    setPending({ compare, from: start?.from ?? null, to: start?.to ?? null });
+  };
+
+  const selectDays = (next: DateRange | undefined) => {
+    if (!next?.from && pending.from) {
+      setPending({ ...pending, to: pending.from });
+      return;
+    }
+
+    setPending({
+      compare: 'custom',
+      from: next?.from ? format(next.from, ISO_DAY) : null,
+      to: next?.to ? format(next.to, ISO_DAY) : null,
+    });
+  };
+
+  const apply = () => {
+    const isCustom = pending.compare === 'custom';
+
+    onChange({
+      ...params,
+      compare: pending.compare,
+      compare_from: isCustom ? pending.from : null,
+      compare_to: isCustom ? pending.to : null,
+    });
     setIsOpen(false);
   };
 
+  const renderCustomRange = () => {
+    const from = pending.from ? parseISO(pending.from) : null;
+    const to = pending.to ? parseISO(pending.to) : null;
+    const lastDay = to ?? from ?? today;
+
+    return (
+      <Flex direction="column" gap={3}>
+        <RangeFields from={from} to={to} displayFormat={DISPLAY_FORMAT} />
+        <Calendar
+          mode="range"
+          min={1}
+          numberOfMonths={2}
+          selected={from ? { from, to: to ?? undefined } : undefined}
+          onSelect={selectDays}
+          defaultMonth={subMonths(startOfMonth(lastDay), 1)}
+          endMonth={today}
+          disabled={{ after: today }}
+          resetOnSelect
+        />
+      </Flex>
+    );
+  };
+
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <ControlTrigger testId="analytics-compare">
-        <span>{getCompareLabel(params.compare)}</span>
-      </ControlTrigger>
-      <PopoverContent align="start">
-        <OptionList>
-          {COMPARE_OPTIONS.map((compare) => (
-            <Option
-              key={compare}
-              label={getCompareLabel(compare)}
-              isSelected={params.compare === compare}
-              onSelect={() => select({ compare, compare_from: null, compare_to: null })}
-            />
-          ))}
-          <CustomRange
-            from={params.compare_from}
-            to={params.compare_to}
-            onApply={(from, to) =>
-              select({ compare: 'custom', compare_from: from, compare_to: to })
+    <Popover modal open={isOpen} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <ControlTrigger
+          data-testid="analytics-compare"
+          icon={<ArrowLeftRight size={14} aria-hidden="true" />}
+        >
+          {appliedRange ? (
+            <>
+              <Text variant="small" color="subdued">
+                {__('Compare:', 'kirki-ecommerce')}
+              </Text>
+              <span css={scoped(styles.strong)}>
+                {formatRangeDates(appliedRange.from, appliedRange.to)}
+              </span>
+            </>
+          ) : (
+            <span css={scoped(styles.strong)}>{getCompareLabel('none')}</span>
+          )}
+        </ControlTrigger>
+      </PopoverTrigger>
+      <PopoverContent align="start" cssOverride={pickerPanelCss}>
+        <Flex direction="column">
+          <Flex gap={2} cssOverride={styles.panelBody}>
+            <Flex direction="column" gap={1} cssOverride={styles.options}>
+              {COMPARISONS.map((compare) => {
+                const optionRange =
+                  compare === 'custom' ? null : resolveComparisonRange(compare, range);
+
+                return (
+                  <CompareOption
+                    key={compare}
+                    label={getCompareLabel(compare)}
+                    detail={optionRange ? formatRangeDates(optionRange.from, optionRange.to) : null}
+                    isSelected={pending.compare === compare}
+                    onSelect={() => selectOption(compare)}
+                  />
+                );
+              })}
+            </Flex>
+            {pending.compare === 'custom' && renderCustomRange()}
+          </Flex>
+          <RangeFooter
+            summary={
+              pendingRange
+                ? sprintf(
+                    __('Compared with %s', 'kirki-ecommerce'),
+                    formatRangeDates(pendingRange.from, pendingRange.to),
+                  )
+                : null
             }
+            applyDisabled={pending.compare === 'custom' && !pendingRange}
+            onCancel={() => setIsOpen(false)}
+            onApply={apply}
           />
-        </OptionList>
+        </Flex>
       </PopoverContent>
     </Popover>
   );
@@ -206,63 +335,19 @@ const CompareControl = (props: Pick<AnalyticsControlsProps, 'params' | 'onChange
 
 CompareControl.displayName = 'CompareControl';
 
-const CurrencyControl = (
-  props: Pick<AnalyticsControlsProps, 'params' | 'onChange' | 'currencies' | 'baseCurrency'>,
-) => {
-  const { params, onChange, currencies, baseCurrency } = props;
-  const [isOpen, setIsOpen] = useState(false);
-  const info = getCurrencyFilterInfo();
-
-  const select = (code: string) => {
-    onChange({ ...params, currency: code === baseCurrency ? null : code });
-    setIsOpen(false);
-  };
-
-  return (
-    <Flex align="center" gap={1}>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <ControlTrigger testId="analytics-currency">
-          <span>{params.currency ?? baseCurrency ?? currencies[0]}</span>
-        </ControlTrigger>
-        <PopoverContent align="start">
-          <OptionList>
-            {currencies.map((code) => (
-              <Option
-                key={code}
-                label={code}
-                isSelected={(params.currency ?? baseCurrency) === code}
-                onSelect={() => select(code)}
-              />
-            ))}
-          </OptionList>
-        </PopoverContent>
-      </Popover>
-      <Tooltip tip={info} position="top">
-        <button type="button" aria-label={info} css={scoped(styles.info)}>
-          <Info size={14} aria-hidden="true" />
-        </button>
-      </Tooltip>
-    </Flex>
-  );
-};
-
-CurrencyControl.displayName = 'CurrencyControl';
-
 const AnalyticsControls = (props: AnalyticsControlsProps) => {
-  const { params, onChange, currencies, baseCurrency } = props;
+  const { params, onChange } = props;
 
   return (
-    <Flex align="center" gap={2} wrap="wrap">
-      <DateRangeControl params={params} onChange={onChange} />
-      <CompareControl params={params} onChange={onChange} />
-      {currencies.length > 1 && (
-        <CurrencyControl
-          params={params}
-          onChange={onChange}
-          currencies={currencies}
-          baseCurrency={baseCurrency}
-        />
-      )}
+    <Flex align="center" justify="space-between" gap={2} wrap="wrap">
+      <Flex align="center" gap={2} wrap="wrap">
+        <DateRangeControl params={params} onChange={onChange} />
+        <CompareControl params={params} onChange={onChange} />
+      </Flex>
+      <Button variant="outline" cssOverride={styles.trigger}>
+        <SlidersHorizontal size={14} aria-hidden="true" />
+        {__('Customize', 'kirki-ecommerce')}
+      </Button>
     </Flex>
   );
 };
@@ -274,33 +359,25 @@ export default AnalyticsControls;
 const styles = defineStyles({
   trigger: {
     gap: theme.spacing[2],
+    backgroundColor: theme.colors.background.fill,
+  },
+  strong: {
+    ...theme.typography.small('semibold'),
+  },
+  panelBody: {
+    padding: theme.spacing[2],
   },
   options: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: theme.spacing[1],
+    minWidth: '240px',
   },
   option: {
-    justifyContent: 'flex-start',
-    width: '100%',
-  },
-  selectedOption: {
-    backgroundColor: theme.colors.analytics.status.neutralBackground,
-    color: theme.colors.analytics.status.neutralText,
-  },
-  info: {
-    display: 'inline-flex',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    padding: 0,
-    margin: 0,
-    border: 'none',
-    borderRadius: theme.radius.full,
-    background: 'transparent',
-    color: theme.colors.icon.secondary,
-    cursor: 'help',
-    '&:focus-visible': {
-      ...uiFocusRing(theme),
-    },
+    gap: 0,
+    width: '100%',
+    height: 'auto',
+    padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+    textAlign: 'left',
   },
 });

@@ -14,7 +14,6 @@ type AnalyticsParams = {
   compare: CompareKey;
   compare_from: string | null;
   compare_to: string | null;
-  currency: string | null;
 };
 
 const DEFAULT_ANALYTICS_PARAMS: AnalyticsParams = {
@@ -24,11 +23,9 @@ const DEFAULT_ANALYTICS_PARAMS: AnalyticsParams = {
   compare: 'previous_period',
   compare_from: null,
   compare_to: null,
-  currency: null,
 };
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const CURRENCY_PATTERN = /^[A-Za-z]{3}$/;
 
 const readDay = (value: string | null) => {
   if (!value || !DAY_PATTERN.test(value)) {
@@ -41,7 +38,6 @@ const readDay = (value: string | null) => {
 const parseAnalyticsParams = (query: URLSearchParams): AnalyticsParams => {
   const range = query.get('range');
   const compare = query.get('compare');
-  const currency = query.get('currency');
   const from = readDay(query.get('from'));
   const to = readDay(query.get('to'));
   const compareFrom = readDay(query.get('compare_from'));
@@ -68,10 +64,6 @@ const parseAnalyticsParams = (query: URLSearchParams): AnalyticsParams => {
     params.compare_to = compareTo;
   }
 
-  if (currency && CURRENCY_PATTERN.test(currency)) {
-    params.currency = currency.toUpperCase();
-  }
-
   return params;
 };
 
@@ -94,10 +86,6 @@ const serializeAnalyticsParams = (params: AnalyticsParams): URLSearchParams => {
   if (params.compare === 'custom' && params.compare_from && params.compare_to) {
     query.set('compare_from', params.compare_from);
     query.set('compare_to', params.compare_to);
-  }
-
-  if (params.currency) {
-    query.set('currency', params.currency);
   }
 
   return query;

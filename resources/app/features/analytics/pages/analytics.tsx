@@ -46,19 +46,17 @@ const CARD_SKELETON_SIZES: ('half' | 'full')[] = [
 
 type ReadyContentProps = {
   data: AnalyticsOverview;
-  params: AnalyticsParams;
 };
 
 const ReadyContent = (props: ReadyContentProps) => {
-  const { data, params } = props;
+  const { data } = props;
   const { kpis, cards } = data;
 
   const definitions = getMetricDefinitions();
   const hasComparison = !!data.compare;
   const isEmptyStore = data.has_orders === false;
-  const formatMinor = createMinorFormatter(params.currency ?? data.base_currency_code ?? 'USD');
+  const formatMinor = createMinorFormatter(data.base_currency_code ?? 'USD');
   const isEmpty = (key: EmptyCheckedCard) => isEmptyStore || hasNoCardData(key, cards);
-  const showRoundingNote = !!params.currency && params.currency !== data.base_currency_code;
 
   return (
     <>
@@ -120,7 +118,6 @@ const ReadyContent = (props: ReadyContentProps) => {
           data={cards.total_sales_breakdown}
           isEmpty={isEmpty('total_sales_breakdown')}
           formatMinor={formatMinor}
-          showRoundingNote={showRoundingNote}
         />
         <SalesByProductCard
           data={cards.sales_by_product}
@@ -211,7 +208,7 @@ const Analytics = () => {
       );
     }
 
-    return <ReadyContent data={data} params={params} />;
+    return <ReadyContent data={data} />;
   };
 
   return (
@@ -219,12 +216,7 @@ const Analytics = () => {
       <PageHeading text={__('Analytics', 'kirki-ecommerce')} />
       <PageContent>
         <Flex direction="column" gap={4} cssOverride={styles.content}>
-          <AnalyticsControls
-            params={params}
-            onChange={handleChange}
-            currencies={data?.currencies ?? []}
-            baseCurrency={data?.base_currency_code ?? null}
-          />
+          <AnalyticsControls params={params} onChange={handleChange} />
           {renderContent()}
         </Flex>
       </PageContent>

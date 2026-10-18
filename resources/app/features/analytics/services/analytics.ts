@@ -23,10 +23,6 @@ const buildQuery = (params: AnalyticsParams) => {
     query.compare_to = params.compare_to;
   }
 
-  if (params.currency) {
-    query.currency = params.currency;
-  }
-
   return query;
 };
 

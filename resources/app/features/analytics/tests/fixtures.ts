@@ -79,7 +79,6 @@ const buildOverview = (
     range,
     compare,
     granularity: 'day',
-    currencies: ['USD'],
     base_currency_code: 'USD',
     has_orders: true,
     kpis: {

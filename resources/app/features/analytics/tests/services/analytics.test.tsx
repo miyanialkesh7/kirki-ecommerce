@@ -50,7 +50,7 @@ describe('useAnalyticsOverviewQuery', () => {
     expect(result.current.data?.kpis?.orders.current).toBe(12);
   });
 
-  it('sends the custom dates and the currency when they are set', async () => {
+  it('sends the custom dates when they are set', async () => {
     let requested: URL | null = null;
     server.use(
       http.get(ENDPOINT, ({ request }) => {
@@ -65,7 +65,6 @@ describe('useAnalyticsOverviewQuery', () => {
       from: '2026-09-01',
       to: '2026-09-30',
       compare: 'none',
-      currency: 'EUR',
     } as const;
 
     const { result } = renderHook(() => useAnalyticsOverviewQuery(params), {
@@ -77,7 +76,7 @@ describe('useAnalyticsOverviewQuery', () => {
     expect(requested!.searchParams.get('from')).toBe('2026-09-01');
     expect(requested!.searchParams.get('to')).toBe('2026-09-30');
     expect(requested!.searchParams.get('compare')).toBe('none');
-    expect(requested!.searchParams.get('currency')).toBe('EUR');
+    expect(requested!.searchParams.has('currency')).toBe(false);
   });
 
   it('keeps a separate cache entry for every selection', async () => {

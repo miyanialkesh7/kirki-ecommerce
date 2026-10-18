@@ -65,12 +65,6 @@ class AnalyticsQueryService
     /** @var string Base currency code of the store. */
     protected $base_currency;
 
-    /** @var string|null Currency filter code, or null for the base currency. */
-    protected $currency;
-
-    /** @var string Money column prefix: base or invoiced. */
-    protected $money_prefix = 'base';
-
     /**
      * Create the service.
      *
@@ -86,7 +80,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Get the overview: key metrics and cards for a range, a comparison and a currency.
+     * Get the overview: key metrics and cards for a range and a comparison.
      *
      * @since 1.0.0
      *
@@ -98,8 +92,6 @@ class AnalyticsQueryService
     {
         $this->table_prefix = DB::connection()->get_table_prefix();
         $this->base_currency = Money::get_base_currency();
-        $this->currency = !empty($params['currency']) ? strtoupper($params['currency']) : null;
-        $this->money_prefix = $this->currency === null ? 'base' : 'invoiced';
 
         $range = $this->range_resolver->resolve($params);
         $has_comparison = $range['compare'] !== null;
@@ -117,7 +109,6 @@ class AnalyticsQueryService
             ],
             'compare' => $range['compare'],
             'granularity' => $range['granularity'],
-            'currencies' => $this->get_currencies(),
             'base_currency_code' => $this->base_currency,
             'has_orders' => $this->has_orders(),
             'kpis' => $this->build_kpis($range, $current, $previous),
@@ -267,7 +258,7 @@ class AnalyticsQueryService
                     COALESCE(SUM({$this->item_sum_sql('o', 'subtotal')}), 0) AS gross,
                     COALESCE(SUM({$this->item_sum_sql('o', 'net')}), 0) AS net,
                     COALESCE(SUM({$this->shipping_sql('o')}), 0) AS shipping,
-                    COALESCE(SUM(o.{$this->money_prefix}_tax_total), 0) AS taxes
+                    COALESCE(SUM(o.base_tax_total), 0) AS taxes
                 FROM {$this->table('orders')} o
                 WHERE {$scope}
                 GROUP BY bucket_key",
@@ -345,8 +336,8 @@ class AnalyticsQueryService
      *
      * The derived table reads the sales orders of all time that belong to the customers of the window. They are
      * found through the indexed customer_id column, and through the trimmed customer_email, so a guest email with
-     * extra spaces still matches. The email branch reads the sales orders without an index on the trimmed email. It does not use the currency filter, because the
-     * first paid order is the first one in any currency.
+     * extra spaces still matches. The email branch reads the sales orders without an index on the trimmed email. It reads orders in every order
+     * currency, because the first paid order is the first one in any currency.
      *
      * @since 1.0.0
      *
@@ -450,9 +441,7 @@ class AnalyticsQueryService
     protected function query_returns(array $bounds, $granularity)
     {
         $bucket = $granularity === null ? "''" : $this->bucket_sql($this->local_date_sql('r.updated_at', $bounds), $granularity);
-        $amount = $this->money_prefix === 'base'
-            ? 'CASE WHEN o.invoiced_total = 0 THEN 0 ELSE (2 * r.invoiced_amount * o.base_total + o.invoiced_total) DIV (2 * o.invoiced_total) END'
-            : 'r.invoiced_amount';
+        $amount = 'CASE WHEN o.invoiced_total = 0 THEN 0 ELSE (2 * r.invoiced_amount * o.base_total + o.invoiced_total) DIV (2 * o.invoiced_total) END';
         $order_scope = $this->order_currency_sql('o');
 
         $rows = DB::connection()->select(
@@ -629,7 +618,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Get the SQL that limits orders to the current base currency and the currency filter.
+     * Get the SQL that limits orders to the current base currency.
      *
      * @since 1.0.0
      *
@@ -639,15 +628,7 @@ class AnalyticsQueryService
      */
     protected function order_currency_sql(string $alias)
     {
-        $sql = "{$alias}.base_currency_code = %s";
-        $bindings = [$this->base_currency];
-
-        if ($this->currency !== null) {
-            $sql .= " AND {$alias}.currency_code = %s";
-            $bindings[] = $this->currency;
-        }
-
-        return [$sql, $bindings];
+        return ["{$alias}.base_currency_code = %s", [$this->base_currency]];
     }
 
     /**
@@ -705,8 +686,7 @@ class AnalyticsQueryService
      */
     protected function item_sum_sql(string $alias, string $column)
     {
-        $prefix = $this->money_prefix;
-        $expression = $column === 'subtotal' ? "i.{$prefix}_subtotal" : "i.{$prefix}_total - i.{$prefix}_tax_total";
+        $expression = $column === 'subtotal' ? 'i.base_subtotal' : 'i.base_total - i.base_tax_total';
 
         return "(SELECT SUM({$expression}) FROM {$this->table('order_items')} i WHERE i.order_id = {$alias}.id)";
     }
@@ -722,7 +702,7 @@ class AnalyticsQueryService
      */
     protected function shipping_sql(string $alias)
     {
-        return "{$alias}.{$this->money_prefix}_shipping_total - {$alias}.{$this->money_prefix}_shipping_tax_amount";
+        return "{$alias}.base_shipping_total - {$alias}.base_shipping_tax_amount";
     }
 
     /**
@@ -778,7 +758,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Build a money object in the selected currency.
+     * Build a money object in the base currency.
      *
      * @since 1.0.0
      *
@@ -788,7 +768,7 @@ class AnalyticsQueryService
      */
     protected function money(int $minor_amount)
     {
-        return Money::prepare_amount_object_from_minor($minor_amount, $this->currency);
+        return Money::prepare_amount_object_from_minor($minor_amount);
     }
 
     /**
@@ -1054,7 +1034,7 @@ class AnalyticsQueryService
     protected function build_sales_by_product(array $range)
     {
         $group_key = $this->product_group_key_sql();
-        $net = 'i.' . $this->money_prefix . '_total - i.' . $this->money_prefix . '_tax_total';
+        $net = 'i.base_total - i.base_tax_total';
         [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
 
         $rows = DB::connection()->select(
@@ -1121,7 +1101,7 @@ class AnalyticsQueryService
     protected function query_previous_product_net(array $compare, array $rows)
     {
         $group_key = $this->product_group_key_sql();
-        $net = 'i.' . $this->money_prefix . '_total - i.' . $this->money_prefix . '_tax_total';
+        $net = 'i.base_total - i.base_tax_total';
         [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($compare['from'], $compare['to']));
         $product_ids = [];
         $names = [];
@@ -1348,7 +1328,7 @@ class AnalyticsQueryService
      */
     protected function query_category_net(string $from, string $to)
     {
-        $net = 'i.' . $this->money_prefix . '_total - i.' . $this->money_prefix . '_tax_total';
+        $net = 'i.base_total - i.base_tax_total';
         [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($from, $to));
 
         $categorized = DB::connection()->select(
@@ -1407,7 +1387,7 @@ class AnalyticsQueryService
     protected function build_sales_by_coupon(array $range)
     {
         [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
-        $amount = 'c.' . $this->money_prefix . '_discount_amount';
+        $amount = 'c.base_discount_amount';
 
         $rows = DB::connection()->select(
             sprintf(
@@ -1444,18 +1424,16 @@ class AnalyticsQueryService
      */
     protected function build_sales_by_payment_method(array $range)
     {
-        $prefix = $this->money_prefix;
         [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
 
         $rows = DB::connection()->select(
             sprintf(
                 "SELECT o.payment_provider AS id, COUNT(*) AS orders,
-                        COALESCE(SUM(%1\$s + o.%2\$s_tax_total + %3\$s), 0) AS total_sales
-                    FROM %4\$s o
-                    WHERE %5\$s AND o.payment_provider IS NOT NULL
-                    GROUP BY o.payment_provider ORDER BY total_sales DESC, orders DESC, id ASC LIMIT %6\$d",
+                        COALESCE(SUM(%1\$s + o.base_tax_total + %2\$s), 0) AS total_sales
+                    FROM %3\$s o
+                    WHERE %4\$s AND o.payment_provider IS NOT NULL
+                    GROUP BY o.payment_provider ORDER BY total_sales DESC, orders DESC, id ASC LIMIT %5\$d",
                 $this->item_sum_sql('o', 'net'),
-                $prefix,
                 $this->shipping_sql('o'),
                 $this->table('orders'),
                 $scope,
@@ -1584,7 +1562,7 @@ class AnalyticsQueryService
      */
     protected function build_taxes_by_region(array $range)
     {
-        $amount = 't.' . $this->money_prefix . '_amount';
+        $amount = 't.base_amount';
         [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
 
         $rows = DB::connection()->select(
@@ -1770,25 +1748,6 @@ class AnalyticsQueryService
         }
 
         return $items;
-    }
-
-    /**
-     * List the currencies of the counted orders, the base currency first.
-     *
-     * @since 1.0.0
-     *
-     * @return string[]
-     */
-    protected function get_currencies()
-    {
-        $rows = DB::connection()->select(
-            sprintf("SELECT DISTINCT currency_code FROM %s WHERE payment_status <> '%s' AND base_currency_code = %%s ORDER BY currency_code ASC", $this->table('orders'), PaymentStatus::FAILED),
-            [$this->base_currency]
-        );
-
-        $others = array_values(array_diff(array_column($rows, 'currency_code'), [$this->base_currency]));
-
-        return array_merge([$this->base_currency], $others);
     }
 
     /**

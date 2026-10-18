@@ -9,9 +9,7 @@ import { theme } from '@/theme';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
-type TotalSalesBreakdownCardProps = CardProps<'total_sales_breakdown'> & {
-  showRoundingNote: boolean;
-};
+type TotalSalesBreakdownCardProps = CardProps<'total_sales_breakdown'>;
 
 const BOLD_ROWS = ['net_sales', 'total_sales'];
 const NEGATIVE_ROWS = ['discounts', 'returns'];
@@ -27,7 +25,7 @@ const getRowLabels = (): Record<string, string> => ({
 });
 
 const TotalSalesBreakdownCard = (props: TotalSalesBreakdownCardProps) => {
-  const { data, isEmpty, showRoundingNote } = props;
+  const { data, isEmpty } = props;
   const definition = getMetricDefinitions().total_sales_breakdown;
   const labels = getRowLabels();
 
@@ -66,14 +64,6 @@ const TotalSalesBreakdownCard = (props: TotalSalesBreakdownCardProps) => {
             );
           })}
         </ul>
-      )}
-      {showRoundingNote && (
-        <Text variant="tiny" color="subdued">
-          {__(
-            'Converted amounts are rounded per order, so lines can differ from the total by a few cents.',
-            'kirki-ecommerce',
-          )}
-        </Text>
       )}
     </AnalyticsCard>
   );

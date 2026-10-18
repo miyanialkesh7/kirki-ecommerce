@@ -136,42 +136,6 @@ class AnalyticsOverviewApiTest extends RestTestCase
     }
 
     /**
-     * Data for invalid currency codes: not a known ISO 4217 code, or not 3 letters.
-     *
-     * @return array
-     * @since 1.0.0
-     */
-    public function invalid_currencies(): array
-    {
-        return [
-            'unknown code' => ['ZZZ'],
-            'lower-case unknown code' => ['zzz'],
-            'two letters' => ['ab'],
-            'four letters' => ['USDX'],
-            'digits' => ['123'],
-        ];
-    }
-
-    /**
-     * Scenario "Unknown currency": a currency that is not 3 letters or not a known ISO 4217 code is 422 with an error on currency.
-     *
-     * @dataProvider invalid_currencies
-     *
-     * @param string $currency Currency parameter.
-     *
-     * @return void
-     * @since 1.0.0
-     */
-    public function test_unknown_currency_is_422_with_a_currency_error(string $currency): void
-    {
-        $payload = $this->assert_validation_error($this->request('GET', 'analytics/overview', ['range' => 'last_30', 'currency' => $currency]));
-
-        $this->assertArrayHasKey('currency', $payload['errors']);
-        $this->assertArrayNotHasKey('kpis', $payload);
-        $this->assertArrayNotHasKey('cards', $payload);
-    }
-
-    /**
      * Scenario "First visit": a store with orders gets the metrics in the first response, with no preparing state.
      *
      * @return void
@@ -221,12 +185,12 @@ class AnalyticsOverviewApiTest extends RestTestCase
 
         $data = $this->overview(['range' => 'last_30', 'compare' => 'previous_period']);
 
-        foreach (['range', 'compare', 'granularity', 'currencies', 'base_currency_code', 'has_orders', 'kpis', 'cards'] as $key) {
+        foreach (['range', 'compare', 'granularity', 'base_currency_code', 'has_orders', 'kpis', 'cards'] as $key) {
             $this->assertArrayHasKey($key, $data);
         }
         $this->assertArrayNotHasKey('preparing', $data);
         $this->assertTrue($data['has_orders']);
-        $this->assertSame(['USD'], $data['currencies']);
+        $this->assertArrayNotHasKey('currencies', $data);
         $this->assertSame(['preset', 'from', 'to', 'days'], array_keys($data['range']));
         $this->assertSame(['from', 'to'], array_keys($data['compare']));
         $this->assertSame('day', $data['granularity']);

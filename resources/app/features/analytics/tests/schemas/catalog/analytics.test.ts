@@ -15,7 +15,7 @@ describe('AnalyticsOverviewSchema', () => {
     const parsed = AnalyticsOverviewSchema.parse(buildOverview());
 
     expect(parsed.granularity).toBe('day');
-    expect(parsed.currencies).toEqual(['USD']);
+    expect(parsed).not.toHaveProperty('currencies');
     expect(parsed.kpis?.gross_sales.current_money_object?.display).toBe('$62.00');
     expect(parsed.kpis?.orders.current).toBe(12);
     expect(parsed.cards?.total_sales_breakdown.rows).toHaveLength(7);

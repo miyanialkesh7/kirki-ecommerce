@@ -458,12 +458,12 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
-     * Scenario "EUR filter": only EUR orders count, with their invoiced amounts, and refunds use their invoiced amount.
+     * Scenario "Currency parameter is ignored": a currency parameter does not filter orders, and every amount is in the base currency.
      *
      * @return void
      * @since 1.0.0
      */
-    public function test_currency_filter_uses_invoiced_amounts_of_that_currency(): void
+    public function test_currency_parameter_is_ignored(): void
     {
         if (!Currency::query()->where('code', 'EUR')->exists()) {
             Currency::create(['code' => 'EUR', 'name' => 'Euro', 'symbol' => 'EUR ', 'exchange_rate' => 0.9, 'is_base' => false, 'is_active' => true]);
@@ -491,13 +491,12 @@ class AnalyticsMetricsTest extends RestTestCase
         $this->assertSame(20000, $this->minor($all['kpis']['gross_sales']['current_money_object']));
         $this->assertSame(2000, $this->breakdown_minor($all, 'returns'));
         $this->assertSame(2, $all['kpis']['orders']['current']);
-        $this->assertSame(['USD', 'EUR'], $all['currencies']);
         $this->assertSame('USD', $all['base_currency_code']);
+        $this->assertArrayNotHasKey('currencies', $all);
 
-        $this->assertSame(9000, $this->minor($eur['kpis']['gross_sales']['current_money_object']));
-        $this->assertSame('EUR', $eur['kpis']['gross_sales']['current_money_object']['currency']['code']);
-        $this->assertSame(1800, $this->breakdown_minor($eur, 'returns'));
-        $this->assertSame(1, $eur['kpis']['orders']['current']);
+        $this->assertSame($all['kpis'], $eur['kpis']);
+        $this->assertSame($all['cards'], $eur['cards']);
+        $this->assertSame('USD', $eur['kpis']['gross_sales']['current_money_object']['currency']['code']);
     }
 
     /**
@@ -1099,29 +1098,6 @@ class AnalyticsMetricsTest extends RestTestCase
 
         $this->assertSame(0, $this->breakdown_minor($this->overview_between('2026-09-20', '2026-09-20'), 'returns'));
         $this->assertSame(1000, $this->breakdown_minor($this->overview_between('2026-09-25', '2026-09-25'), 'returns'));
-    }
-
-    /**
-     * Scenario "Unknown currency" and "Known currency without orders": JPY is valid, has no orders, and gives 200 with zero money in JPY.
-     *
-     * @return void
-     * @since 1.0.0
-     */
-    public function test_known_currency_without_orders_gives_zero_money_in_that_currency(): void
-    {
-        $this->make_sale('2026-10-01 10:00:00', 5000);
-
-        $data = $this->overview_between('2026-10-01', '2026-10-14', ['currency' => 'JPY']);
-
-        $gross = $data['kpis']['gross_sales']['current_money_object'];
-        $this->assertSame('JPY', $gross['currency']['code']);
-        $this->assertSame(0, $this->minor($gross));
-        $this->assertSame(0, $data['kpis']['orders']['current']);
-        foreach (['gross_sales', 'discounts', 'returns', 'net_sales', 'shipping', 'taxes', 'total_sales'] as $key) {
-            $this->assertSame(0, $this->breakdown_minor($data, $key), $key);
-            $this->assertSame('JPY', $this->breakdown_row($data, $key)['current_money_object']['currency']['code']);
-        }
-        $this->assertSame(0, $this->minor($data['cards']['total_sales_over_time']['total']['current_money_object']));
     }
 
     /**

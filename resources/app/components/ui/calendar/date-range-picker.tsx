@@ -1,21 +1,23 @@
 import type { CSSObject } from '@emotion/react';
-import { isSameDay, startOfDay } from 'date-fns';
-import { useId, useMemo, useState } from 'react';
+import { differenceInCalendarDays, isSameDay, startOfDay, startOfMonth, subMonths } from 'date-fns';
+import { type ReactElement, useId, useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
 import Calendar from '@/components/ui/calendar/calendar';
 import {
   clampPresetRange,
-  type DateRangePresetKey,
+  type DateRangePresetsInput,
   type DateRangePresetsPosition,
   resolveRangePresets,
 } from '@/components/ui/calendar/calendar-presets';
-import { pickerContentCss } from '@/components/ui/calendar/calendar-styles';
+import { pickerContentCss, pickerPanelCss } from '@/components/ui/calendar/calendar-styles';
 import { getDateBounds } from '@/components/ui/calendar/calendar-utils';
 import PickerTrigger, { type PickerTriggerSize } from '@/components/ui/calendar/picker-trigger';
+import RangeFields from '@/components/ui/calendar/range-fields';
+import RangeFooter from '@/components/ui/calendar/range-footer';
 import RangePresets, { type RangePresetOption } from '@/components/ui/calendar/range-presets';
 import Flex from '@/components/ui/flex';
-import { Popover, PopoverContent } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   applyTimeToDate,
   DATE_FORMATS,
@@ -24,8 +26,10 @@ import {
   START_OF_DAY_TIME,
   toValidDate,
 } from '@/libs/date';
+import { theme } from '@/theme';
+import { defineStyles } from '@/theme/mixins';
 import { noop } from '@/utils/function';
-import { __ } from '@/wpi18n';
+import { __, _n, sprintf } from '@/wpi18n';
 
 type DateRangeValue = {
   from: Date | null;
@@ -40,8 +44,11 @@ type DateRangePickerProps = {
   minDate?: Date | null;
   maxDate?: Date | null;
   numberOfMonths?: number;
-  presets?: boolean | DateRangePresetKey[];
+  presets?: DateRangePresetsInput;
   presetsPosition?: DateRangePresetsPosition;
+  customPresetLabel?: string;
+  confirm?: boolean;
+  trigger?: ReactElement;
   clearable?: boolean;
   size?: PickerTriggerSize;
   disabled?: boolean;
@@ -59,11 +66,13 @@ const PresetBar = ({
   onSelect,
   startDate,
   endDate,
+  statusLabel,
 }: {
-  presets: boolean | DateRangePresetKey[];
+  presets: DateRangePresetsInput;
   position: DateRangePresetsPosition;
   onSelect: (option: RangePresetOption) => void;
   value?: DateRangeValue | null;
+  statusLabel?: string;
   startDate: Date | null;
   endDate: Date | null;
 }) => {
@@ -104,6 +113,7 @@ const PresetBar = ({
       position={position}
       activeKey={activePresetKey}
       onSelect={onSelect}
+      statusLabel={statusLabel}
     />
   );
 };
@@ -118,6 +128,9 @@ const DateRangePicker = ({
   numberOfMonths = 2,
   presets = false,
   presetsPosition = 'left',
+  customPresetLabel,
+  confirm = false,
+  trigger,
   clearable = false,
   size = 'md',
   disabled = false,
@@ -127,6 +140,7 @@ const DateRangePicker = ({
 }: DateRangePickerProps) => {
   const [open, setOpen] = useState(false);
   const [pendingRange, setPendingRange] = useState<DateRange | undefined>(undefined);
+  const [month, setMonth] = useState<Date | undefined>(undefined);
   const calendarId = useId();
 
   const fromDate = applyTimeToDate(toValidDate(value?.from), START_OF_DAY_TIME);
@@ -154,7 +168,41 @@ const DateRangePicker = ({
     setOpen(false);
   };
 
+  const showRange = (range: DateRange | undefined) => {
+    const lastDay = range?.to ?? range?.from;
+
+    setPendingRange(range);
+    setMonth(lastDay ? subMonths(startOfMonth(lastDay), numberOfMonths - 1) : undefined);
+  };
+
+  const handleConfirmSelect = (nextRange: DateRange | undefined) => {
+    const pendingFrom = pendingRange?.from;
+
+    if (!nextRange?.from && pendingFrom) {
+      setPendingRange({ from: pendingFrom, to: pendingFrom });
+      return;
+    }
+
+    setPendingRange(nextRange);
+  };
+
+  const handleApply = () => {
+    if (pendingRange?.from && pendingRange.to) {
+      commitRange(pendingRange.from, pendingRange.to);
+    }
+  };
+
+  const handleCancel = () => {
+    setPendingRange(undefined);
+    setOpen(false);
+  };
+
   const handleSelect = (nextRange: DateRange | undefined) => {
+    if (confirm) {
+      handleConfirmSelect(nextRange);
+      return;
+    }
+
     const nextFrom = nextRange?.from ?? null;
     const nextTo = nextRange?.to ?? null;
 
@@ -180,9 +228,20 @@ const DateRangePicker = ({
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen && confirm) {
+      showRange(fromDate ? { from: fromDate, to: toDate ?? undefined } : undefined);
+      setOpen(true);
+      return;
+    }
+
     if (nextOpen) {
       setPendingRange(undefined);
       setOpen(true);
+      return;
+    }
+
+    if (confirm) {
+      handleCancel();
       return;
     }
 
@@ -205,6 +264,11 @@ const DateRangePicker = ({
       return;
     }
 
+    if (confirm) {
+      showRange(option.range);
+      return;
+    }
+
     handleSelect(option.range);
   };
 
@@ -220,57 +284,103 @@ const DateRangePicker = ({
     return `${fromLabel}${RANGE_DELIMITER}${toLabel}`;
   };
 
+  const pendingFrom = pendingRange?.from ?? null;
+  const pendingTo = pendingRange?.to ?? null;
+  const pendingValue = { from: pendingFrom, to: pendingTo };
+  const pendingDays =
+    pendingFrom && pendingTo ? differenceInCalendarDays(pendingTo, pendingFrom) + 1 : 0;
+
+  const renderPresetBar = () => {
+    return (
+      <PresetBar
+        presets={presets}
+        onSelect={handlePresetSelect}
+        position={presetsPosition}
+        startDate={startDate}
+        endDate={endDate}
+        value={confirm ? pendingValue : value}
+        statusLabel={customPresetLabel}
+      />
+    );
+  };
+
+  const renderCalendar = () => {
+    return (
+      <Calendar
+        mode="range"
+        min={1}
+        numberOfMonths={numberOfMonths}
+        selected={selectedRange}
+        onSelect={handleSelect}
+        defaultMonth={fromDate ?? undefined}
+        {...(confirm ? { month, onMonthChange: setMonth } : {})}
+        startMonth={startDate ?? undefined}
+        endMonth={endDate ?? undefined}
+        disabled={disabledDays}
+        resetOnSelect
+      />
+    );
+  };
+
+  const renderConfirmContent = () => {
+    return (
+      <Flex direction="column">
+        <Flex cssOverride={styles.panelBody}>
+          {presetsPosition === 'left' && renderPresetBar()}
+          <Flex direction="column" gap={3} cssOverride={styles.panelMain}>
+            <RangeFields from={pendingFrom} to={pendingTo} displayFormat={displayFormat} />
+            {renderCalendar()}
+          </Flex>
+          {presetsPosition !== 'left' && renderPresetBar()}
+        </Flex>
+        <RangeFooter
+          summary={
+            pendingDays > 0
+              ? sprintf(_n('%d day', '%d days', pendingDays, 'kirki-ecommerce'), pendingDays)
+              : null
+          }
+          applyDisabled={!pendingFrom || !pendingTo}
+          onCancel={handleCancel}
+          onApply={handleApply}
+        />
+      </Flex>
+    );
+  };
+
   return (
     <Popover modal open={open} onOpenChange={handleOpenChange}>
-      <PickerTrigger
-        id={id}
-        controlsId={calendarId}
-        ariaHasPopup="grid"
-        open={open}
-        label={triggerLabel()}
-        placeholder={placeholder}
-        clearLabel={__('Clear date range', 'kirki-ecommerce')}
-        onClear={showClear ? handleClear : undefined}
-        size={size}
-        disabled={disabled}
-        error={error}
-        cssOverride={cssOverride}
-      />
-      <PopoverContent id={calendarId} align="start" cssOverride={pickerContentCss}>
-        <Flex direction={presetsPosition === 'bottom' ? 'column' : 'row'} gap={2}>
-          {presetsPosition === 'left' && (
-            <PresetBar
-              presets={presets}
-              onSelect={handlePresetSelect}
-              position={presetsPosition}
-              startDate={startDate}
-              endDate={endDate}
-              value={value}
-            />
-          )}
-          <Calendar
-            mode="range"
-            min={1}
-            numberOfMonths={numberOfMonths}
-            selected={selectedRange}
-            onSelect={handleSelect}
-            defaultMonth={fromDate ?? undefined}
-            startMonth={startDate ?? undefined}
-            endMonth={endDate ?? undefined}
-            disabled={disabledDays}
-            resetOnSelect
-          />
-          {presetsPosition !== 'left' && (
-            <PresetBar
-              presets={presets}
-              onSelect={handlePresetSelect}
-              position={presetsPosition}
-              startDate={startDate}
-              endDate={endDate}
-              value={value}
-            />
-          )}
-        </Flex>
+      {trigger ? (
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      ) : (
+        <PickerTrigger
+          id={id}
+          controlsId={calendarId}
+          ariaHasPopup="grid"
+          open={open}
+          label={triggerLabel()}
+          placeholder={placeholder}
+          clearLabel={__('Clear date range', 'kirki-ecommerce')}
+          onClear={showClear ? handleClear : undefined}
+          size={size}
+          disabled={disabled}
+          error={error}
+          cssOverride={cssOverride}
+        />
+      )}
+      <PopoverContent
+        id={calendarId}
+        align="start"
+        cssOverride={confirm ? pickerPanelCss : pickerContentCss}
+      >
+        {confirm ? (
+          renderConfirmContent()
+        ) : (
+          <Flex direction={presetsPosition === 'bottom' ? 'column' : 'row'} gap={2}>
+            {presetsPosition === 'left' && renderPresetBar()}
+            {renderCalendar()}
+            {presetsPosition !== 'left' && renderPresetBar()}
+          </Flex>
+        )}
       </PopoverContent>
     </Popover>
   );
@@ -280,3 +390,14 @@ DateRangePicker.displayName = 'DateRangePicker';
 
 export default DateRangePicker;
 export type { DateRangePickerProps, DateRangeValue };
+
+const styles = defineStyles({
+  panelBody: {
+    '& > [data-slot="range-presets"]': {
+      padding: theme.spacing[2],
+    },
+  },
+  panelMain: {
+    padding: theme.spacing[2],
+  },
+});

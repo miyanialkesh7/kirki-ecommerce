@@ -7,7 +7,7 @@ import {
 } from '@/features/analytics/lib/url-state';
 
 describe('DEFAULT_ANALYTICS_PARAMS', () => {
-  it('is Last 30 days, Previous period and the base currency', () => {
+  it('is Last 30 days and Previous period', () => {
     expect(DEFAULT_ANALYTICS_PARAMS).toEqual({
       range: 'last_30',
       from: null,
@@ -15,7 +15,6 @@ describe('DEFAULT_ANALYTICS_PARAMS', () => {
       compare: 'previous_period',
       compare_from: null,
       compare_to: null,
-      currency: null,
     });
   });
 });
@@ -25,17 +24,20 @@ describe('parseAnalyticsParams', () => {
     expect(parseAnalyticsParams(new URLSearchParams(''))).toEqual(DEFAULT_ANALYTICS_PARAMS);
   });
 
-  it('reads a preset, a comparison and a currency', () => {
-    const params = parseAnalyticsParams(
-      new URLSearchParams('range=year_to_date&compare=none&currency=EUR'),
-    );
+  it('reads a preset and a comparison', () => {
+    const params = parseAnalyticsParams(new URLSearchParams('range=year_to_date&compare=none'));
 
     expect(params).toEqual({
       ...DEFAULT_ANALYTICS_PARAMS,
       range: 'year_to_date',
       compare: 'none',
-      currency: 'EUR',
     });
+  });
+
+  it('ignores a currency from an old link', () => {
+    expect(parseAnalyticsParams(new URLSearchParams('currency=EUR'))).toEqual(
+      DEFAULT_ANALYTICS_PARAMS,
+    );
   });
 
   it('reads a custom range with its dates', () => {
@@ -84,11 +86,9 @@ describe('serializeAnalyticsParams', () => {
     const query = serializeAnalyticsParams({
       ...DEFAULT_ANALYTICS_PARAMS,
       range: 'last_7',
-      currency: 'EUR',
     });
 
     expect(query.get('range')).toBe('last_7');
-    expect(query.get('currency')).toBe('EUR');
     expect(query.has('compare')).toBe(false);
     expect(query.has('from')).toBe(false);
   });
@@ -121,7 +121,6 @@ describe('serializeAnalyticsParams', () => {
         compare: 'custom',
         compare_from: '2026-06-01',
         compare_to: '2026-06-30',
-        currency: 'EUR',
       },
     ] as const;
 
