@@ -2,29 +2,33 @@ import type { ReactNode } from 'react';
 
 import {
   type ActivePointHandlers,
+  buildLayout,
   CHART_HEIGHT,
-  CHART_WIDTH,
+  type ChartLayout,
+  type ChartLegendRange,
   type ChartPoint,
   type ChartScale,
+  DEFAULT_CHART_WIDTH,
+  estimateTextWidth,
   formatPointValue,
-  getSlotCenter,
-  getSlotWidth,
-  GRID_LINES,
-  PLOT_LEFT,
-  PLOT_RIGHT,
+  getXLabelIndexes,
 } from '@/features/analytics/components/charts/chart-geometry';
+import useElementWidth from '@/features/analytics/hooks/use-element-width';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 
+const X_LABEL_BASELINE = CHART_HEIGHT - 8;
+const Y_LABEL_OFFSET = 4;
+
 type HitAreasProps = {
   points: ChartPoint[];
+  layout: ChartLayout;
   formatValue: (value: number) => string;
   getHandlers: ActivePointHandlers;
 };
 
 const HitAreas = (props: HitAreasProps) => {
-  const { points, formatValue, getHandlers } = props;
-  const slotWidth = getSlotWidth(points.length);
+  const { points, layout, formatValue, getHandlers } = props;
 
   return (
     <>
@@ -34,11 +38,11 @@ const HitAreas = (props: HitAreasProps) => {
           data-testid={`chart-point-${index}`}
           role="img"
           tabIndex={0}
-          aria-label={`${point.label}: ${formatPointValue(point.value, formatValue)}`}
-          x={PLOT_LEFT + slotWidth * index}
+          aria-label={`${point.span_label ?? point.label}: ${formatPointValue(point.value, formatValue)}`}
+          x={layout.plotLeft + layout.slotWidth * index}
           y={0}
-          width={slotWidth}
-          height={CHART_HEIGHT}
+          width={layout.slotWidth}
+          height={layout.height}
           css={scoped(styles.hitArea)}
           {...getHandlers(index)}
         />
@@ -51,29 +55,38 @@ HitAreas.displayName = 'HitAreas';
 
 type GridProps = {
   scale: ChartScale;
+  layout: ChartLayout;
+  formatAxisValue: (value: number) => string;
 };
 
 const Grid = (props: GridProps) => {
-  const { scale } = props;
-  const lines = Array.from({ length: GRID_LINES + 1 }, (_, index) => {
-    const value = scale.min + ((scale.max - scale.min) / GRID_LINES) * index;
-    return scale.toY(value);
-  });
-  const baseline = scale.toY(0);
+  const { scale, layout, formatAxisValue } = props;
 
   return (
-    <g aria-hidden="true">
-      {lines.map((y) => (
-        <line
-          key={y}
-          x1={PLOT_LEFT}
-          x2={PLOT_RIGHT}
-          y1={y}
-          y2={y}
-          css={scoped(styles.gridLine)}
-        />
-      ))}
-      <line x1={PLOT_LEFT} x2={PLOT_RIGHT} y1={baseline} y2={baseline} css={scoped(styles.baseLine)} />
+    <g aria-hidden="true" data-testid="chart-y-axis">
+      {scale.ticks.map((tick) => {
+        const y = scale.toY(tick);
+
+        return (
+          <g key={tick}>
+            <line
+              x1={layout.plotLeft}
+              x2={layout.plotRight}
+              y1={y}
+              y2={y}
+              css={scoped(tick === 0 ? styles.baseLine : styles.gridLine)}
+            />
+            <text
+              x={layout.plotLeft - Y_LABEL_OFFSET * 2}
+              y={y + Y_LABEL_OFFSET}
+              textAnchor="end"
+              css={scoped(styles.axisLabel)}
+            >
+              {formatAxisValue(tick)}
+            </text>
+          </g>
+        );
+      })}
     </g>
   );
 };
@@ -82,27 +95,32 @@ Grid.displayName = 'Grid';
 
 type AxisLabelsProps = {
   points: ChartPoint[];
+  layout: ChartLayout;
 };
 
 const AxisLabels = (props: AxisLabelsProps) => {
-  const { points } = props;
-
-  if (points.length === 0) {
-    return null;
-  }
-
-  const last = points.length - 1;
+  const { points, layout } = props;
+  const indexes = getXLabelIndexes(points.length, layout.plotRight - layout.plotLeft);
 
   return (
-    <g aria-hidden="true">
-      <text x={getSlotCenter(0, points.length)} y={CHART_HEIGHT - 8} textAnchor="start" css={scoped(styles.axisLabel)}>
-        {points[0].label}
-      </text>
-      {last > 0 && (
-        <text x={getSlotCenter(last, points.length)} y={CHART_HEIGHT - 8} textAnchor="end" css={scoped(styles.axisLabel)}>
-          {points[last].label}
-        </text>
-      )}
+    <g aria-hidden="true" data-testid="chart-x-axis">
+      {indexes.map((index) => {
+        const text = points[index].label;
+        const halfWidth = estimateTextWidth(text) / 2;
+        const x = Math.min(Math.max(layout.getX(index), halfWidth), layout.width - halfWidth);
+
+        return (
+          <text
+            key={points[index].date}
+            x={x}
+            y={X_LABEL_BASELINE}
+            textAnchor="middle"
+            css={scoped(styles.axisLabel)}
+          >
+            {text}
+          </text>
+        );
+      })}
     </g>
   );
 };
@@ -111,20 +129,18 @@ AxisLabels.displayName = 'AxisLabels';
 
 type ChartTooltipProps = {
   point: ChartPoint;
-  index: number;
-  count: number;
+  left: number;
   formatValue: (value: number) => string;
   segmentNames?: string[];
 };
 
 const ChartTooltip = (props: ChartTooltipProps) => {
-  const { point, index, count, formatValue, segmentNames } = props;
-  const left = (getSlotCenter(index, count) / CHART_WIDTH) * 100;
+  const { point, left, formatValue, segmentNames } = props;
   const hasComparison = point.previous_value !== null && point.previous_value !== undefined;
 
   return (
     <div role="tooltip" css={scoped(styles.tooltip)} style={{ left: `${left}%` }}>
-      <span css={scoped(styles.tooltipLabel)}>{point.label}</span>
+      <span css={scoped(styles.tooltipLabel)}>{point.span_label ?? point.label}</span>
       <TooltipValues
         value={point.value}
         segments={point.segments}
@@ -133,7 +149,9 @@ const ChartTooltip = (props: ChartTooltipProps) => {
       />
       {hasComparison && (
         <>
-          <span css={scoped(styles.tooltipLabel)}>{point.previous_label}</span>
+          <span css={scoped(styles.tooltipLabel)}>
+            {point.previous_span_label ?? point.previous_label}
+          </span>
           <TooltipValues
             value={point.previous_value}
             segments={point.previous_segments}
@@ -175,51 +193,174 @@ const TooltipValues = (props: TooltipValuesProps) => {
 
 TooltipValues.displayName = 'TooltipValues';
 
+type ChartLegendSample = 'line' | 'bar' | 'dot';
+
+type ChartLegendProps = {
+  legend: ChartLegendRange;
+  sample: ChartLegendSample;
+};
+
+const ChartLegend = (props: ChartLegendProps) => {
+  const { legend, sample } = props;
+  const items = [
+    { key: 'current', text: legend.current, isPrevious: false },
+    ...(legend.previous ? [{ key: 'previous', text: legend.previous, isPrevious: true }] : []),
+  ];
+
+  return (
+    <ul data-testid="chart-legend" css={scoped(styles.legend)}>
+      {items.map((item) => (
+        <li key={item.key} data-series={item.key} css={scoped(styles.legendItem)}>
+          <span
+            aria-hidden="true"
+            css={scoped(
+              item.isPrevious ? styles.previousSamples[sample] : styles.currentSamples[sample],
+            )}
+          />
+          {item.text}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+ChartLegend.displayName = 'ChartLegend';
+
 type ChartFrameProps = {
   label: string;
   points: ChartPoint[];
+  scale: ChartScale;
   activeIndex: number | null;
+  getHandlers: ActivePointHandlers;
   formatValue: (value: number) => string;
+  formatAxisValue: (value: number) => string;
   segmentNames?: string[];
-  children: ReactNode;
+  legend?: ChartLegendRange | null;
+  legendSample?: ChartLegendSample;
+  children: (layout: ChartLayout) => ReactNode;
 };
 
 const ChartFrame = (props: ChartFrameProps) => {
-  const { label, points, activeIndex, formatValue, segmentNames, children } = props;
+  const {
+    label,
+    points,
+    scale,
+    activeIndex,
+    getHandlers,
+    formatValue,
+    formatAxisValue,
+    segmentNames,
+    legend,
+    legendSample = 'line',
+    children,
+  } = props;
+  const { ref, width } = useElementWidth(DEFAULT_CHART_WIDTH);
+  const layout = buildLayout(width, points.length, scale.ticks.map(formatAxisValue));
   const activePoint = activeIndex === null ? null : points[activeIndex];
 
   return (
-    <div css={scoped(styles.frame)}>
+    <div ref={ref} css={scoped(styles.frame)}>
       <svg
         role="img"
         aria-label={label}
-        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-        preserveAspectRatio="none"
+        viewBox={`0 0 ${layout.width} ${layout.height}`}
         css={scoped(styles.svg)}
       >
-        {children}
+        <Grid scale={scale} layout={layout} formatAxisValue={formatAxisValue} />
+        {children(layout)}
+        <AxisLabels points={points} layout={layout} />
+        <HitAreas
+          points={points}
+          layout={layout}
+          formatValue={formatValue}
+          getHandlers={getHandlers}
+        />
       </svg>
       {activePoint && activeIndex !== null && (
         <ChartTooltip
           point={activePoint}
-          index={activeIndex}
-          count={points.length}
+          left={(layout.getX(activeIndex) / layout.width) * 100}
           formatValue={formatValue}
           segmentNames={segmentNames}
         />
       )}
+      {legend && <ChartLegend legend={legend} sample={legendSample} />}
     </div>
   );
 };
 
 ChartFrame.displayName = 'ChartFrame';
 
-export { AxisLabels, ChartFrame, Grid, HitAreas };
+export { ChartFrame };
+
+const sampleBase = {
+  display: 'inline-block',
+  flexShrink: 0,
+};
 
 const styles = defineStyles({
   frame: {
     position: 'relative',
     width: '100%',
+  },
+  legend: {
+    listStyle: 'none',
+    margin: `${theme.spacing[2]} 0 0`,
+    padding: 0,
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: theme.spacing[4],
+  },
+  legendItem: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.spacing[2],
+    margin: 0,
+    color: theme.colors.text.subdued,
+    ...theme.typography.small(),
+  },
+  currentSamples: {
+    line: {
+      ...sampleBase,
+      width: '16px',
+      height: '2px',
+      backgroundColor: theme.colors.analytics.chart.primary,
+    },
+    bar: {
+      ...sampleBase,
+      width: '10px',
+      height: '10px',
+      borderRadius: '2px',
+      backgroundColor: theme.colors.analytics.chart.primary,
+    },
+    dot: {
+      ...sampleBase,
+      width: '9px',
+      height: '9px',
+      borderRadius: theme.radius.full,
+      backgroundColor: theme.colors.analytics.chart.primary,
+    },
+  },
+  previousSamples: {
+    line: {
+      ...sampleBase,
+      width: '16px',
+      borderTop: `2px dashed ${theme.colors.analytics.chart.comparisonLine}`,
+    },
+    bar: {
+      ...sampleBase,
+      width: '10px',
+      height: '2px',
+      backgroundColor: theme.colors.analytics.chart.comparisonLine,
+    },
+    dot: {
+      ...sampleBase,
+      width: '7px',
+      height: '7px',
+      borderRadius: theme.radius.full,
+      backgroundColor: theme.colors.analytics.chart.previous,
+    },
   },
   svg: {
     display: 'block',

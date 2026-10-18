@@ -194,6 +194,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
         $this->assertSame(['preset', 'from', 'to', 'days'], array_keys($data['range']));
         $this->assertSame(['from', 'to'], array_keys($data['compare']));
         $this->assertSame('day', $data['granularity']);
+        $this->assertArrayNotHasKey('granularity_size', $data);
 
         $this->assertSame(['gross_sales', 'orders', 'average_order_value', 'returning_customer_rate'], array_keys($data['kpis']));
         $this->assert_money_metric($data['kpis']['gross_sales']);
@@ -201,7 +202,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
         $this->assert_count_metric($data['kpis']['orders']);
         $this->assert_count_metric($data['kpis']['returning_customer_rate']);
         $this->assertCount(30, $data['kpis']['gross_sales']['series']);
-        $this->assertSame(['date', 'label', 'value', 'previous_date', 'previous_label', 'previous_value'], array_keys($data['kpis']['gross_sales']['series'][0]));
+        $this->assertSame(['date', 'label', 'span_label', 'value', 'previous_date', 'previous_label', 'previous_span_label', 'previous_value'], array_keys($data['kpis']['gross_sales']['series'][0]));
 
         $this->assertSame([
             'total_sales_over_time',
@@ -241,7 +242,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
         $this->assert_count_metric($cards['new_vs_returning_customers']['total']);
         $this->assertArrayHasKey('new_total', $cards['new_vs_returning_customers']);
         $this->assertArrayHasKey('returning_total', $cards['new_vs_returning_customers']);
-        $this->assertSame(['date', 'label', 'new', 'returning', 'previous_date', 'previous_label', 'previous_new', 'previous_returning'], array_keys($cards['new_vs_returning_customers']['series'][0]));
+        $this->assertSame(['date', 'label', 'span_label', 'new', 'returning', 'previous_date', 'previous_label', 'previous_span_label', 'previous_new', 'previous_returning'], array_keys($cards['new_vs_returning_customers']['series'][0]));
         $this->assertArrayHasKey('items', $cards['sales_by_coupon_code']);
         $this->assertArrayHasKey('items', $cards['sales_by_payment_method']);
         $this->assertArrayHasKey('items', $cards['taxes_by_region']);

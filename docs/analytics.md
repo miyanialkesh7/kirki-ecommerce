@@ -59,11 +59,31 @@ page and its data endpoint, `GET /analytics/overview`.
 - All money is in the store's base currency. There is no currency filter.
 - The selection is kept in the page address (`#/analytics?range=...`), so a
   reload or a shared link shows the same view.
-- A chart shows one point for each day when the range has 31 days or fewer, one
-  for each week when it has 32 to 186 days, and one for each month when it has
-  more. The first and last week or month can be partial. Weeks start on the
-  day set in the WordPress *Week Starts On* setting (wp-admin **Settings →
-  General**).
+- The charts group the range into points by its length:
+
+  | Days in the range | One chart point | Example |
+  |---|---|---|
+  | 1 to 31 | one day | Last 30 days: 30 points |
+  | 32 to 186 | one week | Last 90 days: 13 or 14 points |
+  | more than 186 | one month | Last 12 months: 12 or 13 points, 2 years: 24 points |
+
+  Weeks start on
+  the day set in the WordPress *Week Starts On* setting (wp-admin **Settings →
+  General**), and months on day 1. The first and last point can be partial.
+  The comparison uses the same grouping, and its points are matched to the
+  range points by position.
+- The chart shows every point. The x-axis shows the first day of a point
+  ("Oct 8", or "Oct 2026" for months) on every Nth point from the first, with
+  N = points ÷ 12, rounded up: every 3rd day for 30 days, every 2nd week for
+  13 or 14 weeks, every month for 12 months. On a narrow card N is larger, so
+  the labels do not overlap. The steps are equal, so the last point can have
+  no label. The tooltip shows the full span of the point, such as
+  "Oct 12 – Oct 18, 2026" for a week or "Oct 8, 2026" for a day.
+- The y-axis shows 5 round values from 0 in a short form, such as "$750",
+  "$1K", "$1.5K" or "$110K". Count charts show "1.2K" with no currency.
+- The Total sales, Average order value and Orders charts show a legend with
+  the range and the comparison range. The Total sales line has a filled area
+  and a dot on its last point.
 
 ---
 
@@ -104,10 +124,14 @@ page and its data endpoint, `GET /analytics/overview`.
 ## 4. Key metrics
 
 Each key metric shows its value for the range, a change against the comparison
-and a small chart of the range. The change is
+and a small chart of the range beside the change. The change is
 `(current − comparison) ÷ comparison`, rounded to one decimal. When the
 comparison value is 0, or there is no comparison, the page shows no
 percentage. With no comparison, each key metric reads "No comparison".
+
+Every change on the page shows as colored text with no background: green with
+a trending-up icon when the value went up, red with a trending-down icon when
+it went down, and grey when it did not change.
 
 | Key metric | How it is calculated (the info icon text) |
 |---|---|
@@ -242,6 +266,9 @@ The names are familiar, but the numbers do not match one-to-one:
   another paid order in the same period counts as both new and returning.
 - **Weeks follow the site setting.** They start on the day set in WordPress,
   not always on Monday.
+- **The chart grouping is fixed.** Shopify and WooCommerce let the merchant
+  pick the interval (day, week, month and more). Here the interval comes from
+  the range length.
 - **Home dashboard Net sales is different.** The Home page calculates Net sales
   as Total − Tax − Shipping − refunds. Shipping tax is in both Tax and
   Shipping, so it is subtracted twice. This page uses the formula in section 5,

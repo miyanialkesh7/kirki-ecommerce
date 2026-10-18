@@ -18,9 +18,11 @@ const CountMetricSchema = z.object({
 const SeriesPointSchema = z.object({
   date: z.string(),
   label: z.string(),
+  span_label: z.string().nullish(),
   value: z.number().nullish(),
   previous_date: z.string().nullish(),
   previous_label: z.string().nullish(),
+  previous_span_label: z.string().nullish(),
   previous_value: z.number().nullish(),
 });
 
@@ -59,10 +61,12 @@ const FulfillmentItemSchema = z.object({
 const CustomerPointSchema = z.object({
   date: z.string(),
   label: z.string(),
+  span_label: z.string().nullish(),
   new: z.number(),
   returning: z.number(),
   previous_date: z.string().nullish(),
   previous_label: z.string().nullish(),
+  previous_span_label: z.string().nullish(),
   previous_new: z.number().nullish(),
   previous_returning: z.number().nullish(),
 });

@@ -231,15 +231,17 @@ class AnalyticsRangeTest extends RestTestCase
     public function granularity_limits(): array
     {
         return [
+            '30 days is daily' => [30, 'day'],
             '31 days is daily' => [31, 'day'],
             '32 days is weekly' => [32, 'week'],
             '186 days is weekly' => [186, 'week'],
             '187 days is monthly' => [187, 'month'],
+            '367 days is monthly' => [367, 'month'],
         ];
     }
 
     /**
-     * Scenario "90-day range" and the limits: days up to 31, weeks up to 186, months above.
+     * Scenario "32-day range" and the limits: days up to 31, weeks up to 186, months above.
      *
      * @dataProvider granularity_limits
      *
@@ -257,6 +259,152 @@ class AnalyticsRangeTest extends RestTestCase
 
         $this->assertSame($days, $data['range']['days']);
         $this->assertSame($granularity, $data['granularity']);
+        $this->assertArrayNotHasKey('granularity_size', $data);
+    }
+
+    /**
+     * Scenario "7-day range": one point for each day.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_last_7_days_has_a_point_for_each_day(): void
+    {
+        $series = $this->overview(['range' => 'last_7'])['cards']['total_sales_over_time']['series'];
+
+        $this->assertCount(7, $series);
+        $this->assertSame('2026-10-08', $series[0]['date']);
+        $this->assertSame('Oct 8, 2026', $series[0]['span_label']);
+    }
+
+    /**
+     * Scenario "30-day range": one point for each day.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_30_day_range_has_a_point_for_each_day(): void
+    {
+        $this->make_sale('2026-09-15 10:00:00', 100);
+        $this->make_sale('2026-09-16 10:00:00', 200);
+
+        $series = $this->overview(['range' => 'last_30'])['cards']['total_sales_over_time']['series'];
+
+        $this->assertCount(30, $series);
+        $this->assertSame('2026-09-15', $series[0]['date']);
+        $this->assertSame('Sep 15', $series[0]['label']);
+        $this->assertSame('Sep 15, 2026', $series[0]['span_label']);
+        $this->assertSame(100, $series[0]['value']);
+        $this->assertSame('2026-09-16', $series[1]['date']);
+        $this->assertSame(200, $series[1]['value']);
+        $this->assertSame('Oct 14, 2026', $series[29]['span_label']);
+    }
+
+    /**
+     * Scenario "31-day range": one point for each day.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_31_day_range_has_a_point_for_each_day(): void
+    {
+        $series = $this->overview_between('2026-09-01', '2026-10-01')['cards']['total_sales_over_time']['series'];
+
+        $this->assertCount(31, $series);
+        $this->assertSame('2026-10-01', $series[30]['date']);
+    }
+
+    /**
+     * Scenario "90-day range": one point for each week, the first and last partial.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_90_day_range_has_weekly_points(): void
+    {
+        update_option('start_of_week', 1);
+
+        $data = $this->overview(['range' => 'last_90']);
+        $series = $data['cards']['total_sales_over_time']['series'];
+
+        $this->assertSame('week', $data['granularity']);
+        $this->assertCount(14, $series);
+        $this->assertSame('2026-07-17', $series[0]['date']);
+        $this->assertSame('Jul 17 – Jul 19, 2026', $series[0]['span_label']);
+        $this->assertSame('Oct 12 – Oct 14, 2026', $series[13]['span_label']);
+    }
+
+    /**
+     * Scenario "Comparison points": the comparison has the same daily points from its first day.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_comparison_points_start_on_the_comparison_start(): void
+    {
+        $series = $this->overview(['range' => 'last_30', 'compare' => 'previous_year'])['cards']['total_sales_over_time']['series'];
+
+        $this->assertCount(30, $series);
+        $this->assertSame('2025-09-15', $series[0]['previous_date']);
+        $this->assertSame('Sep 15, 2025', $series[0]['previous_span_label']);
+        $this->assertSame('2025-09-16', $series[1]['previous_date']);
+    }
+
+    /**
+     * Scenario "12-month range": one point for each month, labelled with the month and year.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_last_12_months_has_monthly_points(): void
+    {
+        $data = $this->overview(['range' => 'last_12_months']);
+        $series = $data['cards']['total_sales_over_time']['series'];
+
+        $this->assertSame('month', $data['granularity']);
+        $this->assertSame('Oct 2026', end($series)['label']);
+        $this->assertSame('Oct 1 – Oct 14, 2026', end($series)['span_label']);
+    }
+
+    /**
+     * Scenario "Two-year range": one point for each month.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_two_year_range_has_a_point_for_each_month(): void
+    {
+        $this->make_sale('2024-11-20 10:00:00', 100);
+        $this->make_sale('2024-12-05 10:00:00', 200);
+
+        $data = $this->overview_between('2024-11-01', '2026-10-14');
+        $series = $data['cards']['total_sales_over_time']['series'];
+
+        $this->assertSame('month', $data['granularity']);
+        $this->assertCount(24, $series);
+        $this->assertSame('2024-11-01', $series[0]['date']);
+        $this->assertSame('Nov 2024', $series[0]['label']);
+        $this->assertSame('Nov 1 – Nov 30, 2024', $series[0]['span_label']);
+        $this->assertSame(100, $series[0]['value']);
+        $this->assertSame('2024-12-01', $series[1]['date']);
+        $this->assertSame(200, $series[1]['value']);
+        $this->assertSame('Oct 1 – Oct 14, 2026', $series[23]['span_label']);
+    }
+
+    /**
+     * Span labels across two years show the year on both days.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_span_label_across_years_shows_both_years(): void
+    {
+        update_option('start_of_week', 1);
+
+        $series = $this->overview_between('2025-12-01', '2026-01-31')['cards']['total_sales_over_time']['series'];
+
+        $this->assertSame('2025-12-29', $series[4]['date']);
+        $this->assertSame('Dec 29, 2025 – Jan 4, 2026', $series[4]['span_label']);
     }
 
     /**
@@ -320,6 +468,7 @@ class AnalyticsRangeTest extends RestTestCase
         $this->assertSame('week', $data['granularity']);
         $this->assertSame('2026-09-02', $series[0]['date']);
         $this->assertSame(300, $series[0]['value']);
+        $this->assertSame('Sep 2 – Sep 6, 2026', $series[0]['span_label']);
         $this->assertSame('2026-09-07', $series[1]['date']);
         $this->assertSame(400, $series[1]['value']);
     }
@@ -382,5 +531,7 @@ class AnalyticsRangeTest extends RestTestCase
         $this->assertSame('Oct 3', $point['label']);
         $this->assertSame('2026-09-26', $point['previous_date']);
         $this->assertSame('Sep 26', $point['previous_label']);
+        $this->assertSame('Oct 3, 2026', $point['span_label']);
+        $this->assertSame('Sep 26, 2026', $point['previous_span_label']);
     }
 }

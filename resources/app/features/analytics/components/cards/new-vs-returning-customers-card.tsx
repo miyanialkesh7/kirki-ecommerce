@@ -33,9 +33,11 @@ const NewVsReturningCustomersCard = (props: CardProps<'new_vs_returning_customer
             points={data.series.map((point) => ({
               date: point.date,
               label: point.label,
+              span_label: point.span_label,
               value: point.new + point.returning,
               segments: [point.new, point.returning],
               previous_label: point.previous_label,
+              previous_span_label: point.previous_span_label,
               previous_value:
                 point.previous_new === null || point.previous_new === undefined
                   ? null

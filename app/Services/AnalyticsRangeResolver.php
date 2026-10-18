@@ -173,8 +173,8 @@ class AnalyticsRangeResolver
     /**
      * Split a range into chart buckets.
      *
-     * Each bucket has the key SQL groups by, its first and last day inside the range, and its label.
-     * The first and last bucket can be partial.
+     * Each bucket has the key SQL groups by, its first and last day inside the range, its label and its span
+     * label. The first and last bucket can be partial.
      *
      * @since 1.0.0
      *
@@ -182,7 +182,7 @@ class AnalyticsRangeResolver
      * @param string $to          Last day of the range.
      * @param string $granularity One of day, week or month.
      *
-     * @return array<int, array{key: string, start: string, end: string, label: string}>
+     * @return array<int, array{key: string, start: string, end: string, label: string, span_label: string}>
      */
     public function build_buckets(string $from, string $to, string $granularity)
     {
@@ -200,6 +200,7 @@ class AnalyticsRangeResolver
                 'start' => $start,
                 'end' => $end,
                 'label' => $this->label($start, $granularity),
+                'span_label' => $this->span_label($start, $end),
             ];
 
             $key = $next_key;
@@ -286,6 +287,31 @@ class AnalyticsRangeResolver
         $format = $granularity === static::GRANULARITY_MONTH ? 'M Y' : 'M j';
 
         return wp_date($format, $this->utc_date($start)->getTimestamp(), new DateTimeZone('UTC'));
+    }
+
+    /**
+     * Get the tooltip label of a bucket, with its first and last day.
+     *
+     * @since 1.0.0
+     *
+     * @param string $start First day of the bucket.
+     * @param string $end   Last day of the bucket.
+     *
+     * @return string Label such as "Oct 8, 2026", "Oct 5 – Oct 11, 2026" or "Dec 29, 2025 – Jan 4, 2026".
+     */
+    protected function span_label(string $start, string $end)
+    {
+        $zone = new DateTimeZone('UTC');
+        $start_ts = $this->utc_date($start)->getTimestamp();
+        $end_ts = $this->utc_date($end)->getTimestamp();
+
+        if ($start === $end) {
+            return wp_date('M j, Y', $start_ts, $zone);
+        }
+
+        $start_format = substr($start, 0, 4) === substr($end, 0, 4) ? 'M j' : 'M j, Y';
+
+        return wp_date($start_format, $start_ts, $zone) . ' – ' . wp_date('M j, Y', $end_ts, $zone);
     }
 
     /**

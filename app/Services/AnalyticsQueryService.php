@@ -149,6 +149,7 @@ class AnalyticsQueryService
             $series[] = [
                 'date' => $bucket['start'],
                 'label' => $bucket['label'],
+                'span_label' => $bucket['span_label'],
                 'metrics' => $this->summarize($point_sales, $point_returns, $point_placed),
             ];
         }
@@ -832,9 +833,11 @@ class AnalyticsQueryService
             $points[] = [
                 'date' => $point['date'],
                 'label' => $point['label'],
+                'span_label' => $point['span_label'],
                 'value' => $point['metrics'][$metric],
                 'previous_date' => $previous['date'] ?? null,
                 'previous_label' => $previous['label'] ?? null,
+                'previous_span_label' => $previous['span_label'] ?? null,
                 'previous_value' => $previous['metrics'][$metric] ?? null,
             ];
         }
@@ -966,10 +969,12 @@ class AnalyticsQueryService
             $series[] = [
                 'date' => $point['date'],
                 'label' => $point['label'],
+                'span_label' => $point['span_label'],
                 'new' => $point['metrics']['new_customers'],
                 'returning' => $point['metrics']['returning_customers'],
                 'previous_date' => $before['date'] ?? null,
                 'previous_label' => $before['label'] ?? null,
+                'previous_span_label' => $before['span_label'] ?? null,
                 'previous_new' => $before['metrics']['new_customers'] ?? null,
                 'previous_returning' => $before['metrics']['returning_customers'] ?? null,
             ];

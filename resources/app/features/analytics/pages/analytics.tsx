@@ -26,7 +26,10 @@ import KpiCard from '@/features/analytics/components/kpi-card';
 import { type EmptyCheckedCard, hasNoCardData } from '@/features/analytics/lib/empty-cards';
 import { formatMoney, formatNumber, formatPercent } from '@/features/analytics/lib/format';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
-import { createMinorFormatter } from '@/features/analytics/lib/money-format';
+import {
+  createCompactMinorFormatter,
+  createMinorFormatter,
+} from '@/features/analytics/lib/money-format';
 import {
   type AnalyticsParams,
   parseAnalyticsParams,
@@ -55,7 +58,13 @@ const ReadyContent = (props: ReadyContentProps) => {
   const definitions = getMetricDefinitions();
   const hasComparison = !!data.compare;
   const isEmptyStore = data.has_orders === false;
-  const formatMinor = createMinorFormatter(data.base_currency_code ?? 'USD');
+  const currencyCode = data.base_currency_code ?? 'USD';
+  const shared = {
+    formatMinor: createMinorFormatter(currencyCode),
+    formatMinorShort: createCompactMinorFormatter(currencyCode),
+    range: data.range ? { from: data.range.from, to: data.range.to } : null,
+    compareRange: data.compare ?? null,
+  };
   const isEmpty = (key: EmptyCheckedCard) => isEmptyStore || hasNoCardData(key, cards);
 
   return (
@@ -112,62 +121,62 @@ const ReadyContent = (props: ReadyContentProps) => {
         <TotalSalesOverTimeCard
           data={cards.total_sales_over_time}
           isEmpty={isEmpty('total_sales_over_time')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <TotalSalesBreakdownCard
           data={cards.total_sales_breakdown}
           isEmpty={isEmpty('total_sales_breakdown')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <SalesByProductCard
           data={cards.sales_by_product}
           isEmpty={isEmpty('sales_by_product')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <SalesByCategoryCard
           data={cards.sales_by_category}
           isEmpty={isEmpty('sales_by_category')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <AverageOrderValueOverTimeCard
           data={cards.average_order_value_over_time}
           isEmpty={isEmpty('average_order_value_over_time')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <OrdersOverTimeCard
           data={cards.orders_over_time}
           isEmpty={isEmpty('orders_over_time')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <FulfillmentStatusCard
           data={cards.orders_by_fulfillment_status}
           isEmpty={isEmpty('orders_by_fulfillment_status')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <NewVsReturningCustomersCard
           data={cards.new_vs_returning_customers}
           isEmpty={isEmpty('new_vs_returning_customers')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <SalesByCouponCodeCard
           data={cards.sales_by_coupon_code}
           isEmpty={isEmpty('sales_by_coupon_code')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <SalesByPaymentMethodCard
           data={cards.sales_by_payment_method}
           isEmpty={isEmpty('sales_by_payment_method')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <TaxesByRegionCard
           data={cards.taxes_by_region}
           isEmpty={isEmpty('taxes_by_region')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <ShippingChargesByMethodCard
           data={cards.shipping_charges_by_method}
           isEmpty={isEmpty('shipping_charges_by_method')}
-          formatMinor={formatMinor}
+          {...shared}
         />
         <InventoryHealthCard data={cards.inventory_health} />
       </div>

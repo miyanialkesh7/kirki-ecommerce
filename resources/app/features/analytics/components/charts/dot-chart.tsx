@@ -2,48 +2,58 @@ import {
   buildScale,
   type ChartProps,
   defaultFormatValue,
-  getSlotCenter,
   useActivePoint,
 } from '@/features/analytics/components/charts/chart-geometry';
-import {
-  AxisLabels,
-  ChartFrame,
-  Grid,
-  HitAreas,
-} from '@/features/analytics/components/charts/chart-shared';
+import { ChartFrame } from '@/features/analytics/components/charts/chart-shared';
+import { formatCompactNumber } from '@/features/analytics/lib/format';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 
 const DotChart = (props: ChartProps) => {
-  const { label, points, formatValue = defaultFormatValue } = props;
+  const {
+    label,
+    points,
+    formatValue = defaultFormatValue,
+    formatAxisValue = formatCompactNumber,
+    legend,
+  } = props;
   const { activeIndex, getHandlers } = useActivePoint();
   const scale = buildScale(points.flatMap((point) => [point.value, point.previous_value]));
 
   return (
-    <ChartFrame label={label} points={points} activeIndex={activeIndex} formatValue={formatValue}>
-      <Grid scale={scale} />
-      {points.map((point, index) => (
-        <g key={point.date} aria-hidden="true">
-          {typeof point.previous_value === 'number' && (
-            <circle
-              cx={getSlotCenter(index, points.length)}
-              cy={scale.toY(point.previous_value)}
-              r={3.5}
-              css={scoped(styles.previousDot)}
-            />
-          )}
-          {typeof point.value === 'number' && (
-            <circle
-              cx={getSlotCenter(index, points.length)}
-              cy={scale.toY(point.value)}
-              r={activeIndex === index ? 6 : 4.5}
-              css={scoped(styles.dot)}
-            />
-          )}
-        </g>
-      ))}
-      <AxisLabels points={points} />
-      <HitAreas points={points} formatValue={formatValue} getHandlers={getHandlers} />
+    <ChartFrame
+      label={label}
+      points={points}
+      scale={scale}
+      activeIndex={activeIndex}
+      getHandlers={getHandlers}
+      formatValue={formatValue}
+      formatAxisValue={formatAxisValue}
+      legend={legend}
+      legendSample="dot"
+    >
+      {(layout) =>
+        points.map((point, index) => (
+          <g key={point.date} aria-hidden="true">
+            {typeof point.previous_value === 'number' && (
+              <circle
+                cx={layout.getX(index)}
+                cy={scale.toY(point.previous_value)}
+                r={3.5}
+                css={scoped(styles.previousDot)}
+              />
+            )}
+            {typeof point.value === 'number' && (
+              <circle
+                cx={layout.getX(index)}
+                cy={scale.toY(point.value)}
+                r={activeIndex === index ? 6 : 4.5}
+                css={scoped(styles.dot)}
+              />
+            )}
+          </g>
+        ))
+      }
     </ChartFrame>
   );
 };

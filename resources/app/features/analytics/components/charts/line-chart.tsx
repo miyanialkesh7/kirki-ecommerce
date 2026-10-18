@@ -1,80 +1,147 @@
 import {
   buildScale,
+  type ChartLayout,
   type ChartProps,
   defaultFormatValue,
-  getSlotCenter,
-  PLOT_BOTTOM,
-  PLOT_TOP,
   useActivePoint,
 } from '@/features/analytics/components/charts/chart-geometry';
-import {
-  AxisLabels,
-  ChartFrame,
-  Grid,
-  HitAreas,
-} from '@/features/analytics/components/charts/chart-shared';
+import { ChartFrame } from '@/features/analytics/components/charts/chart-shared';
+import { formatCompactNumber } from '@/features/analytics/lib/format';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 
-const buildPath = (values: (number | null | undefined)[], toY: (value: number) => number) => {
-  let path = '';
-  let isDrawing = false;
+type LinePoint = {
+  x: number;
+  y: number;
+};
+
+const getSegments = (
+  values: (number | null | undefined)[],
+  layout: ChartLayout,
+  toY: (value: number) => number,
+) => {
+  const segments: LinePoint[][] = [];
+  let current: LinePoint[] = [];
 
   values.forEach((value, index) => {
     if (typeof value !== 'number') {
-      isDrawing = false;
+      if (current.length > 0) {
+        segments.push(current);
+      }
+      current = [];
       return;
     }
 
-    path += `${isDrawing ? 'L' : 'M'}${getSlotCenter(index, values.length)},${toY(value)} `;
-    isDrawing = true;
+    current.push({ x: layout.getX(index), y: toY(value) });
   });
 
-  return path.trim();
+  if (current.length > 0) {
+    segments.push(current);
+  }
+
+  return segments;
+};
+
+const buildLinePath = (segments: LinePoint[][]) => {
+  return segments
+    .map((segment) =>
+      segment.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x},${point.y}`).join(' '),
+    )
+    .join(' ');
+};
+
+const buildAreaPath = (segments: LinePoint[][], baseline: number) => {
+  return segments
+    .map((segment) => {
+      const first = segment[0];
+      const last = segment[segment.length - 1];
+
+      return `${buildLinePath([segment])} L${last.x},${baseline} L${first.x},${baseline} Z`;
+    })
+    .join(' ');
+};
+
+const findLastIndex = (values: (number | null | undefined)[]) => {
+  for (let index = values.length - 1; index >= 0; index -= 1) {
+    if (typeof values[index] === 'number') {
+      return index;
+    }
+  }
+
+  return -1;
 };
 
 const LineChart = (props: ChartProps) => {
-  const { label, points, formatValue = defaultFormatValue } = props;
+  const {
+    label,
+    points,
+    formatValue = defaultFormatValue,
+    formatAxisValue = formatCompactNumber,
+    legend,
+  } = props;
   const { activeIndex, getHandlers } = useActivePoint();
   const scale = buildScale(points.flatMap((point) => [point.value, point.previous_value]));
-  const activePoint = activeIndex === null ? null : points[activeIndex];
+  const currentValues = points.map((point) => point.value);
+  const previousValues = points.map((point) => point.previous_value);
+  const lastIndex = findLastIndex(currentValues);
 
   return (
-    <ChartFrame label={label} points={points} activeIndex={activeIndex} formatValue={formatValue}>
-      <Grid scale={scale} />
-      <path
-        d={buildPath(
-          points.map((point) => point.previous_value),
-          scale.toY,
-        )}
-        css={scoped(styles.previousLine)}
-      />
-      <path
-        d={buildPath(
-          points.map((point) => point.value),
-          scale.toY,
-        )}
-        css={scoped(styles.line)}
-      />
-      {activeIndex !== null && (
-        <line
-          x1={getSlotCenter(activeIndex, points.length)}
-          x2={getSlotCenter(activeIndex, points.length)}
-          y1={PLOT_TOP}
-          y2={PLOT_BOTTOM}
-          css={scoped(styles.crosshair)}
-        />
-      )}
-      {activeIndex !== null && typeof activePoint?.value === 'number' && (
-        <circle
-          cx={getSlotCenter(activeIndex, points.length)}
-          cy={scale.toY(activePoint.value)}
-          r={4}
-          css={scoped(styles.activeDot)}
-        />
-      )}
-      <AxisLabels points={points} />
-      <HitAreas points={points} formatValue={formatValue} getHandlers={getHandlers} />
+    <ChartFrame
+      label={label}
+      points={points}
+      scale={scale}
+      activeIndex={activeIndex}
+      getHandlers={getHandlers}
+      formatValue={formatValue}
+      formatAxisValue={formatAxisValue}
+      legend={legend}
+    >
+      {(layout) => {
+        const currentSegments = getSegments(currentValues, layout, scale.toY);
+        const activeValue = activeIndex === null ? null : currentValues[activeIndex];
+        const lastValue = currentValues[lastIndex];
+
+        return (
+          <g aria-hidden="true">
+            <path
+              data-testid="line-chart-area"
+              d={buildAreaPath(currentSegments, scale.toY(0))}
+              css={scoped(styles.area)}
+            />
+            <path
+              d={buildLinePath(getSegments(previousValues, layout, scale.toY))}
+              css={scoped(styles.previousLine)}
+            />
+            <path d={buildLinePath(currentSegments)} css={scoped(styles.line)} />
+            {activeIndex !== null && (
+              <line
+                x1={layout.getX(activeIndex)}
+                x2={layout.getX(activeIndex)}
+                y1={layout.plotTop}
+                y2={layout.plotBottom}
+                css={scoped(styles.crosshair)}
+              />
+            )}
+            {typeof lastValue === 'number' && (
+              <circle
+                data-testid="line-chart-last-point"
+                cx={layout.getX(lastIndex)}
+                cy={scale.toY(lastValue)}
+                r={4}
+                css={scoped(styles.lastDot)}
+              />
+            )}
+            {activeIndex !== null && typeof activeValue === 'number' && (
+              <circle
+                cx={layout.getX(activeIndex)}
+                cy={scale.toY(activeValue)}
+                r={4}
+                css={scoped(styles.activeDot)}
+              />
+            )}
+          </g>
+        );
+      }}
     </ChartFrame>
   );
 };
@@ -84,25 +151,29 @@ LineChart.displayName = 'LineChart';
 export default LineChart;
 
 const styles = defineStyles({
+  area: {
+    fill: theme.colors.analytics.chart.soft,
+    stroke: 'none',
+  },
   line: {
     fill: 'none',
     stroke: theme.colors.analytics.chart.primary,
     strokeWidth: 2,
     strokeLinejoin: 'round',
     strokeLinecap: 'round',
-    vectorEffect: 'non-scaling-stroke',
   },
   previousLine: {
     fill: 'none',
-    stroke: theme.colors.analytics.chart.previous,
+    stroke: theme.colors.analytics.chart.comparisonLine,
     strokeWidth: 2,
     strokeDasharray: '4 4',
-    vectorEffect: 'non-scaling-stroke',
   },
   crosshair: {
     stroke: theme.colors.analytics.chart.crosshair,
     strokeWidth: 1,
-    vectorEffect: 'non-scaling-stroke',
+  },
+  lastDot: {
+    fill: theme.colors.analytics.chart.primary,
   },
   activeDot: {
     fill: theme.colors.analytics.chart.primary,

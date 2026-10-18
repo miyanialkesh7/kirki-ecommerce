@@ -24,4 +24,22 @@ const createMinorFormatter = (currencyCode: string) => {
   return (minorAmount: number) => formatter.format(minorAmount / 10 ** digits);
 };
 
-export { createMinorFormatter };
+const createCompactMinorFormatter = (currencyCode: string) => {
+  const digits = getFractionDigits(currencyCode);
+  const options: Intl.NumberFormatOptions = { notation: 'compact', maximumFractionDigits: 1 };
+  let formatter: Intl.NumberFormat;
+
+  try {
+    formatter = new Intl.NumberFormat('en-US', {
+      ...options,
+      style: 'currency',
+      currency: currencyCode,
+    });
+  } catch {
+    formatter = new Intl.NumberFormat('en-US', options);
+  }
+
+  return (minorAmount: number) => formatter.format(minorAmount / 10 ** digits);
+};
+
+export { createCompactMinorFormatter, createMinorFormatter };

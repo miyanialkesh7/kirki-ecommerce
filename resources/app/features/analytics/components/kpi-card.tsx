@@ -34,7 +34,7 @@ const KpiCard = (props: KpiCardProps) => {
       </Text>
       <Flex align="center" justify="space-between" gap={2} cssOverride={styles.change}>
         {hasComparison ? (
-          <ChangeBadge change={change} variant="text" />
+          <ChangeBadge change={change} />
         ) : (
           <Text variant="tiny" color="subdued">
             {__('No comparison', 'kirki-ecommerce')}

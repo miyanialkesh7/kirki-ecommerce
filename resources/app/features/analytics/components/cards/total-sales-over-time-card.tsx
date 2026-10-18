@@ -3,12 +3,12 @@ import CardEmpty from '@/features/analytics/components/card-empty';
 import CardHeadline from '@/features/analytics/components/card-headline';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
 import LineChart from '@/features/analytics/components/charts/line-chart';
-import { toChartPoints } from '@/features/analytics/lib/chart-points';
+import { toChartLegend, toChartPoints } from '@/features/analytics/lib/chart-points';
 import { formatMoney } from '@/features/analytics/lib/format';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 
 const TotalSalesOverTimeCard = (props: CardProps<'total_sales_over_time'>) => {
-  const { data, isEmpty, formatMinor } = props;
+  const { data, isEmpty, formatMinor, formatMinorShort, range, compareRange } = props;
   const definition = getMetricDefinitions().total_sales_over_time;
 
   return (
@@ -30,6 +30,8 @@ const TotalSalesOverTimeCard = (props: CardProps<'total_sales_over_time'>) => {
             label={definition.title}
             points={toChartPoints(data.series)}
             formatValue={formatMinor}
+            formatAxisValue={formatMinorShort}
+            legend={toChartLegend(range, compareRange)}
           />
         </>
       )}

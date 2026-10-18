@@ -2,6 +2,10 @@ import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest';
 
 import BarChart from '@/features/analytics/components/charts/bar-chart';
+import {
+  buildScale,
+  getXLabelIndexes,
+} from '@/features/analytics/components/charts/chart-geometry';
 import DotChart from '@/features/analytics/components/charts/dot-chart';
 import LineChart from '@/features/analytics/components/charts/line-chart';
 
@@ -106,5 +110,135 @@ describe.each(charts)('%s tooltip', (_name, Chart) => {
     renderInRoot(<Chart label="Total sales" points={points} formatValue={formatValue} />);
 
     expect(screen.getByLabelText('Total sales')).toBeInTheDocument();
+  });
+});
+
+describe.each(charts)('%s axes', (_name, Chart) => {
+  afterEach(cleanup);
+
+  it('draws at the measured width with no stretch', () => {
+    renderInRoot(<Chart label="Total sales" points={points} formatValue={formatValue} />);
+
+    const svg = screen.getByLabelText('Total sales');
+
+    expect(svg).toHaveAttribute('viewBox', '0 0 640 220');
+    expect(svg).not.toHaveAttribute('preserveAspectRatio', 'none');
+  });
+
+  // Scenario: Money y-axis
+  it('shows 5 y-axis values at round steps in the short form', () => {
+    const sales = [70000, 35000, 0].map((value, index) => ({ ...points[index], value }));
+
+    renderInRoot(
+      <Chart
+        label="Total sales"
+        points={sales.map(({ date, label, value }) => ({ date, label, value }))}
+        formatValue={formatValue}
+        formatAxisValue={(value) => `$${value / 100}`}
+      />,
+    );
+
+    const labels = within(screen.getByTestId('chart-y-axis')).getAllByText(/\$/);
+
+    expect(labels.map((label) => label.textContent)).toEqual([
+      '$0',
+      '$250',
+      '$500',
+      '$750',
+      '$1000',
+    ]);
+  });
+
+  it('shows every x-axis label when they fit', () => {
+    renderInRoot(<Chart label="Total sales" points={points} formatValue={formatValue} />);
+
+    expect(within(screen.getByTestId('chart-x-axis')).getAllByText(/Oct/)).toHaveLength(3);
+  });
+
+  // Scenario: 13 weekly points
+  it('labels every 2nd week from the first', () => {
+    const weeks = Array.from({ length: 13 }, (_, index) => ({
+      date: `2026-07-${String(index + 1).padStart(2, '0')}`,
+      label: `W${index + 1}`,
+      value: index,
+    }));
+
+    renderInRoot(<Chart label="Total sales" points={weeks} formatValue={formatValue} />);
+
+    const labels = within(screen.getByTestId('chart-x-axis'))
+      .getAllByText(/^W/)
+      .map((label) => label.textContent);
+
+    expect(labels).toEqual(['W1', 'W3', 'W5', 'W7', 'W9', 'W11', 'W13']);
+  });
+
+  // Scenario: Hover a week
+  it('shows the span label of the point in the tooltip', () => {
+    const groups = points.map((point) => ({
+      ...point,
+      span_label: `${point.label} – span`,
+      previous_span_label: `${point.previous_label} – span`,
+    }));
+
+    renderInRoot(<Chart label="Total sales" points={groups} formatValue={formatValue} />);
+
+    act(() => screen.getByTestId('chart-point-1').focus());
+
+    const tooltip = screen.getByRole('tooltip');
+
+    expect(within(tooltip).getByText('Oct 3 – span')).toBeInTheDocument();
+    expect(within(tooltip).getByText('Sep 3 – span')).toBeInTheDocument();
+  });
+});
+
+describe('buildScale', () => {
+  it('uses round steps of 1, 2.5 or 5 from 0', () => {
+    expect(buildScale([70000]).ticks).toEqual([0, 25000, 50000, 75000, 100000]);
+    expect(buildScale([9800000]).ticks).toEqual([0, 2500000, 5000000, 7500000, 10000000]);
+    expect(buildScale([1150]).ticks).toEqual([0, 500, 1000, 1500, 2000]);
+  });
+
+  it('uses whole steps of 1, 2 or 5 for small values', () => {
+    expect(buildScale([7]).ticks).toEqual([0, 2, 4, 6, 8]);
+    expect(buildScale([3]).ticks).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('keeps a scale when every value is zero', () => {
+    expect(buildScale([0, 0]).ticks).toEqual([0, 1, 2, 3, 4]);
+  });
+});
+
+describe('getXLabelIndexes', () => {
+  const everyNth = (count: number, step: number) =>
+    Array.from({ length: Math.ceil(count / step) }, (_, index) => index * step);
+
+  // Scenario: 7 daily points
+  it('labels every day of a 7-day range', () => {
+    expect(getXLabelIndexes(7, 900)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  // Scenario: 30 daily points
+  it('labels every 3rd day of a 30-day range', () => {
+    expect(getXLabelIndexes(30, 1200)).toEqual(everyNth(30, 3));
+  });
+
+  // Scenario: 13 weekly points
+  it('labels every 2nd week of 13 weeks', () => {
+    expect(getXLabelIndexes(13, 1200)).toEqual([0, 2, 4, 6, 8, 10, 12]);
+  });
+
+  // Scenario: 12 monthly points
+  it('labels every month of 12 months', () => {
+    expect(getXLabelIndexes(12, 1200)).toEqual(everyNth(12, 1));
+  });
+
+  // Scenario: 24 monthly points
+  it('labels every 2nd month of 24 months', () => {
+    expect(getXLabelIndexes(24, 1200)).toEqual(everyNth(24, 2));
+  });
+
+  // Scenario: Narrow card
+  it('uses a larger equal step on a narrow card', () => {
+    expect(getXLabelIndexes(30, 280)).toEqual([0, 8, 16, 24]);
   });
 });

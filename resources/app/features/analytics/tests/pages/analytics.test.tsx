@@ -286,8 +286,8 @@ describe('Analytics key metrics', () => {
     }
   });
 
-  // Scenario: Change badge colors
-  it('shows an increase as "12.3%" with an up arrow in the success color', () => {
+  // Scenario: Change colors
+  it('shows an increase as "12.3%" with a trending-up icon in the success color', () => {
     renderPage();
 
     const badge = within(screen.getByTestId('kpi-gross_sales')).getByTestId('change-badge');
@@ -295,10 +295,11 @@ describe('Analytics key metrics', () => {
     expect(badge).toHaveTextContent('12.3%');
     expect(badge).toHaveAttribute('data-direction', 'up');
     expect(badge).toHaveAttribute('data-tone', 'success');
+    expect(badge.querySelector('.lucide-trending-up')).toBeInTheDocument();
   });
 
   // Scenario: Decrease
-  it('shows a decrease as "4.0%" with a down arrow in the critical color', () => {
+  it('shows a decrease as "4.0%" with a trending-down icon in the critical color', () => {
     renderPage();
 
     const badge = within(screen.getByTestId('kpi-orders')).getByTestId('change-badge');
@@ -306,6 +307,24 @@ describe('Analytics key metrics', () => {
     expect(badge).toHaveTextContent('4.0%');
     expect(badge).toHaveAttribute('data-direction', 'down');
     expect(badge).toHaveAttribute('data-tone', 'critical');
+    expect(badge.querySelector('.lucide-trending-down')).toBeInTheDocument();
+  });
+
+  // Scenario: Card headline and Breakdown row
+  it('shows every change on the page as text with a trending icon and no background', () => {
+    renderPage();
+
+    const badges = screen.getAllByTestId('change-badge');
+
+    expect(badges.length).toBeGreaterThan(4);
+    for (const badge of badges) {
+      expect(
+        badge.querySelector('.lucide-trending-up, .lucide-trending-down, .lucide-minus'),
+      ).toBeInTheDocument();
+      expect(getComputedStyle(badge).backgroundColor).toMatch(
+        /^(rgba\(0, 0, 0, 0\)|transparent|)$/,
+      );
+    }
   });
 
   it('shows no badge when the change is empty because the comparison value is zero', () => {

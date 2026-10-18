@@ -4,13 +4,13 @@ import CardEmpty from '@/features/analytics/components/card-empty';
 import CardHeadline from '@/features/analytics/components/card-headline';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
 import BarChart from '@/features/analytics/components/charts/bar-chart';
-import { toChartPoints } from '@/features/analytics/lib/chart-points';
+import { toChartLegend, toChartPoints } from '@/features/analytics/lib/chart-points';
 import { formatNumber } from '@/features/analytics/lib/format';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import { _n, sprintf } from '@/wpi18n';
 
 const OrdersOverTimeCard = (props: CardProps<'orders_over_time'>) => {
-  const { data, isEmpty } = props;
+  const { data, isEmpty, range, compareRange } = props;
   const definition = getMetricDefinitions().orders_over_time;
   const itemsOrdered = data.items_ordered ?? 0;
 
@@ -32,6 +32,7 @@ const OrdersOverTimeCard = (props: CardProps<'orders_over_time'>) => {
             label={definition.title}
             points={toChartPoints(data.series)}
             formatValue={formatNumber}
+            legend={toChartLegend(range, compareRange)}
           />
         </>
       )}
