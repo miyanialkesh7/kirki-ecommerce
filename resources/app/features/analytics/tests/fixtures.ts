@@ -1,5 +1,8 @@
 /**
- * Builders for `GET /analytics/overview` responses used by the analytics tests.
+ * Builders for `GET /analytics/metrics/{key}` responses used by the analytics tests.
+ *
+ * `buildOverview()` builds every key at once as `meta + kpis + cards`;
+ * `splitOverview()` turns it into the `{ meta, data }` response of each key.
  *
  * The shapes follow the "Test contract" section of openspec/changes/analytics-foundation/design.md.
  */
@@ -381,6 +384,19 @@ const emptyCards = () => {
   };
 };
 
+type MetricResponse = { meta: Record<string, unknown>; data: unknown };
+
+const splitOverview = (overview: Record<string, unknown>) => {
+  const { kpis, cards, ...meta } = overview;
+  const responses: Record<string, MetricResponse> = { kpis: { meta, data: kpis } };
+
+  for (const [key, data] of Object.entries(cards as Record<string, unknown>)) {
+    responses[key] = { meta, data };
+  }
+
+  return responses;
+};
+
 export {
   buildEmptyRangeOverview,
   buildEmptyStoreOverview,
@@ -391,4 +407,5 @@ export {
   money,
   moneyMetric,
   point,
+  splitOverview,
 };

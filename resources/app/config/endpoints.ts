@@ -51,7 +51,7 @@ export const endpoints = {
 
   DASHBOARD_OVERVIEW: '/dashboard/overview',
 
-  ANALYTICS_OVERVIEW: '/analytics/overview',
+  ANALYTICS_METRIC: (key: string) => `/analytics/metrics/${key}`,
   ANALYTICS_REGIONS: '/analytics/regions',
 
   COUNTRIES: '/countries',

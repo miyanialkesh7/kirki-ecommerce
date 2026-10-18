@@ -8,6 +8,7 @@ use Kirki\Ecommerce\App\Models\Customer;
 use Kirki\Ecommerce\App\Models\Order;
 use Kirki\Ecommerce\App\Models\OrderItem;
 use Kirki\Ecommerce\App\Models\Refund;
+use Kirki\Ecommerce\App\Services\AnalyticsQueryService;
 
 /**
  * Seeds orders, refunds and customers for the analytics tests and calls the analytics endpoint.
@@ -177,7 +178,23 @@ trait SeedsAnalyticsData
     }
 
     /**
-     * Get the analytics overview payload for the given query parameters.
+     * Get the payload of one analytics metric key for the given query parameters.
+     *
+     * @param string $key    Metric key.
+     * @param array  $params Query parameters.
+     *
+     * @return array The meta and the data of the key.
+     * @since 1.0.0
+     */
+    protected function metric(string $key, array $params = []): array
+    {
+        $params = array_merge(['range' => 'last_30', 'compare' => 'none'], $params);
+
+        return $this->assert_api_success($this->request('GET', 'analytics/metrics/' . $key, $params))['data'];
+    }
+
+    /**
+     * Get every analytics metric key and put them together as the meta, the key metrics and the cards.
      *
      * @param array $params Query parameters.
      *
@@ -186,9 +203,16 @@ trait SeedsAnalyticsData
      */
     protected function overview(array $params = []): array
     {
-        $params = array_merge(['range' => 'last_30', 'compare' => 'none'], $params);
+        $kpis = $this->metric('kpis', $params);
+        $cards = [];
 
-        return $this->assert_api_success($this->request('GET', 'analytics/overview', $params))['data'];
+        foreach (AnalyticsQueryService::METRIC_KEYS as $key) {
+            if ($key !== 'kpis') {
+                $cards[$key] = $this->metric($key, $params)['data'];
+            }
+        }
+
+        return array_merge($kpis['meta'], ['kpis' => $kpis['data'], 'cards' => $cards]);
     }
 
     /**

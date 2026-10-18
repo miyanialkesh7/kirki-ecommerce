@@ -12,11 +12,11 @@ use Kirki\Ecommerce\Framework\Sanitizer;
 use function Kirki\Ecommerce\Framework\app;
 
 /**
- * Validates and sanitizes the range and comparison of an analytics overview request.
+ * Validates and sanitizes the range and comparison of an analytics metric request.
  *
  * @since 1.0.0
  */
-class AnalyticsOverviewRequest extends Request
+class AnalyticsMetricRequest extends Request
 {
     /**
      * @inheritDoc

@@ -4,9 +4,10 @@ namespace Kirki\Ecommerce\App\Http\Controllers\Api;
 
 defined('ABSPATH') || exit;
 
-use Kirki\Ecommerce\App\Http\Requests\Analytics\AnalyticsOverviewRequest;
+use Kirki\Ecommerce\App\Http\Requests\Analytics\AnalyticsMetricRequest;
 use Kirki\Ecommerce\App\Http\Requests\Analytics\AnalyticsRegionsRequest;
 use Kirki\Ecommerce\App\Services\AnalyticsQueryService;
+use Kirki\Ecommerce\Framework\Http\Response;
 
 use function Kirki\Ecommerce\Framework\response;
 
@@ -33,18 +34,26 @@ class AnalyticsController
     }
 
     /**
-     * Get the key metrics and cards.
+     * Get the metrics of one key, with the page meta.
      *
      * @since 1.0.0
      *
-     * @param AnalyticsOverviewRequest $request
-     * @return \Kirki\Ecommerce\Framework\Http\JsonResponse
+     * @param AnalyticsMetricRequest $request
+     * @return \Kirki\Ecommerce\Framework\Http\JsonResponse The metrics, or a 404 for an unknown key.
      */
-    public function overview(AnalyticsOverviewRequest $request)
+    public function metric(AnalyticsMetricRequest $request)
     {
+        $key = $request->string('key');
+
+        if (!in_array($key, AnalyticsQueryService::METRIC_KEYS, true)) {
+            return response()->json([
+                'message' => __('Unknown analytics metric.', 'kirki-ecommerce'),
+            ], Response::NOT_FOUND);
+        }
+
         return response()->json([
-            'data' => $this->query_service->get_overview($request->all()),
-            'message' => __('Analytics overview retrieved successfully.', 'kirki-ecommerce'),
+            'data' => $this->query_service->get_metric($key, $request->all()),
+            'message' => __('Analytics metric retrieved successfully.', 'kirki-ecommerce'),
         ]);
     }
 

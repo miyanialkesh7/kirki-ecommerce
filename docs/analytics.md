@@ -27,8 +27,28 @@ icon. Put the pointer on the icon, or tab to it, to read how the number is
 calculated. On a touch device the icons are always visible.
 
 Only users with the `manage_options` capability (administrators) can open the
-page and its data endpoints, `GET /analytics/overview` and
+page and its data endpoints, `GET /analytics/metrics/{key}` and
 `GET /analytics/regions`.
+
+The page sends one request for each part, all at the same time, so each part
+shows as soon as its own data comes:
+
+- `{key}` is `kpis` (the key metrics row) or one of the 15 card keys:
+  `total_sales_over_time`, `total_sales_breakdown`, `sales_by_product`,
+  `sales_by_category`, `average_order_value_over_time`, `orders_over_time`,
+  `orders_by_fulfillment_status`, `new_vs_returning_customers`,
+  `sales_by_coupon_code`, `orders_by_time_of_day`, `sales_by_location`,
+  `sales_by_payment_method`, `taxes_by_region`, `shipping_charges_by_method`
+  and `inventory_health`. An unknown key returns 404.
+- Every key takes the same `range`, `from`, `to`, `compare`, `compare_from`
+  and `compare_to` parameters.
+- The response `data` is `{ meta, data }`. `meta` has `range`, `compare`,
+  `granularity`, `base_currency_code` and `has_orders`. `data` has only the
+  metrics of that key.
+- While a part loads, it shows a skeleton in its final place and size. When the
+  request of one part fails, only that part shows an error with **Try Again**,
+  and the other parts stay. When every request fails, the page shows one error
+  with **Try Again** for all parts.
 
 ---
 
@@ -229,7 +249,13 @@ tables as they are at that moment.
   read the variants as they are now.
 - **Cost.** Each request adds up the orders of the range and of the comparison
   range. A short range reads few rows. A long range on a very large store does
-  more work, mainly the items and the first paid order of each customer.
+  more work, mainly the items and the first paid order of each customer. The
+  key metrics and five cards (Total sales over time, Total sales breakdown,
+  Average order value over time, Orders over time and New vs returning
+  customers) read the same totals and series, and each of their requests
+  calculates them again. A page load makes 16 requests, and a browser sends
+  about 6 at a time to one site over HTTP/1.1, so the last cards can wait for
+  a free connection.
 
 For developers, the filter `kirki_ecommerce_analytics_today` (a `Y-m-d` date
 that replaces today) is used by the tests.

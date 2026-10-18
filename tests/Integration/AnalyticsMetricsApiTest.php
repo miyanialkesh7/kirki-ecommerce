@@ -3,15 +3,16 @@
 namespace Kirki\Ecommerce\Tests\Integration;
 
 use Kirki\Ecommerce\App\Constants\Order\RefundStatus;
+use Kirki\Ecommerce\App\Services\AnalyticsQueryService;
 use Kirki\Ecommerce\Tests\Support\RestTestCase;
 use Kirki\Ecommerce\Tests\Support\SeedsAnalyticsData;
 
 /**
- * Covers task 5.1: access, validation and the full response shape of GET /analytics/overview.
+ * Covers task 5.1: access, validation and the response shape of GET /analytics/metrics/{key}.
  *
  * Spec: analytics-metrics (Analytics endpoint access, Data freshness).
  */
-class AnalyticsOverviewApiTest extends RestTestCase
+class AnalyticsMetricsApiTest extends RestTestCase
 {
     use SeedsAnalyticsData;
 
@@ -56,7 +57,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
         $this->make_sale('2026-10-01 10:00:00', 1000);
         wp_set_current_user(static::factory()->user->create(['role' => $role]));
 
-        $payload = $this->assert_api_error($this->request('GET', 'analytics/overview', ['range' => 'last_30']), 403);
+        $payload = $this->assert_api_error($this->request('GET', 'analytics/metrics/kpis', ['range' => 'last_30']), 403);
 
         // WordPress permission errors always carry data.status; no metrics may leak.
         $this->assertSame(['status' => 403], $payload['data'] ?? ['status' => 403]);
@@ -116,7 +117,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
     {
         $this->logout();
 
-        $this->assert_api_error($this->request('GET', 'analytics/overview'), 401);
+        $this->assert_api_error($this->request('GET', 'analytics/metrics/kpis'), 401);
     }
 
     /**
@@ -127,7 +128,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
      */
     public function test_custom_range_ending_after_today_is_422(): void
     {
-        $payload = $this->assert_validation_error($this->request('GET', 'analytics/overview', [
+        $payload = $this->assert_validation_error($this->request('GET', 'analytics/metrics/kpis', [
             'range' => 'custom',
             'from' => '2026-10-01',
             'to' => '2026-10-15',
@@ -144,7 +145,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
      */
     public function test_unknown_preset_is_422(): void
     {
-        $payload = $this->assert_validation_error($this->request('GET', 'analytics/overview', ['range' => 'last_1000_years']));
+        $payload = $this->assert_validation_error($this->request('GET', 'analytics/metrics/kpis', ['range' => 'last_1000_years']));
 
         $this->assertArrayHasKey('range', $payload['errors']);
     }
@@ -157,7 +158,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
      */
     public function test_unknown_comparison_is_422(): void
     {
-        $payload = $this->assert_validation_error($this->request('GET', 'analytics/overview', ['range' => 'last_30', 'compare' => 'sideways']));
+        $payload = $this->assert_validation_error($this->request('GET', 'analytics/metrics/kpis', ['range' => 'last_30', 'compare' => 'sideways']));
 
         $this->assertArrayHasKey('compare', $payload['errors']);
     }
@@ -170,8 +171,8 @@ class AnalyticsOverviewApiTest extends RestTestCase
      */
     public function test_custom_range_needs_ordered_dates(): void
     {
-        $missing = $this->assert_validation_error($this->request('GET', 'analytics/overview', ['range' => 'custom', 'from' => '2026-10-01']));
-        $reversed = $this->assert_validation_error($this->request('GET', 'analytics/overview', ['range' => 'custom', 'from' => '2026-10-10', 'to' => '2026-10-01']));
+        $missing = $this->assert_validation_error($this->request('GET', 'analytics/metrics/kpis', ['range' => 'custom', 'from' => '2026-10-01']));
+        $reversed = $this->assert_validation_error($this->request('GET', 'analytics/metrics/kpis', ['range' => 'custom', 'from' => '2026-10-10', 'to' => '2026-10-01']));
 
         $this->assertArrayHasKey('to', $missing['errors']);
         $this->assertArrayHasKey('from', $reversed['errors']);
@@ -300,6 +301,81 @@ class AnalyticsOverviewApiTest extends RestTestCase
         $this->assertSame(['id', 'name', 'orders', 'total_sales_money_object'], array_keys($payment));
         $this->assertSame(['raw', 'display', 'currency'], array_keys($payment['total_sales_money_object']));
         $this->assertSame(9000, $this->minor($cards['total_sales_over_time']['total']['current_money_object']));
+    }
+
+    /**
+     * Scenario "One key only": the response has the meta and the data of that key only.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_one_key_returns_only_its_data_with_the_meta(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000);
+
+        $payload = $this->metric('sales_by_coupon_code');
+
+        $this->assertSame(['meta', 'data'], array_keys($payload));
+        $this->assertSame(['range', 'compare', 'granularity', 'base_currency_code', 'has_orders'], array_keys($payload['meta']));
+        $this->assertTrue($payload['meta']['has_orders']);
+        $this->assertArrayNotHasKey('currencies', $payload['meta']);
+        $this->assertSame(['items'], array_keys($payload['data']));
+    }
+
+    /**
+     * Scenario "Key metrics key": the data has the four key metrics, each with its series.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_kpis_key_returns_the_key_metrics(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000);
+
+        $data = $this->metric('kpis')['data'];
+
+        $this->assertSame(['gross_sales', 'orders', 'average_order_value', 'returning_customer_rate'], array_keys($data));
+        $this->assertSame(1, $data['orders']['current']);
+        $this->assertCount(30, $data['orders']['series']);
+    }
+
+    /**
+     * Every key in METRIC_KEYS answers with the meta and the data.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_every_metric_key_answers(): void
+    {
+        foreach (AnalyticsQueryService::METRIC_KEYS as $key) {
+            $payload = $this->metric($key);
+
+            $this->assertSame(['meta', 'data'], array_keys($payload), $key);
+        }
+    }
+
+    /**
+     * Scenario "Unknown key": the response is 404 and contains no data.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_unknown_key_is_404(): void
+    {
+        $payload = $this->assert_api_error($this->request('GET', 'analytics/metrics/profit', ['range' => 'last_30']), 404);
+
+        $this->assertArrayNotHasKey('data', $payload);
+    }
+
+    /**
+     * Scenario "Old overview endpoint": the route no longer exists.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_old_overview_route_is_404(): void
+    {
+        $this->assert_api_error($this->request('GET', 'analytics/overview', ['range' => 'last_30']), 404);
     }
 
     /**

@@ -1,16 +1,20 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { endpoints } from '@/config/endpoints';
 import type { AnalyticsParams } from '@/features/analytics/lib/url-state';
 import {
-  AnalyticsOverviewSchema,
+  type AnalyticsMetric,
+  type AnalyticsMetricKey,
+  analyticsMetricSchema,
   AnalyticsRegionsSchema,
+  METRIC_KEYS,
 } from '@/features/analytics/schemas/catalog/analytics';
 import { apiClient } from '@/libs/api';
 import { parseData } from '@/services/helpers';
 
 const analyticsKeys = {
-  overview: (params: AnalyticsParams) => ['AnalyticsOverview', params] as const,
+  metric: (key: AnalyticsMetricKey, params: AnalyticsParams) =>
+    ['AnalyticsMetric', key, params] as const,
   regions: (params: AnalyticsParams, country: string | null) =>
     ['AnalyticsRegions', params, country] as const,
 };
@@ -31,17 +35,28 @@ const buildQuery = (params: AnalyticsParams) => {
   return query;
 };
 
-const getAnalyticsOverview = (params: AnalyticsParams) => {
+const getAnalyticsMetric = <K extends AnalyticsMetricKey>(key: K, params: AnalyticsParams) => {
   return apiClient
-    .get(endpoints.ANALYTICS_OVERVIEW, { params: buildQuery(params) })
-    .then((response) => parseData(AnalyticsOverviewSchema, response));
+    .get(endpoints.ANALYTICS_METRIC(key), { params: buildQuery(params) })
+    .then((response) => parseData(analyticsMetricSchema(key), response) as AnalyticsMetric<K>);
 };
 
-const useAnalyticsOverviewQuery = (params: AnalyticsParams) => {
-  return useQuery({
-    queryKey: analyticsKeys.overview(params),
-    queryFn: () => getAnalyticsOverview(params),
-    staleTime: 0,
+type AnalyticsMetricQueries = {
+  [K in AnalyticsMetricKey]: UseQueryResult<AnalyticsMetric<K>>;
+};
+
+const useAnalyticsMetricQueries = (params: AnalyticsParams) => {
+  return useQueries({
+    queries: METRIC_KEYS.map((key) => ({
+      queryKey: analyticsKeys.metric(key, params),
+      queryFn: () => getAnalyticsMetric(key, params),
+      staleTime: 0,
+    })),
+    combine: (results) => {
+      return Object.fromEntries(
+        METRIC_KEYS.map((key, index) => [key, results[index]]),
+      ) as AnalyticsMetricQueries;
+    },
   });
 };
 
@@ -59,4 +74,5 @@ const useAnalyticsRegionsQuery = (params: AnalyticsParams, country: string | nul
   });
 };
 
-export { useAnalyticsOverviewQuery, useAnalyticsRegionsQuery };
+export { useAnalyticsMetricQueries, useAnalyticsRegionsQuery };
+export type { AnalyticsMetricQueries };

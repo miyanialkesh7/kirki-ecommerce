@@ -5,12 +5,13 @@ import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { DEFAULT_ANALYTICS_PARAMS } from '@/features/analytics/lib/url-state';
-import { useAnalyticsOverviewQuery } from '@/features/analytics/services/analytics';
+import { METRIC_KEYS } from '@/features/analytics/schemas/catalog/analytics';
+import { useAnalyticsMetricQueries } from '@/features/analytics/services/analytics';
 import { server } from '@/tests/msw/server';
 
-import { buildOverview } from '../fixtures';
+import { buildOverview, splitOverview } from '../fixtures';
 
-const ENDPOINT = 'https://example.test/wp-json/kirki/ecommerce/v1/analytics/overview';
+const ENDPOINT = 'https://example.test/wp-json/kirki/ecommerce/v1/analytics/metrics/:key';
 
 const createClient = () => {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -24,40 +25,68 @@ const createWrapper = (client: QueryClient) => {
   return Wrapper;
 };
 
-describe('useAnalyticsOverviewQuery', () => {
+const respondWithOverview = (requested: URL[] = []) => {
+  const responses = splitOverview(buildOverview());
+
+  server.use(
+    http.get(ENDPOINT, ({ request, params }) => {
+      requested.push(new URL(request.url));
+      return HttpResponse.json({
+        success: true,
+        message: '',
+        data: responses[params.key as string],
+      });
+    }),
+  );
+};
+
+const allSucceeded = (result: { current: ReturnType<typeof useAnalyticsMetricQueries> }) => {
+  return METRIC_KEYS.every((key) => result.current[key].isSuccess);
+};
+
+describe('useAnalyticsMetricQueries', () => {
   afterEach(() => {
     server.resetHandlers();
   });
 
-  it('sends the default controls as the query string and parses the response', async () => {
-    let requested: URL | null = null;
-    server.use(
-      http.get(ENDPOINT, ({ request }) => {
-        requested = new URL(request.url);
-        return HttpResponse.json({ success: true, message: '', data: buildOverview() });
-      }),
-    );
+  it('requests every metric key in parallel and parses each response', async () => {
+    const requested: URL[] = [];
+    respondWithOverview(requested);
     const client = createClient();
 
-    const { result } = renderHook(() => useAnalyticsOverviewQuery(DEFAULT_ANALYTICS_PARAMS), {
+    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
       wrapper: createWrapper(client),
     });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(allSucceeded(result)).toBe(true));
 
-    expect(requested!.searchParams.get('range')).toBe('last_30');
-    expect(requested!.searchParams.get('compare')).toBe('previous_period');
-    expect(requested!.searchParams.has('currency')).toBe(false);
-    expect(result.current.data?.kpis?.orders.current).toBe(12);
+    expect(requested.map((url) => url.pathname.split('/').pop()).sort()).toEqual(
+      [...METRIC_KEYS].sort(),
+    );
+    expect(result.current.kpis.data?.data.orders.current).toBe(12);
+    expect(result.current.kpis.data?.meta.base_currency_code).toBe('USD');
+    expect(result.current.total_sales_breakdown.data?.data.rows).toHaveLength(7);
+  });
+
+  it('sends the default controls as the query string', async () => {
+    const requested: URL[] = [];
+    respondWithOverview(requested);
+    const client = createClient();
+
+    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
+      wrapper: createWrapper(client),
+    });
+    await waitFor(() => expect(allSucceeded(result)).toBe(true));
+
+    for (const url of requested) {
+      expect(url.searchParams.get('range')).toBe('last_30');
+      expect(url.searchParams.get('compare')).toBe('previous_period');
+      expect(url.searchParams.has('currency')).toBe(false);
+    }
   });
 
   it('sends the custom dates when they are set', async () => {
-    let requested: URL | null = null;
-    server.use(
-      http.get(ENDPOINT, ({ request }) => {
-        requested = new URL(request.url);
-        return HttpResponse.json({ success: true, message: '', data: buildOverview() });
-      }),
-    );
+    const requested: URL[] = [];
+    respondWithOverview(requested);
     const client = createClient();
     const params = {
       ...DEFAULT_ANALYTICS_PARAMS,
@@ -67,61 +96,73 @@ describe('useAnalyticsOverviewQuery', () => {
       compare: 'none',
     } as const;
 
-    const { result } = renderHook(() => useAnalyticsOverviewQuery(params), {
+    const { result } = renderHook(() => useAnalyticsMetricQueries(params), {
       wrapper: createWrapper(client),
     });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(allSucceeded(result)).toBe(true));
 
-    expect(requested!.searchParams.get('range')).toBe('custom');
-    expect(requested!.searchParams.get('from')).toBe('2026-09-01');
-    expect(requested!.searchParams.get('to')).toBe('2026-09-30');
-    expect(requested!.searchParams.get('compare')).toBe('none');
-    expect(requested!.searchParams.has('currency')).toBe(false);
+    expect(requested[0].searchParams.get('range')).toBe('custom');
+    expect(requested[0].searchParams.get('from')).toBe('2026-09-01');
+    expect(requested[0].searchParams.get('to')).toBe('2026-09-30');
+    expect(requested[0].searchParams.get('compare')).toBe('none');
   });
 
-  it('keeps a separate cache entry for every selection', async () => {
-    server.use(
-      http.get(ENDPOINT, () =>
-        HttpResponse.json({ success: true, message: '', data: buildOverview() }),
-      ),
-    );
+  it('keeps a separate cache entry for every key and every selection', async () => {
+    respondWithOverview();
     const client = createClient();
     const wrapper = createWrapper(client);
 
-    const first = renderHook(() => useAnalyticsOverviewQuery(DEFAULT_ANALYTICS_PARAMS), {
+    const first = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
       wrapper,
     });
-    await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(allSucceeded(first.result)).toBe(true));
     const second = renderHook(
-      () => useAnalyticsOverviewQuery({ ...DEFAULT_ANALYTICS_PARAMS, range: 'last_7' }),
-      {
-        wrapper,
-      },
+      () => useAnalyticsMetricQueries({ ...DEFAULT_ANALYTICS_PARAMS, range: 'last_7' }),
+      { wrapper },
     );
-    await waitFor(() => expect(second.result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(allSucceeded(second.result)).toBe(true));
 
-    expect(client.getQueryCache().getAll()).toHaveLength(2);
+    expect(client.getQueryCache().getAll()).toHaveLength(METRIC_KEYS.length * 2);
   });
 
-  // Scenario: First visit (no preparation step, so no polling)
-  it('does not poll: one request per change of the controls', async () => {
+  // Scenario: One card fails
+  it('keeps the other keys when one key fails', async () => {
+    const responses = splitOverview(buildOverview());
     server.use(
-      http.get(ENDPOINT, () =>
-        HttpResponse.json({
+      http.get(ENDPOINT, ({ params }) => {
+        if (params.key === 'taxes_by_region') {
+          return HttpResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+        }
+        return HttpResponse.json({
           success: true,
           message: '',
-          data: { preparing: false, ...buildOverview() },
-        }),
-      ),
+          data: responses[params.key as string],
+        });
+      }),
     );
     const client = createClient();
 
-    const { result } = renderHook(() => useAnalyticsOverviewQuery(DEFAULT_ANALYTICS_PARAMS), {
+    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
       wrapper: createWrapper(client),
     });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(result.current.taxes_by_region.isError).toBe(true));
+    await waitFor(() => expect(result.current.kpis.isSuccess).toBe(true));
 
-    const query = client.getQueryCache().getAll()[0];
-    expect(query.observers[0].options.refetchInterval).toBeUndefined();
+    expect(result.current.sales_by_product.isSuccess).toBe(true);
+  });
+
+  // Scenario: First visit (no preparation step, so no polling)
+  it('does not poll', async () => {
+    respondWithOverview();
+    const client = createClient();
+
+    const { result } = renderHook(() => useAnalyticsMetricQueries(DEFAULT_ANALYTICS_PARAMS), {
+      wrapper: createWrapper(client),
+    });
+    await waitFor(() => expect(allSucceeded(result)).toBe(true));
+
+    for (const query of client.getQueryCache().getAll()) {
+      expect(query.observers[0].options.refetchInterval).toBeUndefined();
+    }
   });
 });

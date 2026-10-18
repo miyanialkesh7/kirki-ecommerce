@@ -2,17 +2,23 @@ import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import Analytics from '@/features/analytics/pages/analytics';
+import { METRIC_KEYS } from '@/features/analytics/schemas/catalog/analytics';
 
-import { buildEmptyRangeOverview, buildEmptyStoreOverview, buildOverview } from '../fixtures';
+import {
+  buildEmptyRangeOverview,
+  buildEmptyStoreOverview,
+  buildOverview,
+  splitOverview,
+} from '../fixtures';
 import { effectiveOpacity, renderPageAt } from '../helpers';
 
-const { useAnalyticsOverviewQuery, useAnalyticsRegionsQuery } = vi.hoisted(() => ({
-  useAnalyticsOverviewQuery: vi.fn(),
+const { useAnalyticsMetricQueries, useAnalyticsRegionsQuery } = vi.hoisted(() => ({
+  useAnalyticsMetricQueries: vi.fn(),
   useAnalyticsRegionsQuery: vi.fn(() => ({ isPending: true, isError: false })),
 }));
 
 vi.mock('@/features/analytics/services/analytics', () => ({
-  useAnalyticsOverviewQuery,
+  useAnalyticsMetricQueries,
   useAnalyticsRegionsQuery,
 }));
 
@@ -25,24 +31,46 @@ type QueryState = {
 };
 
 const refetch = vi.fn();
+const refetches: Record<string, ReturnType<typeof vi.fn>> = {};
 
-const mockQuery = (state: QueryState) => {
-  useAnalyticsOverviewQuery.mockReturnValue({
+const queryResult = (key: string, state: QueryState) => {
+  refetches[key] ??= vi.fn(() => {
+    refetch(key);
+  });
+
+  return {
     data: undefined,
     isLoading: false,
     isPending: false,
     isFetching: false,
     isError: false,
     error: null,
-    refetch,
+    refetch: refetches[key],
     ...state,
+  };
+};
+
+const mockQueries = (states: Record<string, QueryState>) => {
+  useAnalyticsMetricQueries.mockReturnValue(
+    Object.fromEntries(METRIC_KEYS.map((key) => [key, queryResult(key, states[key] ?? {})])),
+  );
+};
+
+const mockQuery = (state: QueryState) => {
+  mockQueries(Object.fromEntries(METRIC_KEYS.map((key) => [key, state])));
+};
+
+const mockData = (overview: unknown, overrides: Record<string, QueryState> = {}) => {
+  const responses = splitOverview(overview as Record<string, unknown>);
+
+  mockQueries({
+    ...Object.fromEntries(METRIC_KEYS.map((key) => [key, { data: responses[key] }])),
+    ...overrides,
   });
 };
 
-const mockData = (data: unknown) => mockQuery({ data });
-
 const lastParams = (): unknown => {
-  const calls = useAnalyticsOverviewQuery.mock.calls as unknown[][];
+  const calls = useAnalyticsMetricQueries.mock.calls as unknown[][];
 
   return calls[calls.length - 1]?.[0];
 };
@@ -177,8 +205,11 @@ const TOOLTIPS: [string, string, string][] = [
 const renderPage = (search = '') => renderPageAt(`/analytics${search}`, <Analytics />);
 
 beforeEach(() => {
-  useAnalyticsOverviewQuery.mockReset();
+  useAnalyticsMetricQueries.mockReset();
   refetch.mockReset();
+  for (const key of Object.keys(refetches)) {
+    delete refetches[key];
+  }
   mockData(buildOverview());
 });
 
@@ -691,15 +722,70 @@ describe('Analytics page states', () => {
   });
 
   // Scenario: Request fails
-  it('shows the error state with a retry action when the request fails', () => {
+  it('shows the error state with a retry action when every request fails', () => {
     mockQuery({ isError: true, error: new Error('Server error') });
     renderPage();
 
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.queryByTestId('kpi-error')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /try again/i }));
 
+    expect(refetch).toHaveBeenCalledTimes(METRIC_KEYS.length);
+  });
+
+  // Scenario: One card loads first
+  it('shows a card as soon as its data comes while the others keep their skeletons', () => {
+    mockQueries({
+      sales_by_coupon_code: { data: splitOverview(buildOverview()).sales_by_coupon_code },
+    });
+    renderPage();
+
+    expect(screen.getByTestId('card-sales_by_coupon_code')).toBeInTheDocument();
+    expect(screen.getAllByTestId('kpi-skeleton')).toHaveLength(4);
+    expect(screen.getAllByTestId('card-skeleton')).toHaveLength(14);
+  });
+
+  // Scenario: One card fails
+  it('shows an error with a retry action only in the card whose request failed', () => {
+    mockData(buildOverview(), { taxes_by_region: { isError: true, error: new Error('Server') } });
+    renderPage();
+
+    const failed = screen.getByTestId('card-error-taxes_by_region');
+    expect(within(failed).getByText('Taxes collected by region')).toBeInTheDocument();
+    expect(within(failed).getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('card-taxes_by_region')).not.toBeInTheDocument();
+    expect(screen.getByTestId('card-shipping_charges_by_method')).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-orders')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /try again/i })).toHaveLength(1);
+  });
+
+  // Scenario: Retry one card
+  it('requests only the failed card again on retry', () => {
+    mockData(buildOverview(), { taxes_by_region: { isError: true, error: new Error('Server') } });
+    renderPage();
+
+    fireEvent.click(
+      within(screen.getByTestId('card-error-taxes_by_region')).getByRole('button', {
+        name: /try again/i,
+      }),
+    );
+
     expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledWith('taxes_by_region');
+  });
+
+  it('shows one error with a retry action across the key metrics row when only the key metrics fail', () => {
+    mockData(buildOverview(), { kpis: { isError: true, error: new Error('Server') } });
+    renderPage();
+
+    fireEvent.click(
+      within(screen.getByTestId('kpi-error')).getByRole('button', { name: /try again/i }),
+    );
+
+    expect(screen.queryByTestId('kpi-orders')).not.toBeInTheDocument();
+    expect(screen.getByTestId('card-total_sales_over_time')).toBeInTheDocument();
+    expect(refetch).toHaveBeenCalledWith('kpis');
   });
 
   // Scenario: Empty store

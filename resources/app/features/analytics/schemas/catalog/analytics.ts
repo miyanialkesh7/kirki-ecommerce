@@ -196,7 +196,7 @@ const AnalyticsKpisSchema = z.object({
   returning_customer_rate: CountKpiSchema,
 });
 
-const AnalyticsOverviewSchema = z.object({
+const AnalyticsMetaSchema = z.object({
   range: z
     .object({
       preset: z.string(),
@@ -209,25 +209,39 @@ const AnalyticsOverviewSchema = z.object({
   granularity: z.string().nullish(),
   base_currency_code: z.string().nullish(),
   has_orders: z.boolean().nullish(),
-  kpis: AnalyticsKpisSchema,
-  cards: AnalyticsCardsSchema,
 });
+
+const METRIC_DATA_SCHEMAS = { kpis: AnalyticsKpisSchema, ...AnalyticsCardsSchema.shape };
+
+type AnalyticsMetricKey = keyof typeof METRIC_DATA_SCHEMAS;
+
+const METRIC_KEYS = Object.keys(METRIC_DATA_SCHEMAS) as AnalyticsMetricKey[];
+
+const analyticsMetricSchema = <K extends AnalyticsMetricKey>(key: K) => {
+  return z.object({ meta: AnalyticsMetaSchema, data: METRIC_DATA_SCHEMAS[key] });
+};
 
 type MoneyObject = z.infer<typeof MoneyObjectSchema>;
 type SeriesPoint = z.infer<typeof SeriesPointSchema>;
 type AnalyticsKpis = z.infer<typeof AnalyticsKpisSchema>;
 type AnalyticsCards = z.infer<typeof AnalyticsCardsSchema>;
-type AnalyticsOverview = z.infer<typeof AnalyticsOverviewSchema>;
+type AnalyticsMeta = z.infer<typeof AnalyticsMetaSchema>;
+type AnalyticsMetric<K extends AnalyticsMetricKey> = {
+  meta: AnalyticsMeta;
+  data: (AnalyticsCards & { kpis: AnalyticsKpis })[K];
+};
 type LocationRow = z.infer<typeof LocationRowSchema>;
 type CountryRow = z.infer<typeof CountryRowSchema>;
 type RegionRow = z.infer<typeof RegionRowSchema>;
 type AnalyticsRegions = z.infer<typeof AnalyticsRegionsSchema>;
 
-export { AnalyticsOverviewSchema, AnalyticsRegionsSchema };
+export { analyticsMetricSchema, AnalyticsRegionsSchema, METRIC_KEYS };
 export type {
   AnalyticsCards,
   AnalyticsKpis,
-  AnalyticsOverview,
+  AnalyticsMeta,
+  AnalyticsMetric,
+  AnalyticsMetricKey,
   AnalyticsRegions,
   CountryRow,
   LocationRow,

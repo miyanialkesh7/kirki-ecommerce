@@ -44,6 +44,34 @@ class AnalyticsQueryService
 
     const VARIANT_CHUNK_SIZE = 1000;
 
+    const METRIC_KEYS = [
+        'kpis',
+        'total_sales_over_time',
+        'total_sales_breakdown',
+        'sales_by_product',
+        'sales_by_category',
+        'average_order_value_over_time',
+        'orders_over_time',
+        'orders_by_fulfillment_status',
+        'new_vs_returning_customers',
+        'sales_by_coupon_code',
+        'orders_by_time_of_day',
+        'sales_by_location',
+        'sales_by_payment_method',
+        'taxes_by_region',
+        'shipping_charges_by_method',
+        'inventory_health',
+    ];
+
+    const WINDOW_KEYS = [
+        'kpis',
+        'total_sales_over_time',
+        'total_sales_breakdown',
+        'average_order_value_over_time',
+        'orders_over_time',
+        'new_vs_returning_customers',
+    ];
+
     const FULFILLMENT_STATUSES = [
         FulfillmentStatus::UNFULFILLED,
         FulfillmentStatus::PROCESSING,
@@ -81,26 +109,41 @@ class AnalyticsQueryService
     }
 
     /**
-     * Get the overview: key metrics and cards for a range and a comparison.
+     * Get the metrics of one key for a range and a comparison, with the page meta.
      *
      * @since 1.0.0
      *
+     * @param string               $key    One of METRIC_KEYS.
      * @param array<string, mixed> $params Validated request parameters.
      *
      * @return array<string, mixed>
      */
-    public function get_overview(array $params)
+    public function get_metric(string $key, array $params)
     {
         $this->table_prefix = DB::connection()->get_table_prefix();
         $this->base_currency = Money::get_base_currency();
 
         $range = $this->range_resolver->resolve($params);
-        $has_comparison = $range['compare'] !== null;
-        $current = $this->collect_window($range['from'], $range['to'], $range['buckets'], $range['granularity']);
-        $previous = $has_comparison
-            ? $this->collect_window($range['compare']['from'], $range['compare']['to'], $range['previous_buckets'], $range['granularity'])
-            : null;
 
+        return [
+            'meta' => $this->build_meta($range),
+            'data' => in_array($key, static::WINDOW_KEYS, true)
+                ? $this->build_window_metric($key, $range)
+                : $this->build_range_metric($key, $range),
+        ];
+    }
+
+    /**
+     * Build the meta that every metric response shares.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $range Resolved range.
+     *
+     * @return array<string, mixed>
+     */
+    protected function build_meta(array $range)
+    {
         return [
             'range' => [
                 'preset' => $range['preset'],
@@ -112,9 +155,89 @@ class AnalyticsQueryService
             'granularity' => $range['granularity'],
             'base_currency_code' => $this->base_currency,
             'has_orders' => $this->has_orders(),
-            'kpis' => $this->build_kpis($range, $current, $previous),
-            'cards' => $this->build_cards($range, $current, $previous),
         ];
+    }
+
+    /**
+     * Build the metrics of a key that reads the window totals and series.
+     *
+     * @since 1.0.0
+     *
+     * @param string               $key   One of WINDOW_KEYS.
+     * @param array<string, mixed> $range Resolved range.
+     *
+     * @return array<string, mixed>
+     */
+    protected function build_window_metric(string $key, array $range)
+    {
+        $current = $this->collect_window($range['from'], $range['to'], $range['buckets'], $range['granularity']);
+        $previous = $range['compare'] !== null
+            ? $this->collect_window($range['compare']['from'], $range['compare']['to'], $range['previous_buckets'], $range['granularity'])
+            : null;
+        $compared = $previous !== null;
+        $now = $current['totals'];
+        $before = $previous['totals'] ?? [];
+
+        switch ($key) {
+            case 'kpis':
+                return $this->build_kpis($range, $current, $previous);
+            case 'total_sales_over_time':
+                return [
+                    'total' => $this->money_metric($now['total_sales'], $before['total_sales'] ?? null, $compared),
+                    'series' => $this->build_series($current, $previous, 'total_sales'),
+                ];
+            case 'total_sales_breakdown':
+                return ['rows' => $this->build_breakdown($now, $before, $compared)];
+            case 'average_order_value_over_time':
+                return [
+                    'total' => $this->money_metric($now['average_order_value'], $before['average_order_value'] ?? null, $compared),
+                    'series' => $this->build_series($current, $previous, 'average_order_value'),
+                ];
+            case 'orders_over_time':
+                return [
+                    'total' => $this->count_metric($now['orders'], $before['orders'] ?? null, $compared),
+                    'items_ordered' => $current['items_ordered'],
+                    'series' => $this->build_series($current, $previous, 'orders'),
+                ];
+            default:
+                return $this->build_new_vs_returning($current, $previous);
+        }
+    }
+
+    /**
+     * Build the metrics of a key that runs its own queries.
+     *
+     * @since 1.0.0
+     *
+     * @param string               $key   One of METRIC_KEYS that is not in WINDOW_KEYS.
+     * @param array<string, mixed> $range Resolved range.
+     *
+     * @return array<string, mixed>
+     */
+    protected function build_range_metric(string $key, array $range)
+    {
+        switch ($key) {
+            case 'sales_by_product':
+                return ['items' => $this->build_sales_by_product($range)];
+            case 'sales_by_category':
+                return ['items' => $this->build_sales_by_category($range)];
+            case 'orders_by_fulfillment_status':
+                return $this->build_fulfillment_status($range);
+            case 'sales_by_coupon_code':
+                return ['items' => $this->build_sales_by_coupon($range)];
+            case 'orders_by_time_of_day':
+                return $this->build_orders_by_time_of_day($range);
+            case 'sales_by_location':
+                return ['countries' => $this->build_sales_by_location($range)];
+            case 'sales_by_payment_method':
+                return ['items' => $this->build_sales_by_payment_method($range)];
+            case 'taxes_by_region':
+                return ['items' => $this->build_taxes_by_region($range)];
+            case 'shipping_charges_by_method':
+                return ['items' => $this->build_shipping_by_method($range)];
+            default:
+                return $this->build_inventory_health();
+        }
     }
 
     /**
@@ -932,52 +1055,6 @@ class AnalyticsQueryService
                 $this->count_metric($now['returning_customer_rate'], $before['returning_customer_rate'] ?? null, $compared),
                 ['series' => $this->build_series($current, $previous, 'returning_customer_rate')]
             ),
-        ];
-    }
-
-    /**
-     * Build the cards.
-     *
-     * @since 1.0.0
-     *
-     * @param array<string, mixed>      $range    Resolved range.
-     * @param array<string, mixed>      $current  Current window.
-     * @param array<string, mixed>|null $previous Comparison window, or null.
-     *
-     * @return array<string, array<string, mixed>>
-     */
-    protected function build_cards(array $range, array $current, $previous)
-    {
-        $compared = $previous !== null;
-        $now = $current['totals'];
-        $before = $previous['totals'] ?? [];
-
-        return [
-            'total_sales_over_time' => [
-                'total' => $this->money_metric($now['total_sales'], $before['total_sales'] ?? null, $compared),
-                'series' => $this->build_series($current, $previous, 'total_sales'),
-            ],
-            'total_sales_breakdown' => ['rows' => $this->build_breakdown($now, $before, $compared)],
-            'sales_by_product' => ['items' => $this->build_sales_by_product($range)],
-            'sales_by_category' => ['items' => $this->build_sales_by_category($range)],
-            'average_order_value_over_time' => [
-                'total' => $this->money_metric($now['average_order_value'], $before['average_order_value'] ?? null, $compared),
-                'series' => $this->build_series($current, $previous, 'average_order_value'),
-            ],
-            'orders_over_time' => [
-                'total' => $this->count_metric($now['orders'], $before['orders'] ?? null, $compared),
-                'items_ordered' => $current['items_ordered'],
-                'series' => $this->build_series($current, $previous, 'orders'),
-            ],
-            'orders_by_fulfillment_status' => $this->build_fulfillment_status($range),
-            'new_vs_returning_customers' => $this->build_new_vs_returning($current, $previous),
-            'sales_by_coupon_code' => ['items' => $this->build_sales_by_coupon($range)],
-            'orders_by_time_of_day' => $this->build_orders_by_time_of_day($range),
-            'sales_by_location' => ['countries' => $this->build_sales_by_location($range)],
-            'sales_by_payment_method' => ['items' => $this->build_sales_by_payment_method($range)],
-            'taxes_by_region' => ['items' => $this->build_taxes_by_region($range)],
-            'shipping_charges_by_method' => ['items' => $this->build_shipping_by_method($range)],
-            'inventory_health' => $this->build_inventory_health(),
         ];
     }
 

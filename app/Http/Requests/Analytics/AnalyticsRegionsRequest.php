@@ -12,7 +12,7 @@ use Kirki\Ecommerce\Framework\Sanitizer;
  *
  * @since 1.0.0
  */
-class AnalyticsRegionsRequest extends AnalyticsOverviewRequest
+class AnalyticsRegionsRequest extends AnalyticsMetricRequest
 {
     /**
      * @inheritDoc

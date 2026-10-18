@@ -1,94 +1,100 @@
 import { describe, expect, it } from 'vitest';
 
-import { AnalyticsOverviewSchema } from '@/features/analytics/schemas/catalog/analytics';
+import {
+  type AnalyticsMetricKey,
+  analyticsMetricSchema,
+  METRIC_KEYS,
+} from '@/features/analytics/schemas/catalog/analytics';
 
-import { buildEmptyStoreOverview, buildOverview, moneyMetric } from '../../fixtures';
+import { buildEmptyStoreOverview, buildOverview, moneyMetric, splitOverview } from '../../fixtures';
 
-describe('AnalyticsOverviewSchema', () => {
-  it('accepts the payload served by GET /analytics/overview', () => {
-    const result = AnalyticsOverviewSchema.safeParse(buildOverview());
+const parseKey = <K extends AnalyticsMetricKey>(key: K, overview: Record<string, unknown>) => {
+  return analyticsMetricSchema(key).safeParse(splitOverview(overview)[key]);
+};
 
-    expect(result.success).toBe(true);
+const parsesEveryKey = (overview: Record<string, unknown>) => {
+  return METRIC_KEYS.every((key) => parseKey(key, overview).success);
+};
+
+describe('analyticsMetricSchema', () => {
+  it('accepts the payload of every key served by GET /analytics/metrics/{key}', () => {
+    expect(parsesEveryKey(buildOverview())).toBe(true);
   });
 
-  it('keeps the metrics of a ready response', () => {
-    const parsed = AnalyticsOverviewSchema.parse(buildOverview());
-
-    expect(parsed.granularity).toBe('day');
-    expect(parsed).not.toHaveProperty('currencies');
-    expect(parsed.kpis?.gross_sales.current_money_object?.display).toBe('$62.00');
-    expect(parsed.kpis?.orders.current).toBe(12);
-    expect(parsed.cards?.total_sales_breakdown.rows).toHaveLength(7);
-    expect(parsed.cards?.orders_by_fulfillment_status.items.map((item) => item.status)).toContain(
-      'returned',
+  it('keeps the meta and the metrics of a ready response', () => {
+    const responses = splitOverview(buildOverview());
+    const kpis = analyticsMetricSchema('kpis').parse(responses.kpis);
+    const breakdown = analyticsMetricSchema('total_sales_breakdown').parse(
+      responses.total_sales_breakdown,
     );
+    const fulfillment = analyticsMetricSchema('orders_by_fulfillment_status').parse(
+      responses.orders_by_fulfillment_status,
+    );
+
+    expect(kpis.meta.granularity).toBe('day');
+    expect(kpis.meta).not.toHaveProperty('currencies');
+    expect(kpis.data.gross_sales.current_money_object?.display).toBe('$62.00');
+    expect(kpis.data.orders.current).toBe(12);
+    expect(breakdown.data.rows).toHaveLength(7);
+    expect(fulfillment.data.items.map((item) => item.status)).toContain('returned');
+  });
+
+  it('rejects the data of another key', () => {
+    const responses = splitOverview(buildOverview());
+
+    expect(analyticsMetricSchema('kpis').safeParse(responses.sales_by_product).success).toBe(false);
   });
 
   it('accepts a response for a store with no orders (empty values and no comparison change)', () => {
-    expect(AnalyticsOverviewSchema.safeParse(buildEmptyStoreOverview()).success).toBe(true);
+    expect(parsesEveryKey(buildEmptyStoreOverview())).toBe(true);
   });
 
   it('accepts a response with no comparison', () => {
-    const result = AnalyticsOverviewSchema.safeParse(
-      buildOverview({
-        top: { compare: null },
-        kpis: { gross_sales: { ...moneyMetric(6200, null, null), series: [] } },
-      }),
-    );
+    const overview = buildOverview({
+      top: { compare: null },
+      kpis: { gross_sales: { ...moneyMetric(6200, null, null), series: [] } },
+    });
 
-    expect(result.success).toBe(true);
+    expect(parsesEveryKey(overview)).toBe(true);
   });
 
   it('accepts an empty change (zero comparison) and an empty Average order value', () => {
-    const result = AnalyticsOverviewSchema.safeParse(
-      buildOverview({
-        kpis: { average_order_value: { ...moneyMetric(null, null, null), series: [] } },
-      }),
-    );
+    const overview = buildOverview({
+      kpis: { average_order_value: { ...moneyMetric(null, null, null), series: [] } },
+    });
 
-    expect(result.success).toBe(true);
+    expect(parseKey('kpis', overview).success).toBe(true);
   });
 
   it('ignores fields it does not know, so a newer backend does not break the page', () => {
-    const result = AnalyticsOverviewSchema.safeParse({
-      ...buildOverview(),
-      brand_new_field: { a: 1 },
-    });
-
-    expect(result.success).toBe(true);
+    expect(parsesEveryKey({ ...buildOverview(), brand_new_field: { a: 1 } })).toBe(true);
   });
 
   // Scenario: First visit (the response always carries the metrics)
-  it('rejects a response without the key metrics', () => {
-    const { kpis: _kpis, ...withoutKpis } = buildOverview();
+  it('rejects a response without the data', () => {
+    const { meta } = splitOverview(buildOverview()).kpis;
 
-    expect(AnalyticsOverviewSchema.safeParse({ preparing: false, ...withoutKpis }).success).toBe(
-      false,
-    );
+    expect(analyticsMetricSchema('kpis').safeParse({ meta }).success).toBe(false);
   });
 
-  it('rejects a response without the cards', () => {
-    const { cards: _cards, ...withoutCards } = buildOverview();
+  it('rejects a response without the meta', () => {
+    const { data } = splitOverview(buildOverview()).sales_by_product;
 
-    expect(AnalyticsOverviewSchema.safeParse({ preparing: false, ...withoutCards }).success).toBe(
-      false,
-    );
+    expect(analyticsMetricSchema('sales_by_product').safeParse({ data }).success).toBe(false);
   });
 
   it('rejects a money metric whose money object is malformed', () => {
-    const result = AnalyticsOverviewSchema.safeParse(
-      buildOverview({
-        kpis: {
-          gross_sales: {
-            current_money_object: { raw: 1 },
-            previous_money_object: null,
-            change: null,
-            series: [],
-          },
+    const overview = buildOverview({
+      kpis: {
+        gross_sales: {
+          current_money_object: { raw: 1 },
+          previous_money_object: null,
+          change: null,
+          series: [],
         },
-      }),
-    );
+      },
+    });
 
-    expect(result.success).toBe(false);
+    expect(parseKey('kpis', overview).success).toBe(false);
   });
 });
