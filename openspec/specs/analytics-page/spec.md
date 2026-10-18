@@ -216,7 +216,7 @@ row filling it. On screens narrower than 720px, every card SHALL take a whole ro
 | Sales by payment method | half | Top 5 methods by Total sales, as one bar each with Total sales, order count and the change in Total sales |
 | Taxes collected by region | half | Top 5 shipping regions by Total tax, as one bar each with Total tax, the product and shipping tax split, and the change in Total tax |
 | Shipping charges by method | half | Top 5 methods by Shipping charges, as one bar each with Shipping charges, order count and the change in Shipping charges |
-| Inventory health | half | Counts of out-of-stock, low-stock and in-stock variants, the 4 lowest variants, and the note "Live, not affected by the date range" |
+| Inventory health | half | Counts of out-of-stock, low-stock and in-stock variants as tiles, up to 4 out-of-stock or low-stock variants with a status badge, and the note "Live, not affected by the date range" with a live indicator |
 
 No card, card row, breakdown line or chart SHALL open another page.
 
@@ -264,6 +264,11 @@ No card, card row, breakdown line or chart SHALL open another page.
 
 - **WHEN** the page shows the Shipping charges by method card
 - **THEN** each of the top 5 methods shows as one bar with its Shipping charges, its order count and its change in Shipping charges
+
+#### Scenario: Inventory health content
+
+- **WHEN** the page shows the Inventory health card
+- **THEN** it shows the 3 count tiles, the out-of-stock and low-stock variants with a status badge, and the live note with its indicator
 
 ### Requirement: Info tooltip on every metric
 
@@ -536,6 +541,42 @@ period, the row SHALL show no change.
 
 - **WHEN** the comparison is No comparison
 - **THEN** no shipping method row shows a change
+
+### Requirement: Inventory health layout
+
+The Inventory health card SHALL show 3 tiles of equal width with a light
+background: Out of stock, Low stock and In stock. Each tile SHALL show the count
+in bold and the status name under it in a subdued color. The Out of stock count
+SHALL use the critical color, the Low stock count the warning color, and the In
+stock count the default text color. Under the tiles, the card SHALL show the
+variant list in a box with a border and a divider between rows. Each row SHALL
+show the product name, the variant name under it in a subdued color when the
+variant has one, and on the right a status badge: "Out of stock" in the
+critical tone or "Low stock" in the warning tone. The row SHALL NOT show the
+quantity. When the list is empty, the box SHALL NOT show. Under the list, the
+card SHALL show the note "Live, not affected by the date range" after a green
+dot. The dot SHALL show a ripple that repeats, and the ripple SHALL NOT animate
+when the user asks for reduced motion.
+
+#### Scenario: Count tiles
+
+- **WHEN** the store has 1 out-of-stock, 2 low-stock and 30 in-stock variants
+- **THEN** the tiles show "1" in the critical color over "Out of stock", "2" in the warning color over "Low stock", and "30" over "In stock"
+
+#### Scenario: Variant row badge
+
+- **WHEN** the list contains the out-of-stock variant Hoodie, Blue / M, with −2 available
+- **THEN** its row shows "Hoodie", "Blue / M" under it and an "Out of stock" badge in the critical tone, and does not show "−2"
+
+#### Scenario: No variant needs attention
+
+- **WHEN** no variant is out of stock or low stock
+- **THEN** the card shows the 3 tiles and the live note, and no list box
+
+#### Scenario: Reduced motion
+
+- **WHEN** the user asks for reduced motion
+- **THEN** the live dot shows without the ripple animation
 
 ### Requirement: Orders by time of day dots
 

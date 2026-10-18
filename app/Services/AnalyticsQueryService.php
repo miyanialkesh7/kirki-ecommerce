@@ -10,6 +10,7 @@ use Kirki\Ecommerce\App\Constants\Order\FulfillmentStatus;
 use Kirki\Ecommerce\App\Constants\Order\OrderTaxType;
 use Kirki\Ecommerce\App\Constants\Order\PaymentStatus;
 use Kirki\Ecommerce\App\Constants\Order\RefundStatus;
+use Kirki\Ecommerce\App\Constants\Product\AvailabilityStatus;
 use Kirki\Ecommerce\App\Facades\Money;
 use Kirki\Ecommerce\App\Models\Variant;
 use Kirki\Ecommerce\App\Payment\Facades\Payment;
@@ -2097,7 +2098,7 @@ class AnalyticsQueryService
                 $status = $this->availability_service->resolve_variant_status($variant, $threshold);
                 $counts[$status] = ($counts[$status] ?? 0) + 1;
 
-                if ($variant->track_inventory) {
+                if ($variant->track_inventory && $status !== AvailabilityStatus::IN_STOCK) {
                     $tracked[] = [(int) $variant->available_quantity, $last_id];
                     sort($tracked);
                     $tracked = array_slice($tracked, 0, static::LOWEST_STOCK_LIMIT);

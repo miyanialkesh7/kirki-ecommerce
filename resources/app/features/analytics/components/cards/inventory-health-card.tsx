@@ -1,4 +1,5 @@
-import Flex from '@/components/ui/flex';
+import { keyframes } from '@emotion/react';
+
 import Text from '@/components/ui/text';
 import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
@@ -13,6 +14,12 @@ const STATUS_TONES = {
   out_of_stock: 'critical',
   low_stock: 'warning',
   in_stock: 'success',
+} as const;
+
+const COUNT_COLORS = {
+  out_of_stock: 'critical',
+  low_stock: 'warning',
+  in_stock: undefined,
 } as const;
 
 const getStatusLabels = (): Record<string, string> => ({
@@ -32,21 +39,19 @@ const InventoryHealthCard = (props: Pick<CardProps<'inventory_health'>, 'data'>)
   ] as const;
 
   return (
-    <AnalyticsCard
-      title={definition.title}
-      info={definition.info}
-      testId="card-inventory_health"
-    >
-      <Flex gap={3} wrap="wrap">
+    <AnalyticsCard title={definition.title} info={definition.info} testId="card-inventory_health">
+      <div css={scoped(styles.counts)}>
         {counts.map((item) => (
           <div key={item.status} css={scoped(styles.count)}>
-            <Text variant="heading4" weight="bold">
+            <Text variant="heading4" weight="bold" color={COUNT_COLORS[item.status]}>
               {formatNumber(item.count)}
             </Text>
-            <StatusBadge tone={STATUS_TONES[item.status]}>{labels[item.status]}</StatusBadge>
+            <Text variant="small" color="subdued">
+              {labels[item.status]}
+            </Text>
           </div>
         ))}
-      </Flex>
+      </div>
       {data.lowest.length > 0 && (
         <ul css={scoped(styles.list)}>
           {data.lowest.map((variant) => (
@@ -56,21 +61,26 @@ const InventoryHealthCard = (props: Pick<CardProps<'inventory_health'>, 'data'>)
                   {variant.product_name}
                 </Text>
                 {variant.variant_name && (
-                  <Text variant="tiny" color="subdued" truncate>
+                  <Text variant="small" color="subdued" truncate>
                     {variant.variant_name}
                   </Text>
                 )}
               </div>
-              <Text variant="small" weight="semibold">
-                {formatNumber(variant.available_quantity)}
-              </Text>
+              <StatusBadge
+                tone={STATUS_TONES[variant.status as keyof typeof STATUS_TONES] ?? 'neutral'}
+              >
+                {labels[variant.status] ?? variant.status}
+              </StatusBadge>
             </li>
           ))}
         </ul>
       )}
-      <Text variant="tiny" color="subdued">
-        {__('Live, not affected by the date range', 'kirki-ecommerce')}
-      </Text>
+      <div css={scoped(styles.live)}>
+        <span aria-hidden="true" data-testid="live-indicator" css={scoped(styles.dot)} />
+        <Text variant="tiny" color="subdued">
+          {__('Live, not affected by the date range', 'kirki-ecommerce')}
+        </Text>
+      </div>
     </AnalyticsCard>
   );
 };
@@ -79,20 +89,39 @@ InventoryHealthCard.displayName = 'InventoryHealthCard';
 
 export default InventoryHealthCard;
 
+const ripple = keyframes({
+  from: {
+    transform: 'scale(1)',
+    opacity: 0.6,
+  },
+  to: {
+    transform: 'scale(2.5)',
+    opacity: 0,
+  },
+});
+
 const styles = defineStyles({
+  counts: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: theme.spacing[3],
+  },
   count: {
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing[1],
-    minWidth: '88px',
+    minWidth: 0,
+    padding: theme.spacing[4],
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.background.surfaceAlt,
   },
   list: {
     listStyle: 'none',
     margin: 0,
     padding: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: theme.spacing[2],
+    border: `1px solid ${theme.colors.border.default}`,
+    borderRadius: theme.radius.md,
+    overflow: 'hidden',
   },
   row: {
     display: 'flex',
@@ -101,10 +130,41 @@ const styles = defineStyles({
     gap: theme.spacing[3],
     margin: 0,
     minWidth: 0,
+    padding: `${theme.spacing[3]} ${theme.spacing[4]}`,
+    '&:not(:first-of-type)': {
+      borderTop: `1px solid ${theme.colors.border.default}`,
+    },
   },
   text: {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
+  },
+  live: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing[2],
+  },
+  dot: {
+    position: 'relative',
+    flexShrink: 0,
+    width: '8px',
+    height: '8px',
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.analytics.status.goodText,
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      backgroundColor: 'inherit',
+      animation: `${ripple} 2s ease-out infinite`,
+    },
+    '@media (prefers-reduced-motion: reduce)': {
+      '&::after': {
+        animation: 'none',
+        opacity: 0,
+      },
+    },
   },
 });

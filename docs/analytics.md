@@ -172,7 +172,7 @@ Details:
 | Sales by payment method | Total sales of paid orders, by the payment method used. | The top 5 methods by total sales, as one bar each with the total sales, the order count and the change in total sales |
 | Taxes collected by region | Product and shipping tax on paid orders, by the shipping address region. | The top 5 regions by total tax, such as "Texas, United States", as one bar each with the total tax, the change in total tax and the product and shipping tax under the bar |
 | Shipping charges by method | Shipping charged on paid orders after free-shipping discounts, without tax, by shipping method. | The top 5 methods by shipping charges, as one bar each with the shipping charges, the order count and the change in shipping charges |
-| Inventory health | Live stock of every variant. Low stock means at or below the variant's low-stock threshold, or the store default. Not affected by the date range. | Counts of out-of-stock, low-stock and in-stock variants, and the 4 variants with the lowest stock |
+| Inventory health | Live stock of every variant. Low stock means at or below the variant's low-stock threshold, or the store default. Not affected by the date range. | Counts of out-of-stock, low-stock and in-stock variants as tiles, up to 4 out-of-stock or low-stock variants (lowest stock first) with a status badge, and a live indicator that pulses. The pulse stops when the user asks for reduced motion |
 
 Notes:
 

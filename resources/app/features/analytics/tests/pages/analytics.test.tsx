@@ -573,6 +573,41 @@ describe('Analytics cards', () => {
     ).toBeInTheDocument();
   });
 
+  // Scenario: Count tiles
+  it('shows the stock counts as tiles in Inventory health', () => {
+    renderPage();
+    const card = within(screen.getByTestId('card-inventory_health'));
+
+    expect(card.getByText('1').nextSibling).toHaveTextContent('Out of stock');
+    expect(card.getByText('2').nextSibling).toHaveTextContent('Low stock');
+    expect(card.getByText('30').nextSibling).toHaveTextContent('In stock');
+  });
+
+  // Scenario: Variant row badge
+  it('shows a status badge without the quantity on each Inventory health row', () => {
+    renderPage();
+    const card = within(screen.getByTestId('card-inventory_health'));
+    const row = within(card.getByText('Hoodie').closest('li') as HTMLElement);
+
+    expect(row.getByText('Blue / M')).toBeInTheDocument();
+    expect(row.getByText('Out of stock')).toHaveAttribute('data-tone', 'critical');
+    expect(row.queryByText('-2')).not.toBeInTheDocument();
+  });
+
+  // Scenario: No variant needs attention
+  it('shows no list in Inventory health when no variant needs attention', () => {
+    mockData(
+      buildOverview({
+        cards: { inventory_health: { out_of_stock: 0, low_stock: 0, in_stock: 30, lowest: [] } },
+      }),
+    );
+    renderPage();
+    const card = within(screen.getByTestId('card-inventory_health'));
+
+    expect(card.queryByRole('list')).not.toBeInTheDocument();
+    expect(card.getByTestId('live-indicator')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   // Scenario: Breakdown line is not a link
   it('opens nothing when the merchant selects the Discounts line', () => {
     renderPage();

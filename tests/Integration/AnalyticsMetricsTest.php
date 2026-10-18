@@ -1202,6 +1202,26 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "In-stock variant with low quantity": the Inventory health list holds only out-of-stock and low-stock variants.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_in_stock_variant_with_low_quantity_is_not_listed(): void
+    {
+        $product_id = $this->create_product()['id'];
+
+        $variant = $this->make_variant($product_id, ['available_quantity' => 1, 'low_stock_threshold' => 0]);
+        $after = $this->overview()['cards']['inventory_health'];
+
+        $this->assertNotContains($variant->id, array_column($after['lowest'], 'variant_id'));
+
+        foreach ($after['lowest'] as $item) {
+            $this->assertContains($item['status'], ['out_of_stock', 'low_stock']);
+        }
+    }
+
+    /**
      * Inventory metrics: an untracked variant is in stock when in_stock is set, else out of stock; the date range does not matter.
      *
      * @return void
