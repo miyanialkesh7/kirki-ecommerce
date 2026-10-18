@@ -404,12 +404,13 @@ describe('Analytics cards', () => {
   });
 
   // Scenario: Stock badge in Sales by product
-  it('shows "3 left in stock" in the critical style for a low-stock top product', () => {
+  it('shows "3 left in stock" in the warning badge for a low-stock top product', () => {
     renderPage();
 
     const badge = within(screen.getByTestId('card-sales_by_product')).getByText('3 left in stock');
 
-    expect(badge.closest('[data-tone]')).toHaveAttribute('data-tone', 'critical');
+    expect(badge).toHaveAttribute('data-slot', 'badge');
+    expect(badge).toHaveAttribute('data-variant', 'warning');
   });
 
   it('shows the live note in Inventory health', () => {

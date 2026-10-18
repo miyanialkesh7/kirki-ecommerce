@@ -1,3 +1,4 @@
+import Badge from '@/components/ui/badge';
 import Flex from '@/components/ui/flex';
 import Image from '@/components/ui/image';
 import Text from '@/components/ui/text';
@@ -5,7 +6,6 @@ import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import CardEmpty from '@/features/analytics/components/card-empty';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
 import ChangeBadge from '@/features/analytics/components/change-badge';
-import StatusBadge from '@/features/analytics/components/status-badge';
 import { formatMoney, formatNumber } from '@/features/analytics/lib/format';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import type { AnalyticsCards } from '@/features/analytics/schemas/catalog/analytics';
@@ -23,18 +23,18 @@ const getStockBadge = (product: ProductItem) => {
   }
 
   if (product.availability_status === 'out_of_stock') {
-    return { tone: 'critical', text: __('Out of stock', 'kirki-ecommerce') } as const;
+    return { variant: 'destructive', text: __('Out of stock', 'kirki-ecommerce') } as const;
   }
 
   if (product.track_inventory && (product.inventory ?? 0) > 0) {
     return {
-      tone: product.availability_status === 'low_stock' ? 'critical' : 'neutral',
+      variant: product.availability_status === 'low_stock' ? 'warning' : 'default',
       /* translators: %s: number of units left in stock */
       text: sprintf(__('%s left in stock', 'kirki-ecommerce'), formatNumber(product.inventory)),
     } as const;
   }
 
-  return { tone: 'success', text: __('In stock', 'kirki-ecommerce') } as const;
+  return { variant: 'success', text: __('In stock', 'kirki-ecommerce') } as const;
 };
 
 const SalesByProductCard = (props: CardProps<'sales_by_product'>) => {
@@ -68,7 +68,7 @@ const SalesByProductCard = (props: CardProps<'sales_by_product'>) => {
                     <Text variant="small" weight="medium" truncate>
                       {item.name}
                     </Text>
-                    {stockBadge && <StatusBadge tone={stockBadge.tone}>{stockBadge.text}</StatusBadge>}
+                    {stockBadge && <Badge variant={stockBadge.variant}>{stockBadge.text}</Badge>}
                   </Flex>
                   <Text variant="tiny" color="subdued">
                     {sprintf(

@@ -221,7 +221,7 @@ No card, card row, breakdown line or chart SHALL open another page.
 #### Scenario: Stock badge in Sales by product
 
 - **WHEN** a top product has tracked variants with 3 and −1 available, and its status is low stock
-- **THEN** its badge reads "3 left in stock" in the critical style
+- **THEN** its badge reads "3 left in stock" in the warning badge style, the same as the home dashboard
 
 #### Scenario: Breakdown line is not a link
 
