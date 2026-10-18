@@ -213,7 +213,7 @@ row filling it. On screens narrower than 720px, every card SHALL take a whole ro
 | Sales by coupon code | half | Top 5 codes by orders using code, as one bar each with orders, "$N off" discount given and the change in orders |
 | Orders by time of day | full | Busiest hour, busiest day and the share of orders from the busiest hour on; a weekday × hour dot grid with each day's total; a "This period / Change" toggle |
 | Sales by location | full | World map colored by the selected tab; "Sales / Orders / Customers" tabs; top 5 countries, or the top 5 regions of the selected country, with value, bar and change |
-| Sales by payment method | half | Top 5 methods by Total sales, with order count |
+| Sales by payment method | half | Top 5 methods by Total sales, as one bar each with Total sales, order count and the change in Total sales |
 | Taxes collected by region | half | Top 5 shipping regions by Total tax |
 | Shipping charges by method | half | Top 5 methods by Shipping charges, with order count |
 | Inventory health | half | Counts of out-of-stock, low-stock and in-stock variants, the 4 lowest variants, and the note "Live, not affected by the date range" |
@@ -249,6 +249,11 @@ No card, card row, breakdown line or chart SHALL open another page.
 
 - **WHEN** the page shows its cards on a wide screen
 - **THEN** Sales by location takes a whole row directly after Orders by time of day
+
+#### Scenario: Payment method row
+
+- **WHEN** the page shows the Sales by payment method card
+- **THEN** each of the top 5 methods shows as one bar with its Total sales, its order count and its change in Total sales
 
 ### Requirement: Info tooltip on every metric
 
@@ -458,6 +463,30 @@ comparison period, the row SHALL show no change.
 
 - **WHEN** FREESHIP50 has 4 orders and $32.00 discount given, and 3 orders in the comparison period
 - **THEN** the row shows "FREESHIP50", "4", "$32.00 off" and a 33.3% up change, with a full-length bar
+
+### Requirement: Sales by payment method bars
+
+The Sales by payment method card SHALL show the top 5 methods by Total sales,
+each as a row with the method name, the Total sales, the order count as
+"N orders" in a subdued color, the change in Total sales, and a horizontal bar
+under the row. The bar length SHALL be the method's Total sales relative to the
+method with the most Total sales. When no comparison is selected, or the method
+had no Total sales in the comparison period, the row SHALL show no change.
+
+#### Scenario: Payment method bars
+
+- **WHEN** Stripe has $20,680.27 Total sales from 209 orders and a change of 36.1%, and PayPal has $13,112.74 from 143 orders and a change of 10.9%
+- **THEN** the Stripe row shows "Stripe", "$20,680.27", "209 orders" and a 36.1% up change with a full-length bar, and the PayPal bar is about 63% of that length
+
+#### Scenario: Drop in Total sales
+
+- **WHEN** Klarna has a change of −8.8%
+- **THEN** its row shows "8.8%" in red with a down icon
+
+#### Scenario: No comparison
+
+- **WHEN** the comparison is No comparison
+- **THEN** no payment method row shows a change
 
 ### Requirement: Orders by time of day dots
 

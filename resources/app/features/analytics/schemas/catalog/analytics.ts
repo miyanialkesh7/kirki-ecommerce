@@ -85,6 +85,8 @@ const PaymentMethodItemSchema = z.object({
   name: z.string(),
   orders: z.number(),
   total_sales_money_object: MoneyObjectSchema,
+  previous_total_sales_money_object: MoneyObjectSchema.nullish(),
+  change: z.number().nullish(),
 });
 
 const TaxRegionItemSchema = z.object({

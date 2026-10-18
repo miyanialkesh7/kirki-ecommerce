@@ -1755,23 +1755,12 @@ class AnalyticsQueryService
      */
     protected function build_sales_by_payment_method(array $range)
     {
-        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($range['from'], $range['to']));
+        $rows = $this->query_payment_method_sales($range['from'], $range['to'], static::LIST_LIMIT);
+        $previous = null;
 
-        $rows = DB::connection()->select(
-            sprintf(
-                "SELECT o.payment_provider AS id, COUNT(*) AS orders,
-                        COALESCE(SUM(%1\$s + o.base_tax_total + %2\$s), 0) AS total_sales
-                    FROM %3\$s o
-                    WHERE %4\$s AND o.payment_provider IS NOT NULL
-                    GROUP BY o.payment_provider ORDER BY total_sales DESC, orders DESC, id ASC LIMIT %5\$d",
-                $this->item_sum_sql('o', 'net'),
-                $this->shipping_sql('o'),
-                $this->table('orders'),
-                $scope,
-                static::LIST_LIMIT
-            ),
-            $bindings
-        );
+        if ($range['compare'] !== null && !empty($rows)) {
+            $previous = array_column($this->query_payment_method_sales($range['compare']['from'], $range['compare']['to']), 'total_sales', 'id');
+        }
 
         $ids = array_column($rows, 'id');
         $saved_names = $this->fetch_saved_names('payment_provider', 'payment_metadata', $ids);
@@ -1779,15 +1768,51 @@ class AnalyticsQueryService
 
         foreach ($rows as $row) {
             $provider = Payment::get_provider($row['id']);
+            $total_sales = (int) $row['total_sales'];
+            $previous_total_sales = $previous === null ? null : (int) ($previous[$row['id']] ?? 0);
             $items[] = [
                 'id' => $row['id'],
                 'name' => $provider ? $provider->title() : ($saved_names[$row['id']] ?? $row['id']),
                 'orders' => (int) $row['orders'],
-                'total_sales_money_object' => $this->money((int) $row['total_sales']),
+                'total_sales_money_object' => $this->money($total_sales),
+                'previous_total_sales_money_object' => $previous_total_sales === null ? null : $this->money($previous_total_sales),
+                'change' => $this->change($total_sales, $previous_total_sales),
             ];
         }
 
         return $items;
+    }
+
+    /**
+     * Sum the Total sales and count the sales orders by payment method in a window.
+     *
+     * @since 1.0.0
+     *
+     * @param string   $from  First day.
+     * @param string   $to    Last day.
+     * @param int|null $limit Most methods to return, or null for all.
+     *
+     * @return array<int, array<string, mixed>> Rows with id, orders and total_sales, most Total sales first.
+     */
+    protected function query_payment_method_sales(string $from, string $to, $limit = null)
+    {
+        [$scope, $bindings] = $this->sales_scope('o', $this->utc_bounds($from, $to));
+
+        return DB::connection()->select(
+            sprintf(
+                "SELECT o.payment_provider AS id, COUNT(*) AS orders,
+                        COALESCE(SUM(%1\$s + o.base_tax_total + %2\$s), 0) AS total_sales
+                    FROM %3\$s o
+                    WHERE %4\$s AND o.payment_provider IS NOT NULL
+                    GROUP BY o.payment_provider ORDER BY total_sales DESC, orders DESC, id ASC%5\$s",
+                $this->item_sum_sql('o', 'net'),
+                $this->shipping_sql('o'),
+                $this->table('orders'),
+                $scope,
+                $limit === null ? '' : sprintf(' LIMIT %d', $limit)
+            ),
+            $bindings
+        );
     }
 
     /**

@@ -910,6 +910,45 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "Payment method change": a method row has the change of its Total sales.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_payment_method_has_the_change_of_its_total_sales(): void
+    {
+        $this->make_sale('2026-09-30 10:00:00', 10000, ['payment_provider' => 'ghost_pay']);
+        $this->make_sale('2026-10-01 10:00:00', 13600, ['payment_provider' => 'ghost_pay']);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['sales_by_payment_method']['items'];
+
+        $this->assertSame(13600, $this->minor($items[0]['total_sales_money_object']));
+        $this->assertSame(10000, $this->minor($items[0]['previous_total_sales_money_object']));
+        $this->assertSame(36.0, $items[0]['change']);
+    }
+
+    /**
+     * Scenario "Payment method new in the range": a method with no previous sales has previous 0 and no change.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_payment_method_new_in_the_range_has_no_change(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 2000, ['payment_provider' => 'ghost_pay']);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['sales_by_payment_method']['items'];
+
+        $this->assertSame(0, $this->minor($items[0]['previous_total_sales_money_object']));
+        $this->assertNull($items[0]['change']);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'none'])['cards']['sales_by_payment_method']['items'];
+
+        $this->assertNull($items[0]['previous_total_sales_money_object']);
+        $this->assertNull($items[0]['change']);
+    }
+
+    /**
      * Payment method and shipping method metrics: the shipping method name falls back to the saved metadata.
      *
      * @return void

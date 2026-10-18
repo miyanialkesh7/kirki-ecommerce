@@ -231,7 +231,24 @@ const buildOverview = (
         ],
       },
       sales_by_payment_method: {
-        items: [{ id: 'paypal', name: 'PayPal', orders: 7, total_sales_money_object: money(6601) }],
+        items: [
+          {
+            id: 'stripe',
+            name: 'Stripe',
+            orders: 209,
+            total_sales_money_object: money(2068027),
+            previous_total_sales_money_object: money(1519500),
+            change: 36.1,
+          },
+          {
+            id: 'klarna',
+            name: 'Klarna',
+            orders: 27,
+            total_sales_money_object: money(285847),
+            previous_total_sales_money_object: money(313400),
+            change: -8.8,
+          },
+        ],
       },
       taxes_by_region: {
         items: [

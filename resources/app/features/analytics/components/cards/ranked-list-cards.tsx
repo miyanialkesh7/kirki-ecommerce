@@ -70,18 +70,29 @@ SalesByCouponCodeCard.displayName = 'SalesByCouponCodeCard';
 
 const SalesByPaymentMethodCard = (props: CardProps<'sales_by_payment_method'>) => {
   const { data, isEmpty } = props;
+  const definition = getMetricDefinitions().sales_by_payment_method;
 
   return (
-    <RankedCardShell
-      metric="sales_by_payment_method"
-      isEmpty={isEmpty}
-      items={data.items.map((item) => ({
-        key: item.id,
-        label: item.name,
-        detail: formatOrders(item.orders),
-        value: formatMoney(item.total_sales_money_object),
-      }))}
-    />
+    <AnalyticsCard
+      title={definition.title}
+      info={definition.info}
+      testId="card-sales_by_payment_method"
+    >
+      {isEmpty ? (
+        <CardEmpty />
+      ) : (
+        <HBarList
+          items={data.items.map((item) => ({
+            key: item.id,
+            label: item.name,
+            value: Number(item.total_sales_money_object.raw),
+            display: formatMoney(item.total_sales_money_object),
+            detail: formatOrders(item.orders),
+            change: item.change,
+          }))}
+        />
+      )}
+    </AnalyticsCard>
   );
 };
 

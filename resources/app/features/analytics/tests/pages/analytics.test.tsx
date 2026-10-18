@@ -459,6 +459,23 @@ describe('Analytics cards', () => {
     expect(card.queryByText('4 orders')).not.toBeInTheDocument();
   });
 
+  // Scenario: Payment method bars
+  it('shows one bar with total sales, orders and growth rate for each method in Sales by payment method', () => {
+    renderPage();
+
+    const card = within(screen.getByTestId('card-sales_by_payment_method'));
+    const badges = card.getAllByTestId('change-badge');
+
+    expect(card.getByText('Stripe')).toBeInTheDocument();
+    expect(card.getByText('$20680.27')).toBeInTheDocument();
+    expect(card.getByText('209 orders')).toBeInTheDocument();
+    expect(badges[0]).toHaveTextContent('36.1%');
+    expect(badges[0]).toHaveAttribute('data-direction', 'up');
+    expect(card.getByText('27 orders')).toBeInTheDocument();
+    expect(badges[1]).toHaveTextContent('8.8%');
+    expect(badges[1]).toHaveAttribute('data-direction', 'down');
+  });
+
   // Scenario: Summary line
   it('shows the busiest hour, the busiest day and the share from the busiest hour on', () => {
     renderPage();
