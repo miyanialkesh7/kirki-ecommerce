@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { geoMercator, geoPath } from 'd3-geo';
 import type { Feature, FeatureCollection, Geometry, Polygon } from 'geojson';
-import { type KeyboardEvent, useMemo, useState } from 'react';
+import { type KeyboardEvent, type MouseEvent, useMemo, useState } from 'react';
 import { feature } from 'topojson-client';
 
 import Skeleton from '@/components/ui/skeleton';
@@ -9,6 +9,7 @@ import ChangeBadge from '@/features/analytics/components/change-badge';
 import useElementWidth from '@/features/analytics/hooks/use-element-width';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
+import { __ } from '@/wpi18n';
 
 const ANTARCTICA = '010';
 const ASPECT_RATIO = 0.6;
@@ -93,6 +94,7 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
       countries && path
         ? countries.map((country) => ({
             id: String(country.id ?? ''),
+            key: String(country.id ?? '') || country.properties.name,
             d: path(country) ?? '',
             country,
           }))
@@ -126,12 +128,21 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
     };
   }, [shapes, path, selectedNumericCode, width, height]);
 
-  const active = shapes.find((shape) => shape.id === activeId && areas[shape.id]);
+  const active = shapes.find((shape) => shape.key === activeId);
   const activeArea = active ? areas[active.id] : null;
 
-  const showAt = (id: string, point: Point) => {
-    setActiveId(id);
+  const showAt = (key: string, point: Point) => {
+    setActiveId(key);
     setTooltipPoint(point);
+  };
+
+  const showAtPointer = (key: string, event: MouseEvent<SVGPathElement>) => {
+    const bounds = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
+
+    showAt(key, {
+      x: event.clientX - (bounds?.left ?? 0),
+      y: event.clientY - (bounds?.top ?? 0),
+    });
   };
 
   const hide = () => {
@@ -184,12 +195,14 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
               if (!area) {
                 return (
                   <path
-                    key={shape.id || shape.country.properties.name}
+                    key={shape.key}
                     d={shape.d}
                     data-country={shape.id}
                     fill={theme.colors.analytics.map.empty}
                     opacity={isFaded ? FADED_OPACITY : 1}
                     css={scoped(styles.country)}
+                    onMouseMove={(event) => showAtPointer(shape.key, event)}
+                    onMouseLeave={hide}
                   />
                 );
               }
@@ -198,7 +211,7 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
 
               return (
                 <path
-                  key={shape.id}
+                  key={shape.key}
                   d={shape.d}
                   role="button"
                   tabIndex={0}
@@ -210,16 +223,9 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
                   css={scoped(styles.country, styles.interactive)}
                   onClick={() => onSelect(area.code)}
                   onKeyDown={(event) => handleKeyDown(event, area.code)}
-                  onMouseMove={(event) => {
-                    const bounds = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
-
-                    showAt(shape.id, {
-                      x: event.clientX - (bounds?.left ?? 0),
-                      y: event.clientY - (bounds?.top ?? 0),
-                    });
-                  }}
+                  onMouseMove={(event) => showAtPointer(shape.key, event)}
                   onMouseLeave={hide}
-                  onFocus={() => showAt(shape.id, focusPoint(shape.country))}
+                  onFocus={() => showAt(shape.key, focusPoint(shape.country))}
                   onBlur={hide}
                 />
               );
@@ -237,15 +243,24 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
           </g>
         </svg>
       )}
-      {activeArea && tooltipPoint && (
+      {active && tooltipPoint && (
         <div
           role="tooltip"
           css={scoped(styles.tooltip)}
           style={{ left: `${tooltipPoint.x}px`, top: `${tooltipPoint.y}px` }}
         >
-          <span>{activeArea.name}</span>
-          <span css={scoped(styles.tooltipValue)}>{activeArea.display}</span>
-          <ChangeBadge change={activeArea.change} />
+          {activeArea ? (
+            <>
+              <span>{activeArea.name}</span>
+              <span css={scoped(styles.tooltipValue)}>{activeArea.display}</span>
+              <ChangeBadge change={activeArea.change} />
+            </>
+          ) : (
+            <>
+              <span>{active.country.properties.name}</span>
+              <span>{__('No data', 'kirki-ecommerce')}</span>
+            </>
+          )}
         </div>
       )}
     </div>

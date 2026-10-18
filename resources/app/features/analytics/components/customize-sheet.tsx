@@ -73,7 +73,7 @@ const SortableRow = (props: SortableRowProps) => {
       data-testid={`customize-item-${id}`}
       data-dragging={isDragging ? 'true' : undefined}
       cssOverride={styles.row}
-      style={{ transform: CSS.Translate.toString(transform), transition, paddingInline: 2, gap: 2 }}
+      style={{ transform: CSS.Translate.toString(transform), transition, paddingLeft: 2, gap: 2 }}
     >
       <button
         type="button"
@@ -315,6 +315,7 @@ const styles = defineStyles({
   },
   note: {
     flexShrink: 0,
+    marginLeft: 'auto',
   },
   footer: {
     justifyContent: 'space-between',

@@ -710,9 +710,11 @@ tab name, the lowest value, a gradient, the highest value, and a gray swatch
 with "None".
 
 Hovering or focusing a country with a value SHALL show a border around that
-country and a tooltip with the country name, the value and the change. A
-country with no value SHALL show no border and no tooltip, and SHALL do
-nothing on a click. The map SHALL NOT zoom on the mouse wheel and SHALL NOT
+country and a tooltip with the country name, the value and the change.
+Hovering a country with no value SHALL also show a border around that country
+and a tooltip with the country name and "No data". A country with no value
+SHALL keep the default cursor, SHALL do nothing on a click, and SHALL NOT be
+reachable with the keyboard. The map SHALL NOT zoom on the mouse wheel and SHALL NOT
 pan on a drag. Each country with a value SHALL be reachable with the keyboard,
 and its accessible name SHALL be the tooltip text.
 
@@ -757,8 +759,8 @@ no country has a value, the card SHALL show the empty state.
 
 #### Scenario: Hover a country with no value
 
-- **WHEN** the merchant hovers a country with no value for the selected tab
-- **THEN** no border and no tooltip show, and a click does nothing
+- **WHEN** the merchant hovers France, which has no value for the selected tab
+- **THEN** France shows a border and the tooltip shows "France" and "No data", the cursor stays the default cursor, and a click does nothing
 
 #### Scenario: Select a country
 

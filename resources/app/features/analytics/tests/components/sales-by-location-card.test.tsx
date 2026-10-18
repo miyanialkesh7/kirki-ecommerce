@@ -134,7 +134,7 @@ describe('Sales by location card', () => {
   });
 
   // Scenario: Hover a country with no value
-  it('gives a country with no value no button, no border and no tooltip', async () => {
+  it('shows a border and a No data tooltip on a country with no value, and does nothing on a click', async () => {
     const { container } = renderCard();
 
     await findCountry(/^Germany · /);
@@ -142,11 +142,21 @@ describe('Sales by location card', () => {
     const france = container.querySelector('path[data-country="250"]');
 
     expect(france).not.toHaveAttribute('role');
+    expect(france).not.toHaveAttribute('tabindex');
     fireEvent.mouseMove(france!);
+
+    expect(screen.getByTestId('choropleth-outline')).toBeInTheDocument();
+    expect(screen.getByRole('tooltip')).toHaveTextContent('FranceNo data');
+
     fireEvent.click(france!);
+
+    expect(lastRegionsCountry()).toBeNull();
+    expect(screen.queryByTestId('regions-heading')).not.toBeInTheDocument();
+
+    fireEvent.mouseLeave(france!);
+
     expect(screen.queryByTestId('choropleth-outline')).not.toBeInTheDocument();
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    expect(lastRegionsCountry()).toBeNull();
   });
 
   // Scenario: Hover a country
