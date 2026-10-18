@@ -46,6 +46,6 @@
 ## 7. Final verification
 
 - [x] 7.1 Run `npm run typecheck && npm test && npm run lint` in `resources/app/` _(typecheck clean, 185 files / 1811 tests pass; lint has only the existing `query-error-state.tsx` import-order error, not touched by this change)_
-- [ ] 7.2 Ask the user to check the controls visually against the four design screenshots (the browser preview is not used in this project)
-- [ ] 7.3 At archive time, update the Purpose of `openspec/specs/analytics-page/spec.md` so it does not mention the currency control
+- [x] 7.2 Ask the user to check the controls visually against the four design screenshots (the browser preview is not used in this project)
+- [x] 7.3 At archive time, update the Purpose of `openspec/specs/analytics-page/spec.md` so it does not mention the currency control
 - [x] 7.4 Verify: `npm run typecheck && npm test` in `resources/app/`

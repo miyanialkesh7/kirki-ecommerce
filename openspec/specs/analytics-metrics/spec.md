@@ -142,19 +142,6 @@ granularity and SHALL be matched to the current series by position.
 - **WHEN** weeks start on Monday and a weekly range starts on a Wednesday
 - **THEN** the first point covers Wednesday to Sunday
 
-### Requirement: Currency filter
-
-By default every money metric SHALL use the `base_` columns of all counted
-orders. When the currency filter is set to a currency code, only orders with that
-`currency_code` SHALL count, and every money metric SHALL use the `invoiced_`
-columns and the refunds' `invoiced_amount`. The filter SHALL NOT convert amounts
-between currencies.
-
-#### Scenario: EUR filter
-
-- **WHEN** the currency filter is EUR
-- **THEN** only orders placed in EUR count, and amounts are their EUR invoiced amounts
-
 ### Requirement: Customer identity
 
 A customer SHALL be identified, in this order, by `orders.customer_id`; else by
@@ -342,7 +329,7 @@ customer once.
 ### Requirement: Inventory metrics
 
 Inventory metrics SHALL read the variants as they are now and SHALL NOT use the
-date range, the comparison or the currency filter. Each variant's status SHALL
+date range or the comparison. Each variant's status SHALL
 be: when inventory is not tracked, in stock if `in_stock` is set, else out of
 stock; when tracked, out of stock if `available_quantity ≤ 0`, low stock if
 `available_quantity` ≤ its `low_stock_threshold` (the store default threshold
@@ -396,10 +383,13 @@ second request to return metrics.
 
 ### Requirement: Analytics endpoint access
 
-`GET /analytics/overview` SHALL accept the range, the comparison and the
-currency, and SHALL return every metric the Analytics page needs in one response.
-Only users with the `manage_options` capability SHALL get a response. Invalid
-parameters SHALL return a 422 response with a field error.
+`GET /analytics/overview` SHALL accept the range and the comparison, and SHALL
+return every metric the Analytics page needs in one response. Every money
+metric SHALL use the `base_` columns of the counted orders and the base currency.
+The response SHALL include `base_currency_code` and SHALL NOT include a
+`currencies` list. A `currency` parameter SHALL be ignored. Only users with the
+`manage_options` capability SHALL get a response. Invalid parameters SHALL
+return a 422 response with a field error.
 
 #### Scenario: Shop manager without the capability
 
@@ -411,12 +401,12 @@ parameters SHALL return a 422 response with a field error.
 - **WHEN** a custom range ends after today
 - **THEN** the response is 422
 
-#### Scenario: Unknown currency
+#### Scenario: Currency parameter is ignored
 
-- **WHEN** the currency parameter is `ZZZ`, or is not 3 letters
-- **THEN** the response is 422 with an error on `currency`
+- **WHEN** the store base currency is USD, there are orders placed in USD and in EUR, and the request has `currency=EUR`
+- **THEN** the response is 200 and every money metric is the same as without the parameter, in USD, counting both orders
 
-#### Scenario: Known currency without orders
+#### Scenario: No currencies list
 
-- **WHEN** the currency parameter is `JPY`, a valid ISO 4217 code, and no order was placed in JPY
-- **THEN** the response is 200 and every money metric is 0 in JPY
+- **WHEN** the endpoint returns the overview
+- **THEN** the response has `base_currency_code` and has no `currencies` field
