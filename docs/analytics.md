@@ -158,7 +158,7 @@ Details:
 | Total sales over time | Net sales + shipping + taxes, by the day each order was paid. Refunds are subtracted on the day they completed. | Total sales, its change, and a line chart with the comparison line |
 | Total sales breakdown | Gross sales − discounts − returns = net sales. Net sales + shipping + taxes = total sales. Paid orders, by paid date. | Gross sales, Discounts, Returns, Net sales, Shipping charges, Taxes and Total sales, each with its change |
 | Sales by product | Top products by net sales: item totals after discounts, without tax, for orders paid in the range. Stock is live. | The top 5 products with thumbnail, stock left, units sold, net sales and change |
-| Sales by category | Net sales of the products in each category. A product in two categories counts in both. | The top 6 categories as bars with the comparison value |
+| Sales by category | Net sales of the products in each category. A product in two categories counts in both. | The top 6 categories, each as one bar with net sales and change |
 | Average order value over time | (Gross sales − discounts) ÷ paid orders, for each day, week or month. | Average order value, its change, and a dot chart |
 | Orders over time | Orders created in each day, week or month, paid or not. Failed payments are left out. | Orders, items ordered, its change, and a bar chart |
 | Orders by fulfillment status | Orders created in the range, by their fulfillment status now. Failed payments are left out. | A headline such as "50% delivered · 12 orders", a bar and a list with count and percent for each status |

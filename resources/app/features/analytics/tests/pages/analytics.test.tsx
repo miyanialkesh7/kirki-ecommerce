@@ -413,6 +413,17 @@ describe('Analytics cards', () => {
     expect(badge).toHaveAttribute('data-variant', 'warning');
   });
 
+  // Scenario: Growth in Sales by category
+  it('shows one bar and the growth rate for each category in Sales by category', () => {
+    renderPage();
+
+    const card = within(screen.getByTestId('card-sales_by_category'));
+
+    expect(card.getByTestId('change-badge')).toHaveTextContent('36.7%');
+    expect(card.getByTestId('change-badge')).toHaveAttribute('data-direction', 'up');
+    expect(card.queryByText('$30.00')).not.toBeInTheDocument();
+  });
+
   it('shows the live note in Inventory health', () => {
     renderPage();
 

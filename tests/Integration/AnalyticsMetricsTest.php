@@ -521,6 +521,25 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "Category growth": a category row has the change of its Net sales.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_category_has_the_change_of_its_net_sales(): void
+    {
+        $hoodies = $this->create_category('Hoodies');
+        $product_id = $this->create_product(['categories' => [$hoodies]])['id'];
+        $this->make_sale_with_item('2026-09-30 10:00:00', ['product_id' => $product_id, 'base_subtotal' => 2000, 'base_total' => 2000]);
+        $this->make_sale_with_item('2026-10-01 10:00:00', ['product_id' => $product_id, 'base_subtotal' => 3000, 'base_total' => 3000]);
+
+        $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['sales_by_category']['items'];
+
+        $this->assertSame(2000, $this->minor($items[0]['previous_net_sales_money_object']));
+        $this->assertSame(50.0, $items[0]['change']);
+    }
+
+    /**
      * Product sales metrics: a product in no category counts under "Uncategorized".
      *
      * @return void

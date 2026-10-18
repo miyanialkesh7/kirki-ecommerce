@@ -137,6 +137,7 @@ const buildOverview = (
             name: 'Hoodies',
             net_sales_money_object: money(4100),
             previous_net_sales_money_object: money(3000),
+            change: 36.7,
           },
         ],
       },

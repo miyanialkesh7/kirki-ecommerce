@@ -1312,11 +1312,14 @@ class AnalyticsQueryService
         });
 
         return array_map(function ($row) use ($previous) {
+            $previous_net = $previous === null ? null : (int) ($previous[$row['category_id']] ?? 0);
+
             return [
                 'category_id' => $row['category_id'] === '' ? null : (int) $row['category_id'],
                 'name' => $row['name'],
                 'net_sales_money_object' => $this->money($row['net_sales']),
-                'previous_net_sales_money_object' => $previous === null ? null : $this->money((int) ($previous[$row['category_id']] ?? 0)),
+                'previous_net_sales_money_object' => $previous_net === null ? null : $this->money($previous_net),
+                'change' => $this->change($row['net_sales'], $previous_net),
             ];
         }, array_slice($rows, 0, static::CATEGORY_LIMIT));
     }

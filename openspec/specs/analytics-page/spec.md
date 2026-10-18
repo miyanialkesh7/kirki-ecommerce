@@ -205,7 +205,7 @@ row filling it. On screens narrower than 720px, every card SHALL take a whole ro
 | Total sales over time | full | Total sales headline and change; line chart of Total sales with the comparison series |
 | Total sales breakdown | half | Rows Gross sales, Discounts (negative), Returns (negative), Net sales, Shipping charges, Taxes, Total sales, each with its change. Net and Total in bold. |
 | Sales by product | half | Top 5 products by Net sales: thumbnail, name, stock left, units sold, Net sales and change |
-| Sales by category | half | Top 6 categories by Net sales, as bars with the comparison value |
+| Sales by category | half | Top 6 categories by Net sales, as one bar each with Net sales and change |
 | Average order value over time | half | AOV headline and change; dot chart with the comparison series |
 | Orders over time | half | Orders headline and change; bar chart with the comparison series |
 | Orders by fulfillment status | half | Share of each current fulfillment status as one segmented bar and a list with count and percent; headline "N% delivered · M orders" |
@@ -222,6 +222,11 @@ No card, card row, breakdown line or chart SHALL open another page.
 
 - **WHEN** a top product has tracked variants with 3 and −1 available, and its status is low stock
 - **THEN** its badge reads "3 left in stock" in the warning badge style, the same as the home dashboard
+
+#### Scenario: Growth in Sales by category
+
+- **WHEN** the category Hoodies has Net sales 4100 and a change of 36.7%
+- **THEN** its row shows one bar, the Net sales and "36.7%" in green with an up icon, and no comparison bar or comparison value
 
 #### Scenario: Breakdown line is not a link
 

@@ -289,12 +289,18 @@ the system SHALL calculate Net items sold (Σ `quantity`), Gross sales (Σ
 no longer exists (an empty `product_id`, or a `product_id` with no product) SHALL
 be grouped by their saved `product_name`, marked as deleted, and returned with an
 empty product id. A product SHALL count once in each category it is in now. A product in
-no category SHALL count under "Uncategorized".
+no category SHALL count under "Uncategorized". Each product row and each category
+row SHALL have the change of its Net sales.
 
 #### Scenario: Product in two categories
 
 - **WHEN** a product with Net sales 3000 is in the categories Hoodies and Sale
 - **THEN** both Hoodies and Sale show 3000
+
+#### Scenario: Category growth
+
+- **WHEN** the category Hoodies has Net sales 3000, and 2000 in the comparison range
+- **THEN** its row has the change 50.0
 
 #### Scenario: Deleted product
 

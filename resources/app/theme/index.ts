@@ -360,7 +360,7 @@ const theme = {
         other: cssVar('analyticsSlate'),
       },
       breakdown: {
-        bar: cssVar('analyticsPurple400'),
+        bar: cssVar('violet2'),
         emphasis: cssVar('violet2'),
         discounts: cssVar('analyticsAmber'),
       },

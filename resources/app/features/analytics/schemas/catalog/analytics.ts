@@ -50,6 +50,7 @@ const CategoryItemSchema = z.object({
   name: z.string(),
   net_sales_money_object: MoneyObjectSchema,
   previous_net_sales_money_object: MoneyObjectSchema.nullish(),
+  change: z.number().nullish(),
 });
 
 const FulfillmentItemSchema = z.object({

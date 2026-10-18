@@ -120,7 +120,7 @@ SHALL resolve through a primitive's CSS custom property.
 | `series.secondary` | `analyticsTeal` |
 | `series.tertiary` | `analyticsAmber` |
 | `series.other` | `analyticsSlate` |
-| `breakdown.bar` | `analyticsPurple400` |
+| `breakdown.bar` | `violet2` |
 | `breakdown.emphasis` | `violet2` |
 | `breakdown.discounts` | `analyticsAmber` |
 | `fulfillment.unfulfilled` | `analyticsSlate` |

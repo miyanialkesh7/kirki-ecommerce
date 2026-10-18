@@ -24,12 +24,7 @@ const SalesByCategoryCard = (props: CardProps<'sales_by_category'>) => {
             label: item.name,
             value: Number(item.net_sales_money_object.raw),
             display: formatMoney(item.net_sales_money_object),
-            previousValue: item.previous_net_sales_money_object
-              ? Number(item.previous_net_sales_money_object.raw)
-              : null,
-            previousDisplay: item.previous_net_sales_money_object
-              ? formatMoney(item.previous_net_sales_money_object)
-              : null,
+            change: item.change,
           }))}
         />
       )}

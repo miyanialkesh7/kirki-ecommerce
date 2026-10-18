@@ -1,4 +1,5 @@
 import Text from '@/components/ui/text';
+import ChangeBadge from '@/features/analytics/components/change-badge';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 
@@ -7,8 +8,7 @@ type HBarItem = {
   label: string;
   value: number;
   display: string;
-  previousValue?: number | null;
-  previousDisplay?: string | null;
+  change?: number | null;
 };
 
 type HBarListProps = {
@@ -19,7 +19,7 @@ const toPercent = (value: number, max: number) => `${Math.max(0, (value / max) *
 
 const HBarList = (props: HBarListProps) => {
   const { items } = props;
-  const max = Math.max(1, ...items.flatMap((item) => [item.value, item.previousValue ?? 0]));
+  const max = Math.max(1, ...items.map((item) => item.value));
 
   return (
     <ul css={scoped(styles.list)}>
@@ -29,23 +29,16 @@ const HBarList = (props: HBarListProps) => {
             <Text variant="small" truncate>
               {item.label}
             </Text>
-            <Text variant="small" weight="semibold">
-              {item.display}
-            </Text>
+            <div css={scoped(styles.values)}>
+              <Text variant="small" weight="semibold">
+                {item.display}
+              </Text>
+              <ChangeBadge change={item.change} />
+            </div>
           </div>
           <div css={scoped(styles.track)} aria-hidden="true">
             <div css={scoped(styles.bar)} style={{ width: toPercent(item.value, max) }} />
           </div>
-          {item.previousDisplay && (
-            <>
-              <div css={scoped(styles.track)} aria-hidden="true">
-                <div css={scoped(styles.previousBar)} style={{ width: toPercent(item.previousValue ?? 0, max) }} />
-              </div>
-              <Text variant="tiny" color="subdued">
-                {item.previousDisplay}
-              </Text>
-            </>
-          )}
         </li>
       ))}
     </ul>
@@ -79,6 +72,12 @@ const styles = defineStyles({
     gap: theme.spacing[3],
     minWidth: 0,
   },
+  values: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing[3],
+    flexShrink: 0,
+  },
   track: {
     height: '6px',
     borderRadius: theme.radius.full,
@@ -89,10 +88,5 @@ const styles = defineStyles({
     height: '100%',
     borderRadius: theme.radius.full,
     backgroundColor: theme.colors.analytics.breakdown.bar,
-  },
-  previousBar: {
-    height: '100%',
-    borderRadius: theme.radius.full,
-    backgroundColor: theme.colors.analytics.chart.previous,
   },
 });
