@@ -117,6 +117,43 @@ class AnalyticsQueryService
     }
 
     /**
+     * Get the top regions of one country by Sales, Orders and Customers for a range and a comparison.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $params Validated request parameters, with the country code.
+     *
+     * @return array<string, mixed>
+     */
+    public function get_regions(array $params)
+    {
+        $this->table_prefix = DB::connection()->get_table_prefix();
+        $this->base_currency = Money::get_base_currency();
+
+        $range = $this->range_resolver->resolve($params);
+        $country = strtoupper((string) $params['country']);
+        $current = $this->merge_region_names($country, $this->query_location_metrics($this->utc_bounds($range['from'], $range['to']), $country));
+        $previous = null;
+
+        if ($range['compare'] !== null) {
+            $previous = $this->merge_region_names($country, $this->query_location_metrics($this->utc_bounds($range['compare']['from'], $range['compare']['to']), $country));
+        }
+
+        $rows = [];
+
+        foreach ($current as $name => $values) {
+            $rows[] = array_merge(['name' => (string) $name], $this->location_values($values, $previous === null ? null : ($previous[$name] ?? [])));
+        }
+
+        return [
+            'country' => $country,
+            'sales' => $this->top_locations($rows, $current, 'sales'),
+            'orders' => $this->top_locations($rows, $current, 'orders'),
+            'customers' => $this->top_locations($rows, $current, 'customers'),
+        ];
+    }
+
+    /**
      * Collect the totals and the bucket series of one window.
      *
      * @since 1.0.0
@@ -935,6 +972,7 @@ class AnalyticsQueryService
             'new_vs_returning_customers' => $this->build_new_vs_returning($current, $previous),
             'sales_by_coupon_code' => ['items' => $this->build_sales_by_coupon($range)],
             'orders_by_time_of_day' => $this->build_orders_by_time_of_day($range),
+            'sales_by_location' => ['countries' => $this->build_sales_by_location($range)],
             'sales_by_payment_method' => ['items' => $this->build_sales_by_payment_method($range)],
             'taxes_by_region' => ['items' => $this->build_taxes_by_region($range)],
             'shipping_charges_by_method' => ['items' => $this->build_shipping_by_method($range)],
@@ -1519,6 +1557,191 @@ class AnalyticsQueryService
         }
 
         return $counts;
+    }
+
+    /**
+     * Build the Sales by location card: Sales, Orders and Customers of every country with orders.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $range Resolved range.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function build_sales_by_location(array $range)
+    {
+        $current = $this->query_location_metrics($this->utc_bounds($range['from'], $range['to']));
+        $previous = null;
+
+        if ($range['compare'] !== null) {
+            $previous = $this->query_location_metrics($this->utc_bounds($range['compare']['from'], $range['compare']['to']));
+        }
+
+        unset($current['']);
+        ksort($current);
+        $rows = [];
+
+        foreach ($current as $code => $values) {
+            $code = (string) $code;
+            $country = CountryData::find_index_entry($code);
+
+            $rows[] = array_merge(
+                [
+                    'code' => $code,
+                    'numeric_code' => $country['numeric_code'] ?? null,
+                    'name' => $country['name'] ?? $code,
+                ],
+                $this->location_values($values, $previous === null ? null : ($previous[$code] ?? []))
+            );
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Calculate Sales, Orders and Customers of a window by location country, or by location state of one country.
+     *
+     * The location is the shipping address, else the billing address when the order has no shipping country.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, mixed> $bounds  UTC bounds of the window.
+     * @param string|null          $country Country code to group by state, or null to group by country.
+     *
+     * @return array<string, array<string, int>> Sales (minor units), orders and customers keyed by country code or saved state.
+     */
+    protected function query_location_metrics(array $bounds, $country = null)
+    {
+        $group = $this->location_sql('o', $country === null ? 'country' : 'state');
+        $filter = $country === null ? '' : " AND {$this->location_sql('o', 'country')} = %s";
+        $filter_bindings = $country === null ? [] : [$country];
+        [$sales_scope, $sales_bindings] = $this->sales_scope('o', $bounds);
+        [$placed_scope, $placed_bindings] = $this->placed_scope('o', $bounds);
+
+        $sales_rows = DB::connection()->select(
+            "SELECT {$group} AS location, COALESCE(SUM({$this->item_sum_sql('o', 'net')}), 0) AS sales,
+                    COUNT(DISTINCT {$this->customer_key_sql('o')}) AS customers
+                FROM {$this->table('orders')} o
+                WHERE {$sales_scope}{$filter}
+                GROUP BY location",
+            array_merge($sales_bindings, $filter_bindings)
+        );
+        $placed_rows = DB::connection()->select(
+            "SELECT {$group} AS location, COUNT(*) AS orders
+                FROM {$this->table('orders')} o
+                WHERE {$placed_scope}{$filter}
+                GROUP BY location",
+            array_merge($placed_bindings, $filter_bindings)
+        );
+
+        $metrics = [];
+        $empty = ['sales' => 0, 'orders' => 0, 'customers' => 0];
+
+        foreach ($sales_rows as $row) {
+            $key = (string) $row['location'];
+            $metrics[$key] = array_merge($metrics[$key] ?? $empty, ['sales' => (int) $row['sales'], 'customers' => (int) $row['customers']]);
+        }
+
+        foreach ($placed_rows as $row) {
+            $key = (string) $row['location'];
+            $metrics[$key] = array_merge($metrics[$key] ?? $empty, ['orders' => (int) $row['orders']]);
+        }
+
+        return $metrics;
+    }
+
+    /**
+     * Get the SQL for one field of the location address of an order.
+     *
+     * @since 1.0.0
+     *
+     * @param string $alias Alias of the orders table.
+     * @param string $field One of country or state.
+     *
+     * @return string
+     */
+    protected function location_sql(string $alias, string $field)
+    {
+        return "CASE WHEN COALESCE({$alias}.shipping_country, '') <> '' THEN COALESCE({$alias}.shipping_{$field}, '')
+            ELSE COALESCE({$alias}.billing_{$field}, '') END";
+    }
+
+    /**
+     * Merge the metrics of saved states that name the same region, such as "TX" and "Texas".
+     *
+     * Customers are added up, so a customer with orders under two saved values of one region counts twice.
+     *
+     * @since 1.0.0
+     *
+     * @param string                            $country Country code.
+     * @param array<string, array<string, int>> $metrics Metrics keyed by saved state.
+     *
+     * @return array<string, array<string, int>> Metrics keyed by region name.
+     */
+    protected function merge_region_names(string $country, array $metrics)
+    {
+        $merged = [];
+
+        foreach ($metrics as $state => $values) {
+            $state = (string) $state;
+            $name = $state === '' ? __('Unknown region', 'kirki-ecommerce') : $this->get_state_name($country, $state);
+
+            foreach ($values as $metric => $value) {
+                $merged[$name][$metric] = ($merged[$name][$metric] ?? 0) + $value;
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Build the Sales, Orders and Customers values of a location, with their changes.
+     *
+     * @since 1.0.0
+     *
+     * @param array<string, int>      $values   Current metrics.
+     * @param array<string, int>|null $previous Comparison metrics, or null when no comparison is set.
+     *
+     * @return array<string, mixed>
+     */
+    protected function location_values(array $values, $previous)
+    {
+        $before = function ($metric) use ($previous) {
+            return $previous === null ? null : (int) ($previous[$metric] ?? 0);
+        };
+
+        return [
+            'sales_money_object' => $this->money($values['sales']),
+            'sales_change' => $this->change($values['sales'], $before('sales')),
+            'orders' => $values['orders'],
+            'orders_change' => $this->change($values['orders'], $before('orders')),
+            'customers' => $values['customers'],
+            'customers_change' => $this->change($values['customers'], $before('customers')),
+        ];
+    }
+
+    /**
+     * Get the top locations by one metric, leaving out locations with no value for it.
+     *
+     * @since 1.0.0
+     *
+     * @param array<int, array<string, mixed>>  $rows    Location rows, in the same order as the metrics.
+     * @param array<string, array<string, int>> $metrics Metrics keyed by location name.
+     * @param string                            $metric  One of sales, orders or customers.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function top_locations(array $rows, array $metrics, string $metric)
+    {
+        $rows = array_values(array_filter($rows, function ($row) use ($metrics, $metric) {
+            return $metrics[$row['name']][$metric] > 0;
+        }));
+
+        usort($rows, function ($first, $second) use ($metrics, $metric) {
+            return [$metrics[$second['name']][$metric], $first['name']] <=> [$metrics[$first['name']][$metric], $second['name']];
+        });
+
+        return array_slice($rows, 0, static::LIST_LIMIT);
     }
 
     /**

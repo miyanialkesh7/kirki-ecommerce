@@ -1,0 +1,309 @@
+import { useQuery } from '@tanstack/react-query';
+import { geoMercator, geoPath } from 'd3-geo';
+import type { Feature, FeatureCollection, Geometry, Polygon } from 'geojson';
+import { type KeyboardEvent, useMemo, useState } from 'react';
+import { feature } from 'topojson-client';
+
+import Skeleton from '@/components/ui/skeleton';
+import ChangeBadge from '@/features/analytics/components/change-badge';
+import useElementWidth from '@/features/analytics/hooks/use-element-width';
+import { theme } from '@/theme';
+import { defineStyles, scoped } from '@/theme/mixins';
+
+const ANTARCTICA = '010';
+const ASPECT_RATIO = 0.6;
+const FIT_SHARE = 0.8;
+const MAX_ZOOM = 8;
+const FADED_OPACITY = 0.35;
+
+type MapArea = {
+  code: string;
+  name: string;
+  fill: string;
+  display: string;
+  change: number | null;
+};
+
+type ChoroplethMapProps = {
+  label: string;
+  areas: Record<string, MapArea>;
+  selectedNumericCode: string | null;
+  onSelect: (code: string | null) => void;
+};
+
+type CountryFeature = Feature<Geometry, { name: string }> & { id?: string };
+
+type Point = { x: number; y: number };
+
+const loadCountries = async () => {
+  const topology = (await import('world-atlas/countries-110m.json')).default;
+  const collection = feature(topology, topology.objects.countries) as FeatureCollection<
+    Geometry,
+    { name: string }
+  >;
+
+  return (collection.features as CountryFeature[]).filter((country) => country.id !== ANTARCTICA);
+};
+
+const largestPolygon = (geometry: Geometry, area: (shape: Polygon) => number): Polygon | null => {
+  if (geometry.type === 'Polygon') {
+    return geometry;
+  }
+
+  if (geometry.type !== 'MultiPolygon') {
+    return null;
+  }
+
+  return geometry.coordinates
+    .map((coordinates): Polygon => ({ type: 'Polygon', coordinates }))
+    .reduce<Polygon | null>(
+      (largest, polygon) => (!largest || area(polygon) > area(largest) ? polygon : largest),
+      null,
+    );
+};
+
+const ChoroplethMap = (props: ChoroplethMapProps) => {
+  const { label, areas, selectedNumericCode, onSelect } = props;
+  const { ref, width } = useElementWidth(640);
+  const height = Math.round(width * ASPECT_RATIO);
+  const { data: countries } = useQuery({
+    queryKey: ['ChoroplethCountries'],
+    queryFn: loadCountries,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [tooltipPoint, setTooltipPoint] = useState<Point | null>(null);
+
+  const path = useMemo(() => {
+    if (!countries) {
+      return null;
+    }
+
+    const projection = geoMercator().fitSize([width, height], {
+      type: 'FeatureCollection',
+      features: countries,
+    });
+
+    return geoPath(projection);
+  }, [countries, width, height]);
+
+  const shapes = useMemo(
+    () =>
+      countries && path
+        ? countries.map((country) => ({
+            id: String(country.id ?? ''),
+            d: path(country) ?? '',
+            country,
+          }))
+        : [],
+    [countries, path],
+  );
+
+  const zoom = useMemo(() => {
+    const selected = shapes.find(
+      (shape) => selectedNumericCode && shape.id === selectedNumericCode,
+    );
+    const polygon =
+      selected && path
+        ? largestPolygon(selected.country.geometry, (shape) => path.area(shape))
+        : null;
+
+    if (!polygon || !path) {
+      return { x: 0, y: 0, k: 1 };
+    }
+
+    const [[left, top], [right, bottom]] = path.bounds(polygon);
+    const k = Math.min(
+      MAX_ZOOM,
+      FIT_SHARE / Math.max((right - left) / width, (bottom - top) / height),
+    );
+
+    return {
+      x: width / 2 - k * ((left + right) / 2),
+      y: height / 2 - k * ((top + bottom) / 2),
+      k,
+    };
+  }, [shapes, path, selectedNumericCode, width, height]);
+
+  const active = shapes.find((shape) => shape.id === activeId && areas[shape.id]);
+  const activeArea = active ? areas[active.id] : null;
+
+  const showAt = (id: string, point: Point) => {
+    setActiveId(id);
+    setTooltipPoint(point);
+  };
+
+  const hide = () => {
+    setActiveId(null);
+    setTooltipPoint(null);
+  };
+
+  const focusPoint = (country: CountryFeature) => {
+    const [x, y] = path ? path.centroid(country) : [width / 2, height / 2];
+
+    return { x: zoom.x + zoom.k * x, y: zoom.y + zoom.k * y };
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<SVGPathElement>, code: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelect(code);
+    }
+  };
+
+  return (
+    <div ref={ref} css={scoped(styles.frame)} data-testid="choropleth-map">
+      {!countries ? (
+        <Skeleton width="100%" height={`${height}px`} data-testid="choropleth-map-loading" />
+      ) : (
+        <svg
+          role="group"
+          aria-label={label}
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          css={scoped(styles.svg)}
+        >
+          <rect
+            data-testid="choropleth-sea"
+            width={width}
+            height={height}
+            fill="transparent"
+            onClick={() => onSelect(null)}
+          />
+          <g
+            data-testid="choropleth-zoom"
+            css={scoped(styles.zoom)}
+            style={{ transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.k})` }}
+          >
+            {shapes.map((shape) => {
+              const area = areas[shape.id];
+              const isFaded = !!selectedNumericCode && shape.id !== selectedNumericCode;
+
+              if (!area) {
+                return (
+                  <path
+                    key={shape.id || shape.country.properties.name}
+                    d={shape.d}
+                    data-country={shape.id}
+                    fill={theme.colors.analytics.map.empty}
+                    opacity={isFaded ? FADED_OPACITY : 1}
+                    css={scoped(styles.country)}
+                  />
+                );
+              }
+
+              const text = `${area.name} · ${area.display}`;
+
+              return (
+                <path
+                  key={shape.id}
+                  d={shape.d}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={text}
+                  aria-pressed={shape.id === selectedNumericCode}
+                  data-country={shape.id}
+                  fill={area.fill}
+                  opacity={isFaded ? FADED_OPACITY : 1}
+                  css={scoped(styles.country, styles.interactive)}
+                  onClick={() => onSelect(area.code)}
+                  onKeyDown={(event) => handleKeyDown(event, area.code)}
+                  onMouseMove={(event) => {
+                    const bounds = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
+
+                    showAt(shape.id, {
+                      x: event.clientX - (bounds?.left ?? 0),
+                      y: event.clientY - (bounds?.top ?? 0),
+                    });
+                  }}
+                  onMouseLeave={hide}
+                  onFocus={() => showAt(shape.id, focusPoint(shape.country))}
+                  onBlur={hide}
+                />
+              );
+            })}
+            {active && (
+              <path
+                d={active.d}
+                data-testid="choropleth-outline"
+                fill="none"
+                stroke={theme.colors.analytics.map.outline}
+                strokeWidth={1.5}
+                css={scoped(styles.outline)}
+              />
+            )}
+          </g>
+        </svg>
+      )}
+      {activeArea && tooltipPoint && (
+        <div
+          role="tooltip"
+          css={scoped(styles.tooltip)}
+          style={{ left: `${tooltipPoint.x}px`, top: `${tooltipPoint.y}px` }}
+        >
+          <span>{activeArea.name}</span>
+          <span css={scoped(styles.tooltipValue)}>{activeArea.display}</span>
+          <ChangeBadge change={activeArea.change} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+ChoroplethMap.displayName = 'ChoroplethMap';
+
+export default ChoroplethMap;
+export type { MapArea };
+
+const styles = defineStyles({
+  frame: {
+    position: 'relative',
+    width: '100%',
+    minWidth: 0,
+  },
+  svg: {
+    display: 'block',
+    overflow: 'hidden',
+  },
+  zoom: {
+    transformOrigin: '0 0',
+    transition: 'transform 500ms ease',
+    '@media (prefers-reduced-motion: reduce)': {
+      transition: 'none',
+    },
+  },
+  country: {
+    stroke: theme.colors.background.surface,
+    strokeWidth: 0.5,
+    vectorEffect: 'non-scaling-stroke',
+    transition: 'opacity 300ms ease',
+    outline: 'none',
+  },
+  interactive: {
+    cursor: 'pointer',
+  },
+  outline: {
+    vectorEffect: 'non-scaling-stroke',
+    pointerEvents: 'none',
+  },
+  tooltip: {
+    position: 'absolute',
+    transform: 'translate(-50%, calc(-100% - 12px))',
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing[2],
+    padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.analytics.chart.tooltip,
+    color: theme.colors.text.light,
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap',
+    zIndex: theme.zIndex.sticky,
+    ...theme.typography.tiny('semibold'),
+  },
+  tooltipValue: {
+    ...theme.typography.tiny('bold'),
+  },
+});

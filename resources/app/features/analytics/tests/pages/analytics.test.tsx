@@ -6,9 +6,15 @@ import Analytics from '@/features/analytics/pages/analytics';
 import { buildEmptyRangeOverview, buildEmptyStoreOverview, buildOverview } from '../fixtures';
 import { effectiveOpacity, renderPageAt } from '../helpers';
 
-const { useAnalyticsOverviewQuery } = vi.hoisted(() => ({ useAnalyticsOverviewQuery: vi.fn() }));
+const { useAnalyticsOverviewQuery, useAnalyticsRegionsQuery } = vi.hoisted(() => ({
+  useAnalyticsOverviewQuery: vi.fn(),
+  useAnalyticsRegionsQuery: vi.fn(() => ({ isPending: true, isError: false })),
+}));
 
-vi.mock('@/features/analytics/services/analytics', () => ({ useAnalyticsOverviewQuery }));
+vi.mock('@/features/analytics/services/analytics', () => ({
+  useAnalyticsOverviewQuery,
+  useAnalyticsRegionsQuery,
+}));
 
 type QueryState = {
   data?: unknown;
@@ -59,6 +65,7 @@ const CARDS = [
   ['new_vs_returning_customers', 'New vs returning customers'],
   ['sales_by_coupon_code', 'Sales by coupon code'],
   ['orders_by_time_of_day', 'Orders by time of day'],
+  ['sales_by_location', 'Sales by location'],
   ['sales_by_payment_method', 'Sales by payment method'],
   ['taxes_by_region', 'Taxes collected by region'],
   ['shipping_charges_by_method', 'Shipping charges by method'],
@@ -159,6 +166,11 @@ const TOOLTIPS: [string, string, string][] = [
     'card-inventory_health',
     'Inventory health',
     "Live stock of every variant. Low stock means at or below the variant's low-stock threshold, or the store default. Not affected by the date range.",
+  ],
+  [
+    'card-sales_by_location',
+    'Sales by location',
+    'Where orders go: the shipping address, or the billing address when there is none. Sales: net sales of paid orders. Orders: orders created, paid or not. Customers: different customers with a paid order.',
   ],
 ];
 
@@ -348,7 +360,7 @@ describe('Analytics key metrics', () => {
 });
 
 describe('Analytics cards', () => {
-  it('shows the 14 cards in order with their titles', () => {
+  it('shows the 15 cards in order with their titles', () => {
     renderPage();
 
     const ids = screen
@@ -603,7 +615,7 @@ describe('Analytics page states', () => {
     renderPage();
 
     expect(screen.getAllByTestId('kpi-skeleton')).toHaveLength(4);
-    expect(screen.getAllByTestId('card-skeleton')).toHaveLength(14);
+    expect(screen.getAllByTestId('card-skeleton')).toHaveLength(15);
     expect(screen.queryByTestId('card-total_sales_over_time')).not.toBeInTheDocument();
   });
 

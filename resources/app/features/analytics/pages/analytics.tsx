@@ -20,6 +20,7 @@ import {
   TaxesByRegionCard,
 } from '@/features/analytics/components/cards/ranked-list-cards';
 import SalesByCategoryCard from '@/features/analytics/components/cards/sales-by-category-card';
+import SalesByLocationCard from '@/features/analytics/components/cards/sales-by-location-card';
 import SalesByProductCard from '@/features/analytics/components/cards/sales-by-product-card';
 import TotalSalesBreakdownCard from '@/features/analytics/components/cards/total-sales-breakdown-card';
 import TotalSalesOverTimeCard from '@/features/analytics/components/cards/total-sales-over-time-card';
@@ -47,15 +48,17 @@ const CARD_SKELETON_SIZES: ('half' | 'full')[] = [
   'full',
   ...Array.from({ length: 8 }, () => 'half' as const),
   'full',
+  'full',
   ...Array.from({ length: 4 }, () => 'half' as const),
 ];
 
 type ReadyContentProps = {
   data: AnalyticsOverview;
+  params: AnalyticsParams;
 };
 
 const ReadyContent = (props: ReadyContentProps) => {
-  const { data } = props;
+  const { data, params } = props;
   const { kpis, cards } = data;
 
   const definitions = getMetricDefinitions();
@@ -171,6 +174,12 @@ const ReadyContent = (props: ReadyContentProps) => {
           isEmpty={isEmpty('orders_by_time_of_day')}
           {...shared}
         />
+        <SalesByLocationCard
+          data={cards.sales_by_location}
+          isEmpty={isEmpty('sales_by_location')}
+          params={params}
+          {...shared}
+        />
         <SalesByPaymentMethodCard
           data={cards.sales_by_payment_method}
           isEmpty={isEmpty('sales_by_payment_method')}
@@ -225,7 +234,7 @@ const Analytics = () => {
       );
     }
 
-    return <ReadyContent data={data} />;
+    return <ReadyContent data={data} params={params} />;
   };
 
   return (

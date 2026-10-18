@@ -76,6 +76,27 @@ const hourCounts = (cells: [number, number, number][] = []) => {
   return counts;
 };
 
+const locationRow = (
+  sales: number,
+  orders: number,
+  customers: number,
+  changes: [number | null, number | null, number | null] = [null, null, null],
+) => ({
+  sales_money_object: money(sales),
+  sales_change: changes[0],
+  orders,
+  orders_change: changes[1],
+  customers,
+  customers_change: changes[2],
+});
+
+const country = (
+  code: string,
+  numericCode: string,
+  name: string,
+  values: ReturnType<typeof locationRow>,
+) => ({ code, numeric_code: numericCode, name, ...values });
+
 const range = { preset: 'last_30', from: '2026-09-15', to: '2026-10-14', days: 30 };
 const compare = { from: '2026-08-16', to: '2026-09-14' };
 
@@ -199,6 +220,16 @@ const buildOverview = (
           [4, 18, 2],
         ]),
       },
+      sales_by_location: {
+        countries: [
+          country('AU', '036', 'Australia', locationRow(537603, 42, 42, [60.5, 44.8, 44.8])),
+          country('BD', '050', 'Bangladesh', locationRow(360336, 32, 12, [19.3, 45.5, 45.5])),
+          country('CA', '124', 'Canada', locationRow(424545, 36, 36, [-24.3, -10, -10])),
+          country('DE', '276', 'Germany', locationRow(567215, 39, 39, [111.2, 117, 117])),
+          country('SG', '702', 'Singapore', locationRow(10000, 2, 2)),
+          country('US', '840', 'United States', locationRow(1991357, 59, 207, [28.8, 20.4, 28.6])),
+        ],
+      },
       sales_by_payment_method: {
         items: [{ id: 'paypal', name: 'PayPal', orders: 7, total_sales_money_object: money(6601) }],
       },
@@ -316,6 +347,7 @@ const emptyCards = () => {
     },
     sales_by_coupon_code: { items: [] },
     orders_by_time_of_day: { current: hourCounts(), previous: hourCounts() },
+    sales_by_location: { countries: [] },
     sales_by_payment_method: { items: [] },
     taxes_by_region: { items: [] },
     shipping_charges_by_method: { items: [] },
@@ -333,6 +365,8 @@ export {
   buildEmptyStoreOverview,
   buildOverview,
   countMetric,
+  country,
+  locationRow,
   money,
   moneyMetric,
   point,

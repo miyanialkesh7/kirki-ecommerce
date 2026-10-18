@@ -15,6 +15,7 @@ type MetricKey =
   | 'new_vs_returning_customers'
   | 'sales_by_coupon_code'
   | 'orders_by_time_of_day'
+  | 'sales_by_location'
   | 'sales_by_payment_method'
   | 'taxes_by_region'
   | 'shipping_charges_by_method'
@@ -121,6 +122,13 @@ const getMetricDefinitions = (): Record<MetricKey, MetricDefinition> => ({
     title: __('Orders by time of day', 'kirki-ecommerce'),
     info: __(
       'Orders placed in the range, by the weekday and hour of the store time zone. Failed payments are left out.',
+      'kirki-ecommerce',
+    ),
+  },
+  sales_by_location: {
+    title: __('Sales by location', 'kirki-ecommerce'),
+    info: __(
+      'Where orders go: the shipping address, or the billing address when there is none. Sales: net sales of paid orders. Orders: orders created, paid or not. Customers: different customers with a paid order.',
       'kirki-ecommerce',
     ),
   },

@@ -2,12 +2,17 @@ import { useQuery } from '@tanstack/react-query';
 
 import { endpoints } from '@/config/endpoints';
 import type { AnalyticsParams } from '@/features/analytics/lib/url-state';
-import { AnalyticsOverviewSchema } from '@/features/analytics/schemas/catalog/analytics';
+import {
+  AnalyticsOverviewSchema,
+  AnalyticsRegionsSchema,
+} from '@/features/analytics/schemas/catalog/analytics';
 import { apiClient } from '@/libs/api';
 import { parseData } from '@/services/helpers';
 
 const analyticsKeys = {
   overview: (params: AnalyticsParams) => ['AnalyticsOverview', params] as const,
+  regions: (params: AnalyticsParams, country: string | null) =>
+    ['AnalyticsRegions', params, country] as const,
 };
 
 const buildQuery = (params: AnalyticsParams) => {
@@ -40,4 +45,18 @@ const useAnalyticsOverviewQuery = (params: AnalyticsParams) => {
   });
 };
 
-export { useAnalyticsOverviewQuery };
+const getAnalyticsRegions = (params: AnalyticsParams, country: string) => {
+  return apiClient
+    .get(endpoints.ANALYTICS_REGIONS, { params: { ...buildQuery(params), country } })
+    .then((response) => parseData(AnalyticsRegionsSchema, response));
+};
+
+const useAnalyticsRegionsQuery = (params: AnalyticsParams, country: string | null) => {
+  return useQuery({
+    queryKey: analyticsKeys.regions(params, country),
+    queryFn: () => getAnalyticsRegions(params, country ?? ''),
+    enabled: !!country,
+  });
+};
+
+export { useAnalyticsOverviewQuery, useAnalyticsRegionsQuery };

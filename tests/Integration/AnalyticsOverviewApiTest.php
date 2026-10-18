@@ -65,6 +65,48 @@ class AnalyticsOverviewApiTest extends RestTestCase
     }
 
     /**
+     * Scenario "Shop manager without the capability" for the regions endpoint: the response is 403 and contains no data.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_regions_without_manage_options_gets_403(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000, ['shipping_country' => 'US']);
+        wp_set_current_user(static::factory()->user->create(['role' => 'editor']));
+
+        $payload = $this->assert_api_error($this->request('GET', 'analytics/regions', ['country' => 'US']), 403);
+
+        $this->assertArrayNotHasKey('sales', $payload);
+    }
+
+    /**
+     * Scenario "Unknown country": the regions endpoint is 422 with an error on country.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_regions_of_an_unknown_country_is_422(): void
+    {
+        $payload = $this->assert_validation_error($this->request('GET', 'analytics/regions', ['country' => 'ZZ']));
+
+        $this->assertArrayHasKey('country', $payload['errors']);
+    }
+
+    /**
+     * Regions endpoint: a known country with no orders has three empty lists.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_regions_of_a_country_without_orders_are_empty(): void
+    {
+        $data = $this->assert_api_success($this->request('GET', 'analytics/regions', ['country' => 'FR']))['data'];
+
+        $this->assertSame(['country' => 'FR', 'sales' => [], 'orders' => [], 'customers' => []], $data);
+    }
+
+    /**
      * A visitor who is not logged in gets 401, like the other store management endpoints.
      *
      * @return void
@@ -214,6 +256,8 @@ class AnalyticsOverviewApiTest extends RestTestCase
             'orders_by_fulfillment_status',
             'new_vs_returning_customers',
             'sales_by_coupon_code',
+            'orders_by_time_of_day',
+            'sales_by_location',
             'sales_by_payment_method',
             'taxes_by_region',
             'shipping_charges_by_method',
@@ -244,6 +288,7 @@ class AnalyticsOverviewApiTest extends RestTestCase
         $this->assertArrayHasKey('returning_total', $cards['new_vs_returning_customers']);
         $this->assertSame(['date', 'label', 'span_label', 'new', 'returning', 'previous_date', 'previous_label', 'previous_span_label', 'previous_new', 'previous_returning'], array_keys($cards['new_vs_returning_customers']['series'][0]));
         $this->assertArrayHasKey('items', $cards['sales_by_coupon_code']);
+        $this->assertArrayHasKey('countries', $cards['sales_by_location']);
         $this->assertArrayHasKey('items', $cards['sales_by_payment_method']);
         $this->assertArrayHasKey('items', $cards['taxes_by_region']);
         $this->assertArrayHasKey('items', $cards['shipping_charges_by_method']);

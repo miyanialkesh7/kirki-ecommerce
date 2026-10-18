@@ -1,7 +1,7 @@
 # Analytics
 
 A page that shows how the store performs over time. It has four key metrics
-and thirteen cards. Each number has a date range, a comparison with an earlier
+and fifteen cards. Each number has a date range, a comparison with an earlier
 period, and an info icon that tells how the number is calculated. Open it with
 **eCommerce → Analytics**.
 
@@ -27,7 +27,8 @@ icon. Put the pointer on the icon, or tab to it, to read how the number is
 calculated. On a touch device the icons are always visible.
 
 Only users with the `manage_options` capability (administrators) can open the
-page and its data endpoint, `GET /analytics/overview`.
+page and its data endpoints, `GET /analytics/overview` and
+`GET /analytics/regions`.
 
 ---
 
@@ -167,6 +168,7 @@ Details:
 | New vs returning customers | New: first paid order in the period. Returning: a paid order in the period that was not their first. One customer can be both. | Customers, its change, and stacked bars of new and returning customers with a rounded top. The comparison shows only in the tooltip. |
 | Sales by coupon code | Paid orders that used each code, and the total discount the code gave. Free-shipping codes show the shipping fee removed. | The top 5 codes by orders, each as one bar with orders, the discount given ("$230.00 off") and the change in orders |
 | Orders by time of day | Orders placed in the range, by the weekday and hour of the store time zone. Failed payments are left out. | A full-width grid with one row for each day (Mon to Sun) and one dot for each hour, with the day totals on the right. Above the grid: the busiest hour (such as "Fri 6pm–7pm"), the busiest day, and the share of orders from the start of the busiest hour to midnight (such as "After 6pm 38% of orders"). When there is a comparison, a "This period / Change" toggle shows. In Change, a purple dot means more orders than the comparison period, a gray dot means fewer, and the dot size is the difference. |
+| Sales by location | Where orders go: the shipping address, or the billing address when there is none. Sales: net sales of paid orders. Orders: orders created, paid or not. Customers: different customers with a paid order. | A full-width world map with a "Sales / Orders / Customers" tab. A country with a bigger value is a darker purple, and a country with no value is gray. Hover a country to see its border, value and change. Next to the map: the top 5 countries. Click a country (on the map or in the list) to zoom to it and see its top 5 regions, with "← All countries" to go back (Escape and a click on the sea also go back). |
 | Sales by payment method | Total sales of paid orders, by the payment method used. | The top 5 methods by total sales, with the order count |
 | Taxes collected by region | Product and shipping tax on paid orders, by the shipping address region. | The top 5 regions by total tax, such as "Texas, United States" |
 | Shipping charges by method | Shipping charged on paid orders after free-shipping discounts, without tax, by shipping method. | The top 5 methods by shipping charges, with the order count |
@@ -184,6 +186,13 @@ Notes:
 - **Taxes** are grouped by the order's shipping country and state. The name of
   the state comes from the saved state ID or name (a two-letter United States
   state code also works).
+- **Location** is the order's shipping country and state. When the order has
+  no shipping country (for example a digital order), the billing country and
+  state are used. An order with no country is on no map and in no list. In a
+  country, orders with no state are one "Unknown region" row. The regions of a
+  country load when the merchant selects it, from
+  `GET /analytics/regions?country=<code>` with the same range and comparison.
+  Sales by location uses product net sales, so Returns are not subtracted.
 - **Payment method and shipping method names** are the current names. If the
   method no longer exists, the name saved on the newest order is used, and then
   the stored ID.
@@ -238,6 +247,13 @@ that replaces today) is used by the tests.
 - Categories are read as they are now. A product that moves to another category
   moves its old sales with it.
 - Stock has no history, so Inventory health shows only the present.
+- The world map has only country shapes, from Natural Earth at 1:110m. Small
+  countries such as Singapore and Malta have no shape: they show in the list
+  and their regions show, but the map does not zoom to them. The map has no
+  region shapes, and borders are the Natural Earth de facto borders.
+- In the regions of a country, saved state values that name the same region
+  (such as "TX" and "Texas") are one row. A customer with orders under both
+  values counts twice in that row's Customers.
 - The Home page shows its own Net sales, which is calculated in a different way,
   so the two pages can show different numbers (section 8).
 
@@ -277,6 +293,11 @@ The names are familiar, but the numbers do not match one-to-one:
   Shipping, so it is subtracted twice. This page uses the formula in section 5,
   so Home and Analytics can show different Net sales until the Home page is
   corrected.
+- **Sales by location has no city level and no region map.** Shopify shows
+  sales by country, region and city, and WooCommerce has no location map by
+  default. Here the map has countries only, and a selected country lists its
+  top 5 regions. Sales by location always uses the shipping address, else the
+  billing address, with no choice of address.
 - **Base currency only.** All amounts are in the store's base currency. There is
   no filter for the currency the customer paid in, and no view of the amounts in
   that currency.

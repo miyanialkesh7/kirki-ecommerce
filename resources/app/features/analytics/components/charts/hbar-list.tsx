@@ -10,6 +10,7 @@ type HBarItem = {
   display: string;
   detail?: string;
   change?: number | null;
+  onSelect?: () => void;
 };
 
 type HBarListProps = {
@@ -17,6 +18,41 @@ type HBarListProps = {
 };
 
 const toPercent = (value: number, max: number) => `${Math.max(0, (value / max) * 100)}%`;
+
+type HBarRowProps = {
+  item: HBarItem;
+  max: number;
+};
+
+const HBarRow = (props: HBarRowProps) => {
+  const { item, max } = props;
+
+  return (
+    <>
+      <div css={scoped(styles.header)}>
+        <Text variant="small" truncate>
+          {item.label}
+        </Text>
+        <div css={scoped(styles.values)}>
+          <Text variant="small" weight="semibold">
+            {item.display}
+          </Text>
+          {item.detail && (
+            <Text variant="small" color="subdued">
+              {item.detail}
+            </Text>
+          )}
+          <ChangeBadge change={item.change} />
+        </div>
+      </div>
+      <div css={scoped(styles.track)} aria-hidden="true">
+        <div css={scoped(styles.bar)} style={{ width: toPercent(item.value, max) }} />
+      </div>
+    </>
+  );
+};
+
+HBarRow.displayName = 'HBarRow';
 
 const HBarList = (props: HBarListProps) => {
   const { items } = props;
@@ -26,25 +62,13 @@ const HBarList = (props: HBarListProps) => {
     <ul css={scoped(styles.list)}>
       {items.map((item) => (
         <li key={item.key} css={scoped(styles.row)}>
-          <div css={scoped(styles.header)}>
-            <Text variant="small" truncate>
-              {item.label}
-            </Text>
-            <div css={scoped(styles.values)}>
-              <Text variant="small" weight="semibold">
-                {item.display}
-              </Text>
-              {item.detail && (
-                <Text variant="small" color="subdued">
-                  {item.detail}
-                </Text>
-              )}
-              <ChangeBadge change={item.change} />
-            </div>
-          </div>
-          <div css={scoped(styles.track)} aria-hidden="true">
-            <div css={scoped(styles.bar)} style={{ width: toPercent(item.value, max) }} />
-          </div>
+          {item.onSelect ? (
+            <button type="button" css={scoped(styles.select)} onClick={item.onSelect}>
+              <HBarRow item={item} max={max} />
+            </button>
+          ) : (
+            <HBarRow item={item} max={max} />
+          )}
         </li>
       ))}
     </ul>
@@ -71,6 +95,20 @@ const styles = defineStyles({
     gap: theme.spacing[1],
     minWidth: 0,
     margin: 0,
+  },
+  select: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing[1],
+    width: '100%',
+    minWidth: 0,
+    padding: 0,
+    border: 'none',
+    background: 'none',
+    color: 'inherit',
+    font: 'inherit',
+    textAlign: 'left',
+    cursor: 'pointer',
   },
   header: {
     display: 'flex',

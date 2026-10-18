@@ -112,6 +112,30 @@ const LowestVariantSchema = z.object({
   status: z.string(),
 });
 
+const LocationRowSchema = z.object({
+  sales_money_object: MoneyObjectSchema,
+  sales_change: z.number().nullish(),
+  orders: z.number(),
+  orders_change: z.number().nullish(),
+  customers: z.number(),
+  customers_change: z.number().nullish(),
+});
+
+const CountryRowSchema = LocationRowSchema.extend({
+  code: z.string(),
+  numeric_code: z.string().nullish(),
+  name: z.string(),
+});
+
+const RegionRowSchema = LocationRowSchema.extend({ name: z.string() });
+
+const AnalyticsRegionsSchema = z.object({
+  country: z.string(),
+  sales: z.array(RegionRowSchema),
+  orders: z.array(RegionRowSchema),
+  customers: z.array(RegionRowSchema),
+});
+
 const HourCountsSchema = z.array(z.array(z.number()).length(24)).length(7);
 
 const AnalyticsCardsSchema = z.object({
@@ -147,6 +171,7 @@ const AnalyticsCardsSchema = z.object({
     current: HourCountsSchema,
     previous: HourCountsSchema.nullish(),
   }),
+  sales_by_location: z.object({ countries: z.array(CountryRowSchema) }),
   sales_by_payment_method: z.object({ items: z.array(PaymentMethodItemSchema) }),
   taxes_by_region: z.object({ items: z.array(TaxRegionItemSchema) }),
   shipping_charges_by_method: z.object({ items: z.array(ShippingMethodItemSchema) }),
@@ -187,6 +212,20 @@ type SeriesPoint = z.infer<typeof SeriesPointSchema>;
 type AnalyticsKpis = z.infer<typeof AnalyticsKpisSchema>;
 type AnalyticsCards = z.infer<typeof AnalyticsCardsSchema>;
 type AnalyticsOverview = z.infer<typeof AnalyticsOverviewSchema>;
+type LocationRow = z.infer<typeof LocationRowSchema>;
+type CountryRow = z.infer<typeof CountryRowSchema>;
+type RegionRow = z.infer<typeof RegionRowSchema>;
+type AnalyticsRegions = z.infer<typeof AnalyticsRegionsSchema>;
 
-export { AnalyticsOverviewSchema };
-export type { AnalyticsCards, AnalyticsKpis, AnalyticsOverview, MoneyObject, SeriesPoint };
+export { AnalyticsOverviewSchema, AnalyticsRegionsSchema };
+export type {
+  AnalyticsCards,
+  AnalyticsKpis,
+  AnalyticsOverview,
+  AnalyticsRegions,
+  CountryRow,
+  LocationRow,
+  MoneyObject,
+  RegionRow,
+  SeriesPoint,
+};

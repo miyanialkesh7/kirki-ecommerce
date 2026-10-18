@@ -61,6 +61,23 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Get the regions of one country for one custom day range with no comparison.
+     *
+     * @param string $country Country code.
+     * @param string $from    First day, Y-m-d.
+     * @param string $to      Last day, Y-m-d.
+     *
+     * @return array
+     * @since 1.0.0
+     */
+    protected function regions_between(string $country, string $from, string $to): array
+    {
+        $params = ['country' => $country, 'range' => 'custom', 'from' => $from, 'to' => $to, 'compare' => 'none'];
+
+        return $this->assert_api_success($this->request('GET', 'analytics/regions', $params))['data'];
+    }
+
+    /**
      * Create the tax-exclusive worked example order from the spec, paid on a given day.
      *
      * @param string $paid_at Payment time, UTC.
@@ -289,6 +306,164 @@ class AnalyticsMetricsTest extends RestTestCase
 
         $this->assertSame(1, $card['current'][3][11]);
         $this->assertSame(1, $card['previous'][2][9]);
+    }
+
+    /**
+     * Scenario "Shipping address wins": an order billed to Canada and shipped to Texas counts under the United States and Texas.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_location_uses_the_shipping_address(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000, [
+            'billing_country' => 'CA',
+            'billing_state' => 'ON',
+            'shipping_country' => 'US',
+            'shipping_state' => 'TX',
+        ]);
+
+        $countries = $this->overview_between('2026-10-01', '2026-10-14')['cards']['sales_by_location']['countries'];
+        $regions = $this->regions_between('US', '2026-10-01', '2026-10-14');
+
+        $this->assertSame(['US'], array_column($countries, 'code'));
+        $this->assertSame('840', $countries[0]['numeric_code']);
+        $this->assertSame('United States', $countries[0]['name']);
+        $this->assertSame(1000, $this->minor($countries[0]['sales_money_object']));
+        $this->assertSame(1, $countries[0]['orders']);
+        $this->assertSame(1, $countries[0]['customers']);
+        $this->assertNull($countries[0]['sales_change']);
+        $this->assertSame(['Texas'], array_column($regions['sales'], 'name'));
+    }
+
+    /**
+     * Scenario "No shipping address": an order with no shipping country counts under its billing country and state.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_location_falls_back_to_the_billing_address(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000, ['billing_country' => 'CA', 'billing_state' => 'Ontario']);
+
+        $countries = $this->overview_between('2026-10-01', '2026-10-14')['cards']['sales_by_location']['countries'];
+        $regions = $this->regions_between('CA', '2026-10-01', '2026-10-14');
+
+        $this->assertSame(['CA'], array_column($countries, 'code'));
+        $this->assertSame(['Ontario'], array_column($regions['orders'], 'name'));
+    }
+
+    /**
+     * Scenario "No country at all": an order with no country is in no location, but Orders still counts it.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_order_without_a_country_is_in_no_location(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000);
+
+        $data = $this->overview_between('2026-10-01', '2026-10-14');
+
+        $this->assertSame([], $data['cards']['sales_by_location']['countries']);
+        $this->assertSame(1, $data['kpis']['orders']['current']);
+    }
+
+    /**
+     * Scenario "Placed but not paid": an unpaid order counts in Orders only.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_unpaid_order_counts_only_in_location_orders(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000, ['payment_status' => PaymentStatus::UNPAID, 'shipping_country' => 'DE']);
+        Order::query()->update(['paid_at' => null]);
+
+        $countries = $this->overview_between('2026-10-01', '2026-10-14')['cards']['sales_by_location']['countries'];
+
+        $this->assertSame('DE', $countries[0]['code']);
+        $this->assertSame(1, $countries[0]['orders']);
+        $this->assertSame(0, $this->minor($countries[0]['sales_money_object']));
+        $this->assertSame(0, $countries[0]['customers']);
+    }
+
+    /**
+     * Scenario "One customer, two orders": Australia has 2 orders and 1 customer.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_location_counts_a_customer_once(): void
+    {
+        $this->make_sale('2026-10-01 10:00:00', 1000, ['customer_email' => 'mia@example.com', 'shipping_country' => 'AU']);
+        $this->make_sale('2026-10-02 10:00:00', 1000, ['customer_email' => 'mia@example.com', 'shipping_country' => 'AU']);
+
+        $countries = $this->overview_between('2026-10-01', '2026-10-14')['cards']['sales_by_location']['countries'];
+
+        $this->assertSame(2, $countries[0]['orders']);
+        $this->assertSame(1, $countries[0]['customers']);
+    }
+
+    /**
+     * Scenario "Country change": Germany has Net sales 5672.15 and 2686.00 before, so its Sales change is 111.2.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_location_has_the_change_of_each_metric(): void
+    {
+        $this->make_sale('2026-09-30 10:00:00', 268600, ['shipping_country' => 'DE']);
+        $this->make_sale('2026-10-01 10:00:00', 567215, ['shipping_country' => 'DE']);
+
+        $countries = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['sales_by_location']['countries'];
+
+        $this->assertSame(111.2, $countries[0]['sales_change']);
+        $this->assertSame(0.0, $countries[0]['orders_change']);
+    }
+
+    /**
+     * Scenario "Empty state": orders of a country with no state group into one "Unknown region" row.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_orders_without_a_state_are_an_unknown_region(): void
+    {
+        foreach (['2026-10-01 10:00:00', '2026-10-02 10:00:00', '2026-10-03 10:00:00'] as $paid_at) {
+            $this->make_sale($paid_at, 1000, ['shipping_country' => 'US']);
+        }
+
+        $regions = $this->regions_between('US', '2026-10-01', '2026-10-14');
+
+        $this->assertSame('US', $regions['country']);
+        $this->assertSame('Unknown region', $regions['orders'][0]['name']);
+        $this->assertSame(3, $regions['orders'][0]['orders']);
+    }
+
+    /**
+     * Scenario "Three lists in one response": the top 5 regions by each metric, in their own order.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_regions_have_the_top_five_for_each_metric(): void
+    {
+        $states = ['CA' => 9000, 'NY' => 8000, 'TX' => 7000, 'FL' => 6000, 'IL' => 5000, 'WA' => 4000];
+
+        foreach ($states as $state => $subtotal) {
+            $this->make_sale('2026-10-01 10:00:00', $subtotal, ['shipping_country' => 'US', 'shipping_state' => $state]);
+        }
+
+        $this->make_sale('2026-10-02 10:00:00', 100, ['shipping_country' => 'US', 'shipping_state' => 'WA']);
+        $this->make_sale('2026-10-03 10:00:00', 100, ['shipping_country' => 'US', 'shipping_state' => 'WA']);
+
+        $regions = $this->regions_between('US', '2026-10-01', '2026-10-14');
+
+        $this->assertSame(['California', 'New York', 'Texas', 'Florida', 'Illinois'], array_column($regions['sales'], 'name'));
+        $this->assertSame('Washington', $regions['orders'][0]['name']);
+        $this->assertSame(3, $regions['orders'][0]['orders']);
+        $this->assertCount(5, $regions['customers']);
     }
 
     /**

@@ -69,6 +69,7 @@ Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], 
 
     // Analytics
     Route::get('/analytics/overview', [AnalyticsController::class, 'overview']);
+    Route::get('/analytics/regions', [AnalyticsController::class, 'regions']);
 
     // App Config
     Route::get('/app-config', [AppConfigController::class, 'get']);

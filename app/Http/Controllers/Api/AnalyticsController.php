@@ -5,6 +5,7 @@ namespace Kirki\Ecommerce\App\Http\Controllers\Api;
 defined('ABSPATH') || exit;
 
 use Kirki\Ecommerce\App\Http\Requests\Analytics\AnalyticsOverviewRequest;
+use Kirki\Ecommerce\App\Http\Requests\Analytics\AnalyticsRegionsRequest;
 use Kirki\Ecommerce\App\Services\AnalyticsQueryService;
 
 use function Kirki\Ecommerce\Framework\response;
@@ -44,6 +45,22 @@ class AnalyticsController
         return response()->json([
             'data' => $this->query_service->get_overview($request->all()),
             'message' => __('Analytics overview retrieved successfully.', 'kirki-ecommerce'),
+        ]);
+    }
+
+    /**
+     * Get the top regions of one country.
+     *
+     * @since 1.0.0
+     *
+     * @param AnalyticsRegionsRequest $request
+     * @return \Kirki\Ecommerce\Framework\Http\JsonResponse
+     */
+    public function regions(AnalyticsRegionsRequest $request)
+    {
+        return response()->json([
+            'data' => $this->query_service->get_regions($request->all()),
+            'message' => __('Analytics regions retrieved successfully.', 'kirki-ecommerce'),
         ]);
     }
 }
