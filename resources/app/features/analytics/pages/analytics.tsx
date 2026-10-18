@@ -215,7 +215,7 @@ const Analytics = () => {
   };
 
   return (
-    <Page containerSize="xl">
+    <Page containerSize="xxl">
       <PageHeading text={__('Analytics', 'kirki-ecommerce')} />
       <PageContent>
         <Flex direction="column" gap={4} cssOverride={styles.content}>
