@@ -12,7 +12,7 @@ type KpiCardProps = {
   metricKey: string;
   title: string;
   info: string;
-  value: string;
+  value: { text: string; title?: string };
   change?: number | null;
   hasComparison: boolean;
   series: SeriesPoint[];
@@ -29,8 +29,8 @@ const KpiCard = (props: KpiCardProps) => {
       titleVariant="label"
       cssOverride={styles.card}
     >
-      <Text variant="heading4" weight="bold" truncate>
-        {value}
+      <Text variant="heading4" weight="bold" truncate title={value.title}>
+        {value.text}
       </Text>
       <Flex align="center" justify="space-between" gap={2} cssOverride={styles.change}>
         {hasComparison ? (

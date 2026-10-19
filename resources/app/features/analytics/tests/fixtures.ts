@@ -7,9 +7,18 @@
  * The shapes follow the "Test contract" section of openspec/changes/analytics-foundation/design.md.
  */
 
+const shortAmount = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
 const money = (minor: number, code = 'USD', symbol = '$') => ({
   raw: minor / 100,
   display: `${symbol}${(minor / 100).toFixed(2)}`,
+  short_display:
+    Math.abs(minor) < 100000
+      ? `${symbol}${(minor / 100).toFixed(2)}`
+      : `${symbol}${shortAmount.format(minor / 100)}`,
   currency: { code, symbol },
 });
 
@@ -116,6 +125,7 @@ const buildOverview = (
     granularity: 'day',
     base_currency_code: 'USD',
     has_orders: true,
+    amount_example: money(2034500),
     kpis: {
       gross_sales: {
         ...moneyMetric(6200, 5500, 12.3),
@@ -433,5 +443,6 @@ export {
   money,
   moneyMetric,
   point,
+  series,
   splitOverview,
 };

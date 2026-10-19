@@ -49,7 +49,8 @@ const Text = forwardRef<HTMLElement, TextProps>((props, ref) => {
 
   if (truncate) {
     rest.title =
-      typeof children === 'string' || typeof children === 'number' ? String(children) : '';
+      rest.title ??
+      (typeof children === 'string' || typeof children === 'number' ? String(children) : '');
   }
 
   if (variant === 'heading1') {

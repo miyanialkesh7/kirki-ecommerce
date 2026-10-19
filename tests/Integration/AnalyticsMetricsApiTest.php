@@ -336,7 +336,7 @@ class AnalyticsMetricsApiTest extends RestTestCase
 
         $payment = $cards['sales_by_payment_method']['items'][0];
         $this->assertSame(['id', 'name', 'orders', 'total_sales_money_object', 'previous_total_sales_money_object', 'change'], array_keys($payment));
-        $this->assertSame(['raw', 'display', 'currency'], array_keys($payment['total_sales_money_object']));
+        $this->assertSame(['short_display', 'raw', 'display', 'currency'], array_keys($payment['total_sales_money_object']));
         $this->assertSame(9000, $this->minor($cards['total_sales_over_time']['total']['current_money_object']));
     }
 
@@ -353,8 +353,10 @@ class AnalyticsMetricsApiTest extends RestTestCase
         $payload = $this->metric('sales_by_coupon_code');
 
         $this->assertSame(['meta', 'data'], array_keys($payload));
-        $this->assertSame(['range', 'compare', 'granularity', 'base_currency_code', 'has_orders'], array_keys($payload['meta']));
+        $this->assertSame(['range', 'compare', 'granularity', 'base_currency_code', 'has_orders', 'amount_example'], array_keys($payload['meta']));
         $this->assertTrue($payload['meta']['has_orders']);
+        $this->assertSame('$20,345.00', $payload['meta']['amount_example']['display']);
+        $this->assertSame('$20.3K', $payload['meta']['amount_example']['short_display']);
         $this->assertArrayNotHasKey('currencies', $payload['meta']);
         $this->assertSame(['items'], array_keys($payload['data']));
     }
@@ -432,7 +434,7 @@ class AnalyticsMetricsApiTest extends RestTestCase
         $this->assertArrayHasKey('change', $metric);
 
         if ($metric['current_money_object'] !== null) {
-            $this->assertSame(['raw', 'display', 'currency'], array_keys($metric['current_money_object']));
+            $this->assertSame(['short_display', 'raw', 'display', 'currency'], array_keys($metric['current_money_object']));
             $this->assertSame(['code', 'symbol'], array_keys($metric['current_money_object']['currency']));
         }
     }

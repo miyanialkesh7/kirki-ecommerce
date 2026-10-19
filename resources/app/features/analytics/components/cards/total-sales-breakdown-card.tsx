@@ -3,7 +3,7 @@ import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import CardEmpty from '@/features/analytics/components/card-empty';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
 import ChangeBadge from '@/features/analytics/components/change-badge';
-import { formatMoney } from '@/features/analytics/lib/format';
+import { useMoney } from '@/features/analytics/contexts/amount-format-context';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import { theme } from '@/theme';
 import { defineStyles, mergeCss, scoped } from '@/theme/mixins';
@@ -26,6 +26,7 @@ const getRowLabels = (): Record<string, string> => ({
 
 const TotalSalesBreakdownCard = (props: TotalSalesBreakdownCardProps) => {
   const { data, isEmpty } = props;
+  const { money } = useMoney();
   const definition = getMetricDefinitions().total_sales_breakdown;
   const labels = getRowLabels();
 
@@ -42,7 +43,10 @@ const TotalSalesBreakdownCard = (props: TotalSalesBreakdownCardProps) => {
           {data.rows.map((row) => {
             const isBold = BOLD_ROWS.includes(row.key);
             const amount = row.current_money_object;
-            const isNegative = NEGATIVE_ROWS.includes(row.key) && !!amount && Number(amount.raw) > 0;
+            const isNegative =
+              NEGATIVE_ROWS.includes(row.key) && !!amount && Number(amount.raw) > 0;
+            const sign = isNegative ? '−' : '';
+            const value = money(amount);
 
             return (
               <li
@@ -55,8 +59,12 @@ const TotalSalesBreakdownCard = (props: TotalSalesBreakdownCardProps) => {
                   {labels[row.key] ?? row.key}
                 </Text>
                 <span css={scoped(styles.amount)}>
-                  <Text variant="small" weight={isBold ? 'semibold' : 'normal'}>
-                    {isNegative ? `−${formatMoney(amount)}` : formatMoney(amount)}
+                  <Text
+                    variant="small"
+                    weight={isBold ? 'semibold' : 'normal'}
+                    title={value.title && `${sign}${value.title}`}
+                  >
+                    {`${sign}${value.text}`}
                   </Text>
                   <ChangeBadge change={row.change} />
                 </span>

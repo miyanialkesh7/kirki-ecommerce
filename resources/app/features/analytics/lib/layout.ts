@@ -5,6 +5,7 @@ import type { AnalyticsCards, AnalyticsKpis } from '@/features/analytics/schemas
 type KpiKey = keyof AnalyticsKpis;
 type CardKey = keyof AnalyticsCards;
 type LayoutGroup = 'kpis' | 'cards';
+type AmountFormat = 'short' | 'long';
 
 type LayoutItem<K extends string> = {
   key: K;
@@ -14,6 +15,7 @@ type LayoutItem<K extends string> = {
 type AnalyticsLayout = {
   kpis: LayoutItem<KpiKey>[];
   cards: LayoutItem<CardKey>[];
+  amounts: AmountFormat;
 };
 
 type LayoutKey<G extends LayoutGroup> = G extends 'kpis' ? KpiKey : CardKey;
@@ -55,6 +57,7 @@ const CARD_KEYS: CardKey[] = [
 const DEFAULT_LAYOUT: AnalyticsLayout = {
   kpis: KPI_KEYS.map((key, index) => ({ key, visible: index < DEFAULT_VISIBLE_KPIS })),
   cards: CARD_KEYS.map((key) => ({ key, visible: true })),
+  amounts: 'short',
 };
 
 const StoredItemSchema = z.object({ key: z.string(), visible: z.boolean() });
@@ -62,6 +65,7 @@ const StoredItemSchema = z.object({ key: z.string(), visible: z.boolean() });
 const StoredLayoutSchema = z.object({
   kpis: z.array(StoredItemSchema),
   cards: z.array(StoredItemSchema),
+  amounts: z.unknown(),
 });
 
 const normalizeGroup = <K extends string>(
@@ -106,8 +110,9 @@ const normalizeLayout = (raw: unknown): AnalyticsLayout => {
   return {
     kpis: normalizeGroup(parsed.data.kpis, DEFAULT_LAYOUT.kpis),
     cards: normalizeGroup(parsed.data.cards, DEFAULT_LAYOUT.cards),
+    amounts: parsed.data.amounts === 'long' ? 'long' : DEFAULT_LAYOUT.amounts,
   };
 };
 
 export { CARD_KEYS, DEFAULT_LAYOUT, KPI_KEYS, normalizeLayout };
-export type { AnalyticsLayout, CardKey, KpiKey, LayoutGroup, LayoutItem, LayoutKey };
+export type { AmountFormat, AnalyticsLayout, CardKey, KpiKey, LayoutGroup, LayoutItem, LayoutKey };

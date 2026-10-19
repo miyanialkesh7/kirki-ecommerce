@@ -89,9 +89,9 @@ class DashboardService
 
         return [
             'base_total_sales' => Money::prepare_amount_from_minor($base_total_sales),
-            'base_total_sales_money_object' => Money::prepare_amount_object_from_minor($base_total_sales),
+            'base_total_sales_money_object' => Money::to_short_dto($base_total_sales),
             'base_net_sales' => Money::prepare_amount_from_minor($base_net_sales),
-            'base_net_sales_money_object' => Money::prepare_amount_object_from_minor($base_net_sales),
+            'base_net_sales_money_object' => Money::to_short_dto($base_net_sales),
             'orders_count' => (int) ($totals->orders_count ?? 0),
             'products_sold' => (int) ($products_sold->products_sold ?? 0),
         ];
@@ -210,7 +210,7 @@ class DashboardService
                 'image' => MediaAttachment::make($item->product_image ?? null),
                 'units_sold' => (int) $row->units_sold,
                 'base_revenue' => Money::prepare_amount_from_minor($base_revenue),
-                'base_revenue_money_object' => Money::prepare_amount_object_from_minor($base_revenue),
+                'base_revenue_money_object' => Money::to_short_dto($base_revenue),
             ], $this->get_product_stock($product));
         })->values()->all();
     }

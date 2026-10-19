@@ -302,6 +302,29 @@ class DashboardApiTest extends RestTestCase
     }
 
     /**
+     * Metric and top product money objects have a short display; recent orders do not.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_metrics_and_top_products_have_short_display(): void
+    {
+        $this->create_order(['base_total' => 2034500, 'invoiced_total' => 2034500], [
+            ['product_name' => 'Sofa', 'quantity' => 1, 'base_total' => 2034500],
+        ]);
+
+        $overview = $this->get_overview();
+        $total_sales = $overview['metrics']['base_total_sales_money_object'];
+
+        $this->assertSame('$20,345.00', $total_sales['display']);
+        $this->assertSame('$20.3K', $total_sales['short_display']);
+        $this->assertSame('$20.3K', $overview['metrics']['base_net_sales_money_object']['short_display']);
+        $this->assertSame('$20.3K', $overview['top_products'][0]['base_revenue_money_object']['short_display']);
+        $this->assertArrayNotHasKey('short_display', $overview['recent_orders'][0]['invoiced_total_money_object']);
+        $this->assertArrayNotHasKey('short_display', $overview['recent_orders'][0]['base_total_money_object']);
+    }
+
+    /**
      * Build variant attributes for a product request or a variant row.
      *
      * @param array $overrides Variant attribute overrides.

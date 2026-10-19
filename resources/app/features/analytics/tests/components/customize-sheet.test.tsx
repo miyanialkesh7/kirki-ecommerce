@@ -254,6 +254,25 @@ describe('CustomizeSheet', () => {
     expect(within(sheet).getByRole('checkbox', { name: 'Net sales' })).not.toBeChecked();
   });
 
+  it('shows the Amounts group below Cards, with only the names before the example loads', () => {
+    const sheet = openSheet();
+    const headings = within(sheet)
+      .getAllByRole('heading')
+      .map((heading) => heading.textContent);
+
+    expect(headings.slice(-2)).toEqual(['Cards', 'Amounts']);
+    expect(within(sheet).getByRole('radio', { name: 'Short' })).toBeChecked();
+    expect(within(sheet).getByRole('radio', { name: 'Long' })).not.toBeChecked();
+  });
+
+  it('saves the selected amount format', () => {
+    const sheet = openSheet();
+
+    fireEvent.click(within(sheet).getByRole('radio', { name: 'Long' }));
+
+    expect(storedLayout().amounts).toBe('long');
+  });
+
   // Scenario: Done
   it('closes on Done and keeps the changes', () => {
     const sheet = openSheet();

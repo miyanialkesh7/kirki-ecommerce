@@ -6,7 +6,8 @@ import AnalyticsCard from '@/features/analytics/components/analytics-card';
 import CardEmpty from '@/features/analytics/components/card-empty';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
 import ChangeBadge from '@/features/analytics/components/change-badge';
-import { formatMoney, formatNumber } from '@/features/analytics/lib/format';
+import { useMoney } from '@/features/analytics/contexts/amount-format-context';
+import { formatNumber } from '@/features/analytics/lib/format';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import type { AnalyticsCards } from '@/features/analytics/schemas/catalog/analytics';
 import { theme } from '@/theme';
@@ -39,14 +40,11 @@ const getStockBadge = (product: ProductItem) => {
 
 const SalesByProductCard = (props: CardProps<'sales_by_product'>) => {
   const { data, isEmpty } = props;
+  const { money } = useMoney();
   const definition = getMetricDefinitions().sales_by_product;
 
   return (
-    <AnalyticsCard
-      title={definition.title}
-      info={definition.info}
-      testId="card-sales_by_product"
-    >
+    <AnalyticsCard title={definition.title} info={definition.info} testId="card-sales_by_product">
       {isEmpty ? (
         <CardEmpty />
       ) : (
@@ -79,8 +77,12 @@ const SalesByProductCard = (props: CardProps<'sales_by_product'>) => {
                   </Text>
                 </Flex>
                 <Flex direction="column" align="end" cssOverride={styles.sales}>
-                  <Text variant="small" weight="semibold">
-                    {formatMoney(item.net_sales_money_object)}
+                  <Text
+                    variant="small"
+                    weight="semibold"
+                    title={money(item.net_sales_money_object).title}
+                  >
+                    {money(item.net_sales_money_object).text}
                   </Text>
                   <ChangeBadge change={item.change} />
                 </Flex>

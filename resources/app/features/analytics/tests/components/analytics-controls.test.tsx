@@ -35,6 +35,7 @@ const renderControls = (params: Partial<AnalyticsParams> = {}) => {
         layout: DEFAULT_LAYOUT,
         setVisible: vi.fn(),
         move: vi.fn(),
+        setAmounts: vi.fn(),
         reset: vi.fn(),
       }}
     />,

@@ -123,6 +123,7 @@ class AnalyticsMetricsTest extends RestTestCase
         $this->assertSame(3003, $this->minor($total));
         $this->assertEqualsWithDelta(30.03, $total['raw'], 0.0001);
         $this->assertStringContainsString('30.03', $total['display']);
+        $this->assertSame($total['display'], $total['short_display']);
     }
 
     /**
@@ -462,6 +463,7 @@ class AnalyticsMetricsTest extends RestTestCase
         $regions = $this->regions_between('US', '2026-10-01', '2026-10-14');
 
         $this->assertSame(['California', 'New York', 'Texas', 'Florida', 'Illinois'], array_column($regions['sales'], 'name'));
+        $this->assertArrayHasKey('short_display', $regions['sales'][0]['sales_money_object']);
         $this->assertSame('Washington', $regions['orders'][0]['name']);
         $this->assertSame(3, $regions['orders'][0]['orders']);
         $this->assertCount(5, $regions['customers']);

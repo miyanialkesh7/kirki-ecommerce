@@ -1,4 +1,5 @@
-import { formatMoney, formatNumber } from '@/features/analytics/lib/format';
+import { formatNumber, moneyValue } from '@/features/analytics/lib/format';
+import type { AmountFormat } from '@/features/analytics/lib/layout';
 import type { LocationRow } from '@/features/analytics/schemas/catalog/analytics';
 import { theme } from '@/theme';
 
@@ -13,8 +14,14 @@ const metricValue = (row: LocationRow, metric: LocationMetric) =>
 
 const metricChange = (row: LocationRow, metric: LocationMetric) => row[`${metric}_change`] ?? null;
 
-const formatMetric = (row: LocationRow, metric: LocationMetric) =>
-  metric === 'sales' ? formatMoney(row.sales_money_object) : formatNumber(row[metric]);
+const formatMetric = (
+  row: LocationRow,
+  metric: LocationMetric,
+  format: AmountFormat,
+): { text: string; title?: string } =>
+  metric === 'sales'
+    ? moneyValue(row.sales_money_object, format)
+    : { text: formatNumber(row[metric]) };
 
 const colorShare = (value: number, min: number, max: number) =>
   max <= min ? 1 : Math.sqrt(Math.max(0, value - min) / (max - min));

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import {
+  type AmountFormat,
   type AnalyticsLayout,
   DEFAULT_LAYOUT,
   type LayoutGroup,
@@ -66,11 +67,15 @@ const useAnalyticsLayout = () => {
     });
   };
 
+  const setAmounts = (amounts: AmountFormat) => {
+    setLayout((current) => ({ ...current, amounts }));
+  };
+
   const reset = () => {
     setLayout(DEFAULT_LAYOUT);
   };
 
-  return { layout, setVisible, move, reset };
+  return { layout, setVisible, move, setAmounts, reset };
 };
 
 type AnalyticsLayoutControls = ReturnType<typeof useAnalyticsLayout>;

@@ -10,6 +10,8 @@ import {
   buildEmptyRangeOverview,
   buildEmptyStoreOverview,
   buildOverview,
+  moneyMetric,
+  series,
   splitOverview,
 } from '../fixtures';
 import { effectiveOpacity, renderPageAt } from '../helpers';
@@ -502,7 +504,7 @@ describe('Analytics cards', () => {
     const badges = card.getAllByTestId('change-badge');
 
     expect(card.getByText('Stripe')).toBeInTheDocument();
-    expect(card.getByText('$20680.27')).toBeInTheDocument();
+    expect(card.getByText('$20.7K')).toHaveAttribute('title', '$20680.27');
     expect(card.getByText('209 orders')).toBeInTheDocument();
     expect(badges[0]).toHaveTextContent('36.1%');
     expect(badges[0]).toHaveAttribute('data-direction', 'up');
@@ -878,6 +880,7 @@ const withVisible = (
 ): AnalyticsLayout => ({
   kpis: layout.kpis.map((item) => ({ ...item, visible: changes[item.key] ?? item.visible })),
   cards: layout.cards.map((item) => ({ ...item, visible: changes[item.key] ?? item.visible })),
+  amounts: layout.amounts,
 });
 
 const lastEnabledKeys = () => {
@@ -953,6 +956,7 @@ describe('Analytics customize', () => {
     saveLayout({
       kpis: [DEFAULT_LAYOUT.kpis[1], DEFAULT_LAYOUT.kpis[0], ...DEFAULT_LAYOUT.kpis.slice(2)],
       cards: [DEFAULT_LAYOUT.cards[14], ...DEFAULT_LAYOUT.cards.slice(0, 14)],
+      amounts: 'short',
     });
     renderPage();
 
@@ -1082,6 +1086,7 @@ describe('Analytics customize', () => {
         {
           kpis: [DEFAULT_LAYOUT.kpis[1], DEFAULT_LAYOUT.kpis[0], ...DEFAULT_LAYOUT.kpis.slice(2)],
           cards: DEFAULT_LAYOUT.cards,
+          amounts: 'long',
         },
         { sales_by_product: false, taxes_by_region: false, inventory_health: false },
       ),
@@ -1106,5 +1111,121 @@ describe('Analytics customize', () => {
     renderPage();
 
     expect(screen.queryByTestId('card-sales_by_coupon_code')).not.toBeInTheDocument();
+  });
+});
+
+const buildLargeOverview = () =>
+  buildOverview({
+    kpis: {
+      gross_sales: {
+        ...moneyMetric(2034500, 1500000, 35.6),
+        series: series([1000, 2200, 3000], [900, 1900, 2700]),
+      },
+    },
+    cards: {
+      total_sales_over_time: {
+        total: moneyMetric(2034500, 1500000, 35.6),
+        series: series([1000, 2200, 2034500], [900, 1900, 1500000]),
+      },
+    },
+  });
+
+const grossSalesValue = () => within(screen.getByTestId('kpi-gross_sales')).getByText(/^\$20/);
+
+describe('Analytics amount format', () => {
+  beforeAll(() => {
+    Element.prototype.hasPointerCapture = vi.fn(() => false);
+    Element.prototype.setPointerCapture = vi.fn();
+    Element.prototype.releasePointerCapture = vi.fn();
+  });
+
+  beforeEach(() => {
+    mockData(buildLargeOverview());
+  });
+
+  // Scenario: Short format
+  it('shows short amounts by default, with the long amount as the title', () => {
+    renderPage();
+
+    expect(grossSalesValue()).toHaveTextContent('$20.3K');
+    expect(grossSalesValue()).toHaveAttribute('title', '$20345.00');
+    expect(
+      within(screen.getByTestId('card-total_sales_over_time')).getByText('$20.3K'),
+    ).toHaveAttribute('title', '$20345.00');
+  });
+
+  // Scenario: Small amount in Short format
+  it('shows a small amount with its decimals, and its title is the same text', () => {
+    renderPage();
+
+    const value = within(screen.getByTestId('kpi-average_order_value')).getByText('$52.00');
+
+    expect(value).toHaveAttribute('title', '$52.00');
+  });
+
+  // Scenario: Long format
+  it('shows long amounts with no extra title when Long is selected, and sends no new request', () => {
+    renderPage();
+
+    const params = lastParams();
+    const sheet = openCustomize();
+
+    fireEvent.click(within(sheet).getByRole('radio', { name: 'Long ($20345.00)' }));
+
+    expect(grossSalesValue()).toHaveTextContent('$20345.00');
+    expect(grossSalesValue()).toHaveAttribute('title', '$20345.00');
+    expect(
+      within(screen.getByTestId('card-total_sales_over_time')).getByText('$20345.00'),
+    ).not.toHaveAttribute('title');
+    expect(lastParams()).toBe(params);
+    expect(lastEnabledKeys().sort()).toEqual([...METRIC_KEYS].sort());
+  });
+
+  // Scenario: Amount examples
+  it('shows the two formats with the examples from the backend, Short selected', () => {
+    renderPage();
+
+    const sheet = openCustomize();
+
+    expect(within(sheet).getByRole('radiogroup', { name: 'Amounts' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('radio', { name: 'Short ($20.3K)' })).toBeChecked();
+    expect(within(sheet).getByRole('radio', { name: 'Long ($20345.00)' })).not.toBeChecked();
+  });
+
+  // Scenario: Amount format persists
+  it('keeps Long when the page opens again', () => {
+    const { unmount } = renderPage();
+
+    fireEvent.click(within(openCustomize()).getByRole('radio', { name: 'Long ($20345.00)' }));
+    unmount();
+    renderPage();
+
+    expect(grossSalesValue()).toHaveTextContent('$20345.00');
+    expect(within(openCustomize()).getByRole('radio', { name: 'Long ($20345.00)' })).toBeChecked();
+  });
+
+  // Scenario: Reset
+  it('sets Short again on Reset to default', () => {
+    saveLayout({ ...DEFAULT_LAYOUT, amounts: 'long' });
+    renderPage();
+
+    const sheet = openCustomize();
+
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Reset to default' }));
+
+    expect(grossSalesValue()).toHaveTextContent('$20.3K');
+    expect(within(sheet).getByRole('radio', { name: 'Short ($20.3K)' })).toBeChecked();
+  });
+
+  // Scenario: Chart tooltip
+  it('keeps the long amount in the chart tooltip in Short mode', () => {
+    renderPage();
+
+    const card = within(screen.getByTestId('card-total_sales_over_time'));
+
+    fireEvent.pointerEnter(card.getByTestId('chart-point-2'));
+    fireEvent.mouseOver(card.getByTestId('chart-point-2'));
+
+    expect(card.getByRole('tooltip')).toHaveTextContent('$20,345.00');
   });
 });

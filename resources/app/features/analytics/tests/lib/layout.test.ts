@@ -21,6 +21,10 @@ describe('DEFAULT_LAYOUT', () => {
     ]);
   });
 
+  it('shows short amounts', () => {
+    expect(DEFAULT_LAYOUT.amounts).toBe('short');
+  });
+
   it('has the 15 cards all on, in page order', () => {
     expect(DEFAULT_LAYOUT.cards.map((item) => item.key)).toEqual(CARD_KEYS);
     expect(CARD_KEYS).toHaveLength(15);
@@ -29,6 +33,19 @@ describe('DEFAULT_LAYOUT', () => {
 });
 
 describe('normalizeLayout', () => {
+  it('keeps the saved amount format', () => {
+    expect(normalizeLayout({ kpis: [], cards: [], amounts: 'long' }).amounts).toBe('long');
+    expect(normalizeLayout({ kpis: [], cards: [], amounts: 'short' }).amounts).toBe('short');
+  });
+
+  it('uses short amounts for a layout saved before the amount format, or an unknown format', () => {
+    const layout = normalizeLayout({ kpis: [{ key: 'orders', visible: true }], cards: [] });
+
+    expect(layout.amounts).toBe('short');
+    expect(layout.kpis[0]).toEqual({ key: 'orders', visible: true });
+    expect(normalizeLayout({ kpis: [], cards: [], amounts: 'huge' }).amounts).toBe('short');
+  });
+
   it('gives the default layout for a value that is not a layout', () => {
     expect(normalizeLayout(null)).toEqual(DEFAULT_LAYOUT);
     expect(normalizeLayout('broken')).toEqual(DEFAULT_LAYOUT);
