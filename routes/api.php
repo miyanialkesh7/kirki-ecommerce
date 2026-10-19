@@ -2,6 +2,7 @@
 
 defined('ABSPATH') || exit;
 
+use Kirki\Ecommerce\App\Http\Controllers\Api\AnalyticsController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\AppConfigController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\AttributeController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\AttributeValueController;
@@ -65,6 +66,10 @@ Route::group(['middleware' => [AuthMiddleware::class, AdminMiddleware::class]], 
 
     // Dashboard
     Route::get('/dashboard/overview', [DashboardController::class, 'overview']);
+
+    // Analytics
+    Route::get('/analytics/metrics/{key}', [AnalyticsController::class, 'metric']);
+    Route::get('/analytics/regions', [AnalyticsController::class, 'regions']);
 
     // App Config
     Route::get('/app-config', [AppConfigController::class, 'get']);

@@ -28,7 +28,7 @@ EXCLUDE_PATHS=(
   "resources/site"
   "docker"
   "wpcli"
-  "kirki-test"
+  "kirki-ecommerce-test"
   "openspec"
   "sidebar-references"
   "phpcs"

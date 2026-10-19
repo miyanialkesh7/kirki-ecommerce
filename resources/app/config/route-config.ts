@@ -22,6 +22,8 @@ export const RouteConfig = {
     OrderDetail: defineRoute('/:id'),
   }),
 
+  Analytics: defineRoute('/analytics'),
+
   Collections: defineRoute('/collections', {
     CollectionDetail: defineRoute('/:id'),
   }),
