@@ -1,5 +1,6 @@
 <?php
 
+use Kirki\Ecommerce\App\Menu\Analytics;
 use Kirki\Ecommerce\App\Menu\Brands;
 use Kirki\Ecommerce\App\Menu\Categories;
 use Kirki\Ecommerce\App\Menu\Collections;
@@ -20,6 +21,7 @@ return [
     Root::class,
     Home::class,
     Orders::class,
+    Analytics::class,
     Separator::class,
     Products::class,
     Inventory::class,

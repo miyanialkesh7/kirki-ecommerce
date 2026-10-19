@@ -17,7 +17,7 @@ This repo is **plugin code only**. WordPress core lives in a Docker volume on fi
 git clone git@github.com:themeum/kirki-ecommerce.git
 cd kirki-ecommerce
 
-chmod +x wpcli kirki-test bin/dev-up bin/dev-urls docker/scripts/*.sh
+chmod +x wpcli kirki-ecommerce-test bin/dev-up bin/dev-urls docker/scripts/*.sh
 source docker/scripts/dev-env.sh   # re-run in new terminals
 
 composer install   # installs deps and scopes themeum/framework into vendor/libraries/framework
@@ -93,7 +93,7 @@ composer test:docker:unit        # fast unit tests
 composer test:docker:integration # REST API / WordPress tests
 ```
 
-Without `dev-env.sh`, prefix wrappers with `./` (e.g. `./wpcli`, `./kirki-test`).
+Without `dev-env.sh`, prefix wrappers with `./` (e.g. `./wpcli`, `./kirki-ecommerce-test`).
 
 > **Warning:** `wpcli kirki migrate:fresh` **drops all plugin tables**. Never on production/staging.  
 > `docker compose down -v` removes the entire WordPress volume (core, uploads, themes).
