@@ -52,7 +52,7 @@ http:
         "customer_last_name": "Doe",
         "customer_email": "jane.shipping@example.com",
         "customer_phone": "+1 555-000-2000",
-        "customer_notes": "testing"
+        "order_notes": "testing"
       }
   auth: inherit
 settings:
@@ -109,7 +109,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": "testing"
+            "order_notes": "testing"
           }
     response:
       status: 200
@@ -242,8 +242,7 @@ examples:
               "shipping_method": "fsdfdsfsdfsdf343432jh4",
               "shipping_method_name": "Standard Delivery",
               "shipping_method_type": "flat_rate",
-              "customer_notes": "Please leave the package at the front door.",
-              "admin_notes": null,
+              "order_notes": "Please leave the package at the front door.",
               "flags": [],
               "shipping_tracking": {
                 "carrier": null,
@@ -303,7 +302,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": "testing"
+            "order_notes": "testing"
           }
     response:
       status: 404

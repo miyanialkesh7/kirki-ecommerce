@@ -115,6 +115,23 @@ class OrderNoteEmailTest extends RestTestCase
     }
 
     /**
+     * Spec scenario: Email sent without a passed note.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_order_note_mail_does_not_fall_back_to_the_order_notes(): void
+    {
+        $order = $this->place_order($this->default_variant_id($this->create_product()), 'Private merchant note')
+            ->fresh('items', 'order_coupons.order_item_coupons');
+        $this->assertSame('Private merchant note', $order->order_notes);
+
+        $data = CustomerOrderNoteMail::make($order)->with();
+
+        $this->assertStringNotContainsString('Private merchant note', $data['admin_order_note']);
+    }
+
+    /**
      * Add a comment through the API and return the response payload.
      *
      * @param string $message         Comment text.
@@ -134,11 +151,12 @@ class OrderNoteEmailTest extends RestTestCase
     /**
      * Place a manual order through the API and return it.
      *
-     * @param int $variant_id Variant to order.
+     * @param int         $variant_id Variant to order.
+     * @param string|null $order_notes Optional order note.
      * @return Order
      * @since 1.0.0
      */
-    protected function place_order(int $variant_id): Order
+    protected function place_order(int $variant_id, ?string $order_notes = null): Order
     {
         $payload = $this->assert_api_success($this->request('POST', 'orders', [
             'items' => [['variant_id' => $variant_id, 'quantity' => 1]],
@@ -163,6 +181,7 @@ class OrderNoteEmailTest extends RestTestCase
             'billing_state' => 'NY',
             'billing_postal_code' => '10001',
             'billing_country' => 'US',
+            'order_notes' => $order_notes,
         ]), 201);
 
         return Order::find($payload['data']['id']);

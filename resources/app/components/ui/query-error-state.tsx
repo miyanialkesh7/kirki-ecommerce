@@ -1,10 +1,10 @@
+import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { RefreshCw } from 'lucide-react';
 
 import Button from '@/components/ui/button';
 import ErrorState from '@/components/ui/error-state';
 import Flex from '@/components/ui/flex';
 import { __ } from '@/wpi18n';
-import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 
 type QueryErrorStateProps = {
   onRetry: () => void;

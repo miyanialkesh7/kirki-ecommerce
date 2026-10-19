@@ -135,6 +135,20 @@ describe('useOrderCreate debounce -> payload -> query wiring', () => {
     expect(result.current.calculation).toBeUndefined();
   });
 
+  it('does not fire the calculation query when only the order notes change', async () => {
+    const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
+
+    const { result } = renderUseOrderCreate();
+
+    act(() => {
+      result.current.form.setValue('order_notes', 'Leave at the front door', { shouldDirty: true });
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    expect(getRequestCount()).toBe(0);
+  });
+
   it('fires the calculation query when the form is reset', async () => {
     const { getRequestCount } = mockCalculationResponse(() => buildCalculationResponse(0));
 

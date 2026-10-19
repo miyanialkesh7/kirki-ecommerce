@@ -100,7 +100,7 @@ const OrderCreateProvider = ({ children }: OrderCreateProviderProps) => {
         callback: ({ name, values }) => {
           if (
             isDefined(name) &&
-            ['admin_notes', 'customer_notes', 'flags', 'is_manual'].includes(name)
+            ['order_notes', 'flags', 'is_manual'].includes(name)
           ) {
             return;
           }

@@ -47,7 +47,7 @@ type UseOrderDetailsResult = {
     tracking_url: string;
   }) => void;
   handleMarkAsPaid: (paymentProvider: string) => void;
-  handleSaveOrder: () => void;
+  handleSaveOrder: () => Promise<boolean>;
 };
 
 export const useOrderDetails = (id: string | undefined): UseOrderDetailsResult => {
@@ -130,16 +130,23 @@ export const useOrderDetails = (id: string | undefined): UseOrderDetailsResult =
     );
   };
 
-  const handleSaveOrder = form.handleSubmit(async (payload) => {
-    if (!order) {
-      return;
-    }
-    try {
-      await updateMutation.mutateAsync({ id: order.id, data: payload });
-    } catch (error) {
-      applyServerErrors(form, error as ErrorResponse);
-    }
-  });
+  const handleSaveOrder = async () => {
+    let isSaved = false;
+
+    await form.handleSubmit(async (payload) => {
+      if (!order) {
+        return;
+      }
+      try {
+        await updateMutation.mutateAsync({ id: order.id, data: payload });
+        isSaved = true;
+      } catch (error) {
+        applyServerErrors(form, error as ErrorResponse);
+      }
+    })();
+
+    return isSaved;
+  };
 
   return {
     order,

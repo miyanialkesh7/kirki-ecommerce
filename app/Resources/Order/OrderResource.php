@@ -131,8 +131,7 @@ class OrderResource extends Resource
             'shipping_method' => $this->shipping_method,
             'shipping_method_name' => $this->shipping_metadata['shipping_method']['name'] ?? null,
             'shipping_method_type' => $this->shipping_metadata['shipping_method']['type'] ?? null,
-            'customer_notes' => $this->customer_notes,
-            'admin_notes' => $this->admin_notes,
+            'order_notes' => $this->order_notes,
             'flags' => $this->flags,
 
             'shipping_tracking' => [

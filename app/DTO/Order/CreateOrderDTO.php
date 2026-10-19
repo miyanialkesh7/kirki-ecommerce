@@ -145,10 +145,7 @@ class CreateOrderDTO extends DTO
     public $billing_email;
 
     /** @var string|null */
-    public $customer_notes;
-
-    /** @var string|null */
-    public $admin_notes;
+    public $order_notes;
 
     /** @var string|null */
     public $ip_address;

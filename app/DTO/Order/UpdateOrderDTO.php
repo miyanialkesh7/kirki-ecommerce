@@ -134,7 +134,7 @@ class UpdateOrderDTO extends DTO
     public $billing_company;
 
     /** @var string|null */
-    public $admin_notes;
+    public $order_notes;
 
     /** @var string[]|null */
     public $flags;

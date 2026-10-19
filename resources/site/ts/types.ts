@@ -47,6 +47,7 @@ export type KirkiEcommerceConfig = {
     pricing: CartPricing;
     shipping_method: ShippingMethod | null;
     customer_email?: string | null;
+    order_notes?: string | null;
     is_billing_same_as_shipping?: boolean;
     shipping_address?: Record<string, any> | null;
     billing_address?: Record<string, any> | null;
@@ -186,7 +187,7 @@ export type Cart = {
   billing_address: any;
   available_shipping_methods: any[];
   shipping_method: any;
-  customer_notes: string | null;
+  order_notes: string | null;
   ip_address: string | null;
   user_agent: string | null;
   expires_at: string | null;
@@ -238,7 +239,7 @@ export type CheckoutRequest = {
   billing_company?: string | null;
   customer_email: string;
   customer_phone: string;
-  customer_notes?: string | null;
+  order_notes?: string | null;
 };
 
 export type CheckoutResponse = {

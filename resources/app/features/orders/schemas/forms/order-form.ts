@@ -119,7 +119,7 @@ const OrderFormShape = prepareFormSchema(
     billing_email: stringOrNull(),
     billing_company: stringOrNull(),
 
-    admin_notes: stringOrNull(),
+    order_notes: stringOrNull(),
     flags: z.array(z.string()).nullish(),
     is_manual: z.boolean().default(true),
   }),
@@ -192,7 +192,7 @@ const OrderFormSchema = OrderFormShape.transform((values) => ({
   is_billing_same_as_shipping: values.is_billing_same_as_shipping,
   ...buildBillingFields(values),
 
-  admin_notes: values.admin_notes ?? null,
+  order_notes: values.order_notes ?? null,
   flags: values.flags ?? null,
   is_manual: values.is_manual,
 }));

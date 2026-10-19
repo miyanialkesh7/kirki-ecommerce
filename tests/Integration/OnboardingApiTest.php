@@ -134,7 +134,7 @@ class OnboardingApiTest extends RestTestCase
      */
     public function test_successful_setup_configures_the_store(): void
     {
-        Option::set(OptionKeys::GENERAL_SETTINGS, ['store_email' => 'owner@example.com']);
+        Option::set(OptionKeys::GENERAL_SETTINGS, ['store_email' => WP_TESTS_EMAIL]);
         $store_created_count = did_action(DevHookNames::STORE_CREATED);
         $product_count = Product::query()->count();
 

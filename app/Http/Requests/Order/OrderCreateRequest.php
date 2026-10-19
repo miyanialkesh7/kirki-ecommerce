@@ -149,8 +149,7 @@ class OrderCreateRequest extends Request
             'customer_last_name' => 'required_if:is_manual,1|nullable|string',
             'customer_email' => 'required_if:is_guest,1|nullable|email',
             'customer_phone' => 'nullable|string',
-            'customer_notes' => 'nullable|string',
-            'admin_notes' => 'nullable|string',
+            'order_notes' => 'nullable|string',
             'is_manual' => 'nullable|boolean',
         ];
     }
@@ -244,8 +243,7 @@ class OrderCreateRequest extends Request
             'customer_last_name' => Sanitizer::TEXT,
             'customer_email' => Sanitizer::EMAIL,
             'customer_phone' => Sanitizer::TEXT,
-            'customer_notes' => Sanitizer::TEXT,
-            'admin_notes' => Sanitizer::TEXT,
+            'order_notes' => Sanitizer::TEXTAREA,
             'is_manual' => Sanitizer::BOOL,
         ];
     }

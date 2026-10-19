@@ -30,7 +30,7 @@ class CustomerOrderNoteMail extends Mailer
      * @since 1.0.0
      *
      * @param Order  $order Order the email is about.
-     * @param string $note  The note's text; when empty, the order's own admin note is shown, as the preview's sample order does.
+     * @param string $note  The note's text shown in the email.
      */
     public function __construct(Order $order, string $note = '')
     {
@@ -67,7 +67,7 @@ class CustomerOrderNoteMail extends Mailer
                 'label' => __('View Your Order', 'kirki-ecommerce'),
                 'link' => Url::get_order_tracking_url($order['uuid']),
             ]),
-            'admin_order_note' => $this->get_content('emails.parts.info', ['info_text' => $this->note !== '' ? $this->note : ($order['admin_notes'] ?? '')]),
+            'admin_order_note' => $this->get_content('emails.parts.info', ['info_text' => $this->note]),
             'shipping_tracking_number' => $order['shipping_tracking']['tracking_number'] ?? '',
             'shipping_tracking_url' => $this->get_content('emails.parts.link', [
                 'label' => $order['shipping_tracking']['tracking_url'] ?? '',

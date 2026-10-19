@@ -28,7 +28,7 @@ class Cart extends Model
         'items_count',
         'ip_address',
         'user_agent',
-        'customer_notes',
+        'order_notes',
         'expires_at',
         'shipping_address',
         'billing_address',

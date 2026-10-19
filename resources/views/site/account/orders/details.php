@@ -196,6 +196,19 @@ $billing_state = array_find($billing_country['states'] ?? [], fn($item) => $item
                     </div>
                 </div>
             </div>
+
+            <?php if (!empty($order['order_notes'])) : ?>
+                <div class="kecom-card kecom-order-info-card">
+                    <div class="kecom-order-info-block">
+                        <h4 class="kecom-order-info-title">
+                            <?php esc_html_e('Order note', 'kirki-ecommerce'); ?>
+                        </h4>
+                        <div class="kecom-order-info-content">
+                            <p class="kecom-order-info-text"><?php echo nl2br(esc_html($order['order_notes'])); ?></p>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Right Column (Products List & Total Breakdown) -->

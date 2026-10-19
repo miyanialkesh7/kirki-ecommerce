@@ -410,8 +410,7 @@ class OrderActivityApiTest extends RestTestCase
             'billing_state' => 'NY',
             'billing_postal_code' => '10001',
             'billing_country' => 'US',
-            'customer_notes' => 'Test order',
-            'admin_notes' => 'Test order',
+            'order_notes' => 'Test order',
         ];
 
         return array_merge($payload, $overrides);
