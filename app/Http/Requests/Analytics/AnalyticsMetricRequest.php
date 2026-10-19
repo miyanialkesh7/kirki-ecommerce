@@ -27,12 +27,37 @@ class AnalyticsMetricRequest extends Request
     {
         return [
             'range' => 'nullable|string|in:' . implode(',', AnalyticsRangeResolver::PRESETS),
-            'from' => 'nullable|string',
-            'to' => 'nullable|string',
+            'from' => 'required_if:range,custom|nullable|date|format:Y-m-d',
+            'to' => 'required_if:range,custom|nullable|date|format:Y-m-d',
             'compare' => 'nullable|string|in:' . implode(',', AnalyticsRangeResolver::COMPARISONS),
-            'compare_from' => 'nullable|string',
-            'compare_to' => 'nullable|string',
+            'compare_from' => 'required_if:compare,custom|nullable|date|format:Y-m-d',
+            'compare_to' => 'required_if:compare,custom|nullable|date|format:Y-m-d',
         ];
+    }
+
+    /**
+     * @inheritDoc
+     *
+     * @since 1.0.0
+     */
+    protected function messages()
+    {
+        $field_messages = [
+            'from' => __('Enter a start date.', 'kirki-ecommerce'),
+            'to' => __('Enter an end date.', 'kirki-ecommerce'),
+            'compare_from' => __('Enter a comparison start date.', 'kirki-ecommerce'),
+            'compare_to' => __('Enter a comparison end date.', 'kirki-ecommerce'),
+        ];
+
+        $messages = [];
+
+        foreach ($field_messages as $field => $message) {
+            $messages[$field . '.required_if'] = $message;
+            $messages[$field . '.date'] = $message;
+            $messages[$field . '.format'] = $message;
+        }
+
+        return $messages;
     }
 
     /**
@@ -53,12 +78,12 @@ class AnalyticsMetricRequest extends Request
     }
 
     /**
-     * Check the dates of a custom range and a custom comparison.
+     * Check the order of the dates of a custom range and a custom comparison.
      *
      * @since 1.0.0
      *
      * @return void
-     * @throws ValidationException When a date is missing, malformed, in the future or out of order.
+     * @throws ValidationException When a date is in the future or out of order.
      */
     protected function passed_validation()
     {
@@ -78,7 +103,7 @@ class AnalyticsMetricRequest extends Request
     }
 
     /**
-     * Check the start and end day of a custom range.
+     * Check that a custom range does not end after today and does not start after its end.
      *
      * @since 1.0.0
      *
@@ -91,17 +116,9 @@ class AnalyticsMetricRequest extends Request
         $from = (string) $this->input('from');
         $to = (string) $this->input('to');
 
-        if (!$this->is_date($from)) {
-            $errors['from'] = [__('Enter a start date.', 'kirki-ecommerce')];
-        }
-
-        if (!$this->is_date($to)) {
-            $errors['to'] = [__('Enter an end date.', 'kirki-ecommerce')];
-        } elseif ($to > app()->make(AnalyticsRangeResolver::class)->today()) {
+        if ($to > app()->make(AnalyticsRangeResolver::class)->today()) {
             $errors['to'] = [__('The end date cannot be after today.', 'kirki-ecommerce')];
-        }
-
-        if (!isset($errors['from']) && !isset($errors['to']) && $from > $to) {
+        } elseif ($from > $to) {
             $errors['from'] = [__('The start date cannot be after the end date.', 'kirki-ecommerce')];
         }
 
@@ -109,7 +126,7 @@ class AnalyticsMetricRequest extends Request
     }
 
     /**
-     * Check the start and end day of a custom comparison range.
+     * Check that a custom comparison range does not start after its end.
      *
      * @since 1.0.0
      *
@@ -122,36 +139,10 @@ class AnalyticsMetricRequest extends Request
         $from = (string) $this->input('compare_from');
         $to = (string) $this->input('compare_to');
 
-        if (!$this->is_date($from)) {
-            $errors['compare_from'] = [__('Enter a comparison start date.', 'kirki-ecommerce')];
-        }
-
-        if (!$this->is_date($to)) {
-            $errors['compare_to'] = [__('Enter a comparison end date.', 'kirki-ecommerce')];
-        }
-
-        if (!isset($errors['compare_from']) && !isset($errors['compare_to']) && $from > $to) {
+        if ($from > $to) {
             $errors['compare_from'] = [__('The comparison start date cannot be after the end date.', 'kirki-ecommerce')];
         }
 
         return $errors;
-    }
-
-    /**
-     * Check that a value is a real calendar day in Y-m-d format.
-     *
-     * @since 1.0.0
-     *
-     * @param string $value Value to check.
-     *
-     * @return bool
-     */
-    protected function is_date(string $value)
-    {
-        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $parts)) {
-            return false;
-        }
-
-        return checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
     }
 }
