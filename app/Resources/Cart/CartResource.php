@@ -128,7 +128,7 @@ class CartResource extends Resource
             }, $shipping_options),
             'shipping_method' => $this->shipping_method,
 
-            'customer_notes' => $this->customer_notes,
+            'order_notes' => $this->order_notes,
             'ip_address' => $this->ip_address,
             'user_agent' => $this->user_agent,
 

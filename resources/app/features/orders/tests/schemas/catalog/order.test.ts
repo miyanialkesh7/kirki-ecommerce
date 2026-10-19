@@ -293,8 +293,7 @@ describe('OrderSchema', () => {
     shipping_method: 'fsdfdsfsdfsdf343432jh4',
     shipping_method_name: 'Standard Delivery',
     shipping_method_type: 'flat_rate',
-    customer_notes: null,
-    admin_notes: null,
+    order_notes: null,
     flags: [],
     shipping_tracking: {
       carrier: null,
@@ -313,6 +312,14 @@ describe('OrderSchema', () => {
 
   it('accepts the order shape emitted by OrderResource', () => {
     expect(OrderSchema.safeParse(documentedOrder).success).toBe(true);
+  });
+
+  it('keeps order_notes on the parsed order and has no customer_notes or admin_notes field', () => {
+    const result = OrderSchema.parse({ ...documentedOrder, order_notes: 'Leave at the door' });
+
+    expect(result.order_notes).toBe('Leave at the door');
+    expect(Object.keys(result)).not.toContain('customer_notes');
+    expect(Object.keys(result)).not.toContain('admin_notes');
   });
 
   it('accepts an unrecognized extra field on the order and on a nested item', () => {

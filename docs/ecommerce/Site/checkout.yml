@@ -37,7 +37,7 @@ http:
         "billing_postal_code": "10001",
         "billing_country": "US",
         "customer_email": "jane.doe@example.com",
-        "customer_notes": null
+        "order_notes": null
       }
   auth: inherit
 
@@ -82,7 +82,7 @@ examples:
             "billing_postal_code": "10001",
             "billing_country": "US",
             "customer_email": "jane.doe@example.com",
-            "customer_notes": null
+            "order_notes": null
           }
     response:
       status: 201
@@ -237,7 +237,7 @@ examples:
               "shipping_method": "method-0001",
               "shipping_method_name": "Standard Delivery",
               "shipping_method_type": "flat_rate",
-              "customer_notes": null,
+              "order_notes": null,
               "flags": null,
               "shipping_tracking": {
                 "carrier": null,

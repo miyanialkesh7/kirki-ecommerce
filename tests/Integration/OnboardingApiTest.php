@@ -134,7 +134,7 @@ class OnboardingApiTest extends RestTestCase
      */
     public function test_successful_setup_configures_the_store(): void
     {
-        Option::set(OptionKeys::GENERAL_SETTINGS, ['store_email' => 'owner@example.com']);
+        Option::set(OptionKeys::GENERAL_SETTINGS, ['store_email' => WP_TESTS_EMAIL]);
         $store_created_count = did_action(DevHookNames::STORE_CREATED);
         $product_count = Product::query()->count();
 
@@ -143,7 +143,7 @@ class OnboardingApiTest extends RestTestCase
         $general = Option::get(OptionKeys::GENERAL_SETTINGS);
         $this->assertSame('Acme', $general['store_name']);
         $this->assertSame('food-and-drink', $general['industry']);
-        $this->assertSame('owner@example.com', $general['store_email']);
+        $this->assertSame(WP_TESTS_EMAIL, $general['store_email']);
         $this->assertSame('BD', $general['store_address']['country']);
         $this->assertSame('Dhaka', $general['store_address']['city']);
         $this->assertNull($general['store_address']['address_line_1']);
@@ -481,7 +481,7 @@ class OnboardingApiTest extends RestTestCase
         $this->assert_api_success($this->request('POST', 'onboarding', $this->preset_payload()));
 
         $general = Option::get(OptionKeys::GENERAL_SETTINGS);
-        $this->assertSame(['prefix' => '', 'suffix' => ''], $general['order_number']);
+        $this->assertSame(['prefix' => '#'], $general['order_number']);
         $this->assertSame([
             'prefix' => '',
             'suffix' => '',

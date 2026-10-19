@@ -316,11 +316,33 @@ class CartApiTest extends RestTestCase
         $this->assertArrayHasKey('customer_email', $invalid['errors']);
 
         $this->assert_api_success($this->request('PUT', 'cart', [
-            'customer_notes' => 'Leave at the door',
+            'order_notes' => 'Leave at the door',
         ], $this->cart_headers));
 
         $fetched = $this->assert_api_success($this->request('GET', 'cart', [], $this->cart_headers));
         $this->assertSame('guest@example.com', $fetched['data']['customer_email']);
+    }
+
+    /**
+     * Spec scenario: Customer adds a note to the cart.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_cart_update_accepts_and_returns_order_notes(): void
+    {
+        $this->prepare_variant();
+        $this->add_cart_item();
+
+        $saved = $this->assert_api_success($this->request('PUT', 'cart', [
+            'order_notes' => 'Leave at the door',
+        ], $this->cart_headers));
+
+        $this->assertSame('Leave at the door', $saved['data']['order_notes']);
+        $this->assertArrayNotHasKey('customer_notes', $saved['data']);
+
+        $fetched = $this->assert_api_success($this->request('GET', 'cart', [], $this->cart_headers));
+        $this->assertSame('Leave at the door', $fetched['data']['order_notes']);
     }
 
     public function test_removing_non_last_item_keeps_cart_and_last_removal_deletes_it(): void

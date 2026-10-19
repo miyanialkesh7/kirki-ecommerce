@@ -48,7 +48,7 @@ http:
         "customer_last_name": "Doe",
         "customer_email": "jane.shipping@example.com",
         "customer_phone": "+1 555-000-2000",
-        "customer_notes": null
+        "order_notes": null
       }
   auth: inherit
 settings:
@@ -101,7 +101,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": null
+            "order_notes": null
           }
     response:
       status: 200
@@ -219,8 +219,7 @@ examples:
               "shipping_method": "fsdfdsfsdfsdf343432jh4",
               "shipping_method_name": "Standard Delivery",
               "shipping_method_type": "flat_rate",
-              "customer_notes": null,
-              "admin_notes": null,
+              "order_notes": null,
               "flags": [],
               "shipping_tracking": {
                 "carrier": null,
@@ -276,7 +275,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": null
+            "order_notes": null
           }
     response:
       status: 404

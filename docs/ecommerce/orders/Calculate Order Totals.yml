@@ -48,7 +48,7 @@ http:
         "customer_last_name": "Doe",
         "customer_email": "jane.shipping@example.com",
         "customer_phone": "+1 555-000-2000",
-        "customer_notes": null
+        "order_notes": null
       }
   auth: inherit
 
@@ -102,7 +102,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": null
+            "order_notes": null
           }
     response:
       status: 200
@@ -204,7 +204,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": null
+            "order_notes": null
           }
     response:
       status: 404

@@ -1,4 +1,3 @@
-import { useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router';
 
 import ActionGroup from '@/components/ui/action-group';
@@ -64,11 +63,6 @@ const OrderDetails = () => {
     handleMarkAsPaid,
     handleSaveOrder,
   } = useOrderDetails(id);
-
-  const adminNotes = useWatch({
-    control: form.control,
-    name: 'admin_notes',
-  });
 
   if (isLoading) {
     return <OrderDetailsSkeleton />;
@@ -205,7 +199,7 @@ const OrderDetails = () => {
 
               <FlagCard onSave={handleSaveOrder} />
 
-              {Boolean(adminNotes) && <NotesCard isEditable={false} />}
+              <NotesCard mode="edit" onSave={handleSaveOrder} isSaving={isSaving} />
             </Flex>
           </Flex>
         </PageContent>

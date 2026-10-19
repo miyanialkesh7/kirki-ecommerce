@@ -37,7 +37,7 @@ describe('OrderFormSchema', () => {
     shipping_email: null,
     shipping_company: null,
     is_billing_same_as_shipping: true,
-    admin_notes: null,
+    order_notes: null,
   };
 
   const separateBilling = {
@@ -94,7 +94,7 @@ describe('OrderFormSchema', () => {
       billing_phone: null,
       billing_email: null,
       billing_company: null,
-      admin_notes: null,
+      order_notes: null,
       flags: null,
       is_manual: true,
     });
@@ -201,6 +201,12 @@ describe('OrderFormSchema', () => {
     expect(OrderFormSchema.parse({ ...base, coupon_codes: [] }).coupon_codes).toEqual([]);
   });
 
+  it('includes a provided order_notes value in the form payload', () => {
+    const result = OrderFormSchema.parse({ ...base, order_notes: 'Leave at the door' });
+
+    expect(result.order_notes).toBe('Leave at the door');
+  });
+
   it('sends null rather than undefined for every omitted optional field', () => {
     const result = OrderFormSchema.parse({
       items: base.items,
@@ -227,7 +233,7 @@ describe('OrderFormSchema', () => {
     expect(result.shipping_phone).toBeNull();
     expect(result.shipping_email).toBeNull();
     expect(result.shipping_company).toBeNull();
-    expect(result.admin_notes).toBeNull();
+    expect(result.order_notes).toBeNull();
   });
 
   it('defaults is_manual to true and is_billing_same_as_shipping to false', () => {
@@ -547,7 +553,7 @@ describe('OrderCalculationRequestSchema', () => {
     expect(result.coupon_codes).toEqual(['SAVE10']);
   });
 
-  it('forwards the billing block, shipping_company, payment_provider and customer contact fields, but not shipping_id/billing_id, is_billing_same_as_shipping or admin_notes', () => {
+  it('forwards the billing block, shipping_company, payment_provider and customer contact fields, but not shipping_id/billing_id, is_billing_same_as_shipping or order_notes', () => {
     const result = OrderCalculationRequestSchema.parse({
       billing_first_name: 'Jane',
       billing_postal_code: 'SW1A 2AA',
@@ -557,7 +563,7 @@ describe('OrderCalculationRequestSchema', () => {
       payment_provider: 'stripe',
       customer_email: 'jane@example.com',
       customer_phone: '+44 20 7925 0918',
-      admin_notes: 'Leave at the door',
+      order_notes: 'Leave at the door',
       is_billing_same_as_shipping: false,
       is_manual: false,
     });
@@ -573,7 +579,7 @@ describe('OrderCalculationRequestSchema', () => {
     expect(Object.keys(result)).not.toContain('shipping_id');
     expect(Object.keys(result)).not.toContain('billing_id');
     expect(Object.keys(result)).not.toContain('is_billing_same_as_shipping');
-    expect(Object.keys(result)).not.toContain('admin_notes');
+    expect(Object.keys(result)).not.toContain('order_notes');
   });
 
   it('does not default a billing field from shipping, unlike OrderFormSchema', () => {

@@ -7,14 +7,18 @@ import { buildCartApi } from '../api/cart';
 import { checkoutApi } from '../api/checkout';
 import { emit, EVENTS, listen, waitForEvent } from '../events';
 import { toastManager } from '../services/toast/runtime';
-import type { CartCoupon, CartPricing, CheckoutRequest, ShippingMethod } from '../types';
+import type {
+  AddressRule,
+  CartCoupon,
+  CartPricing,
+  CheckoutRequest,
+  ShippingMethod,
+} from '../types';
 import { config } from '../utils';
 import { debounce } from '../utils/debounce';
 import { scrollToFirstError } from '../utils/dom';
 import { renderPaymentGatewayHTML } from '../utils/payment';
 import { type CountryState, createAddressModal } from './address-modal';
-import { EMAIL_PATTERN } from './form';
-import type { AddressRule } from '../types';
 import {
   type CheckoutAddress,
   formatAddressPayload,
@@ -25,11 +29,12 @@ import {
   toShippingOrderFields,
   validateAddress,
 } from './checkout-address';
+import { EMAIL_PATTERN } from './form';
 
 const cartApi = buildCartApi({ skipTax: false });
 
-export type { CheckoutAddress };
 export { stateField } from './state-field';
+export type { CheckoutAddress };
 
 /** Subset of Alpine $data() returned for the form component */
 type AlpineFormData = {
@@ -188,10 +193,14 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
     availableShippingMethods: [] as ShippingMethod[],
     shippingMethodError: null as string | null,
 
+    orderNotes: '',
+
     consents: {} as Record<string, boolean>,
     consentError: null as string | null,
 
     init() {
+      this.orderNotes = this.cartData?.order_notes ?? '';
+
       // Seed a key per consent so x-model binds to a reactive property.
       for (const consent of config.checkout_consents ?? []) {
         this.consents[consent.id] = false;
@@ -244,6 +253,12 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
       document
         .querySelector('#contact-form')
         ?.addEventListener('input', () => debouncedSyncContactEmail());
+
+      document.querySelector('#checkout-order-notes')?.addEventListener('blur', () => {
+        if (this.orderNotes !== (this.cartData?.order_notes ?? '')) {
+          void this.updateCart();
+        }
+      });
 
       // The contact form is a child component, so it is only ready on the next tick.
       (this as unknown as AlpineContext).$nextTick(() => {
@@ -383,6 +398,7 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
           shipping_address: formatAddressPayload(this.shippingAddress),
           is_billing_same_as_shipping: this.billingSameAsShipping,
           shipping_method: this.selectedShippingMethod,
+          order_notes: this.orderNotes,
           ...(!this.billingSameAsShipping
             ? { billing_address: formatAddressPayload(this.billingAddress) }
             : {}),
@@ -617,7 +633,7 @@ export function checkout(componentConfig: CheckoutConfig = {}) {
           ...billingFields,
           customer_email: customerEmail,
           customer_phone: customerPhone,
-          customer_notes: null,
+          order_notes: this.orderNotes || null,
           consents: Object.keys(this.consents).filter((id) => this.consents[id]),
         };
 

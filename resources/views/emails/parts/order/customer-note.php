@@ -9,7 +9,7 @@ use function Kirki\Ecommerce\Framework\view_data;
 $data = view_data();
 $order = $data['order'] ?? [];
 
-if (empty($order['customer_notes'])) {
+if (empty($order['order_notes'])) {
     return;
 }
 
@@ -26,7 +26,7 @@ $divider_color = $colors['background']['divider'] ?? EmailDefaultTemplate::BACKG
             <?php echo esc_html__('Customer note', 'kirki-ecommerce'); ?>
         </p>
         <p data-email-part="colors.typography.muted" style="margin: 0; font-size: 14px; font-weight: 400; color: <?php echo esc_attr($muted_color); ?>;">
-            <?php echo nl2br(esc_html($order['customer_notes'])); ?>
+            <?php echo nl2br(esc_html($order['order_notes'])); ?>
         </p>
     </td>
 </tr>

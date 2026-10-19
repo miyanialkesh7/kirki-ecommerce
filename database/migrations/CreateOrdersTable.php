@@ -110,8 +110,7 @@ class CreateOrdersTable implements Migration
             $table->ip_address('ip_address')->nullable();
             $table->text('user_agent')->nullable();
 
-            $table->text('customer_notes')->nullable();
-            $table->text('admin_notes')->nullable();
+            $table->text('order_notes')->nullable();
             $table->text('flags')->nullable()->comment('Comma separated admin flags, i.e. Backorder, Urgent');
 
             $table->text('cancellation_reason')->nullable();

@@ -17,7 +17,7 @@ const CheckoutConf = () => {
     <>
       <Card
         data-search-id="checkout.configuration"
-        data-search-keywords="billing fields, required fields, optional fields, customer information form"
+        data-search-keywords="billing fields, required fields, optional fields, customer information form, customer note"
         cssOverride={cardStyles.formCard}
       >
         <CardHeader cssOverride={cardStyles.sectionHeader}>
@@ -64,6 +64,21 @@ const CheckoutConf = () => {
               </Flex>
               <ActionGroup>
                 <SwitchField name="checkout_configuration.has_apply_coupon_code" />
+              </ActionGroup>
+            </Flex>
+
+            <Flex align="center">
+              <Flex direction="column" gap={2}>
+                <Text weight="medium">{__('Customer Note', 'kirki-ecommerce')}</Text>
+                <Text variant="small" color="secondary">
+                  {__(
+                    'Customers can add a note to their order during checkout.',
+                    'kirki-ecommerce',
+                  )}
+                </Text>
+              </Flex>
+              <ActionGroup>
+                <SwitchField name="checkout_configuration.show_customer_note" />
               </ActionGroup>
             </Flex>
           </Flex>
