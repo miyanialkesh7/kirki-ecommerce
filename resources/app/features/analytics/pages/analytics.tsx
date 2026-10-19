@@ -12,14 +12,15 @@ import { CardSkeleton, KpiSkeleton } from '@/features/analytics/components/analy
 import CardError from '@/features/analytics/components/card-error';
 import { CardMenuContext } from '@/features/analytics/components/card-menu';
 import KpiCard from '@/features/analytics/components/kpi-card';
+import { AmountFormatProvider } from '@/features/analytics/contexts/amount-format-context';
 import {
   type AnalyticsLayoutControls,
   canHideItem,
   useAnalyticsLayout,
 } from '@/features/analytics/hooks/use-analytics-layout';
 import { CARD_REGISTRY, type CardSize } from '@/features/analytics/lib/card-registry';
-import { formatMoney, formatNumber, formatPercent } from '@/features/analytics/lib/format';
-import type { CardKey, KpiKey } from '@/features/analytics/lib/layout';
+import { formatNumber, formatPercent, moneyValue } from '@/features/analytics/lib/format';
+import type { AmountFormat, CardKey, KpiKey } from '@/features/analytics/lib/layout';
 import { getMetricDefinitions } from '@/features/analytics/lib/metric-definitions';
 import {
   type AnalyticsParams,
@@ -41,24 +42,28 @@ import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __ } from '@/wpi18n';
 
-const KPI_VALUE_FORMATTERS: { [K in KpiKey]: (metric: AnalyticsKpis[K]) => string } = {
-  gross_sales: (metric) => formatMoney(metric.current_money_object),
-  orders: (metric) => formatNumber(metric.current),
-  average_order_value: (metric) => formatMoney(metric.current_money_object),
-  returning_customer_rate: (metric) => formatPercent(metric.current),
-  net_sales: (metric) => formatMoney(metric.current_money_object),
-  total_sales: (metric) => formatMoney(metric.current_money_object),
-  items_ordered: (metric) => formatNumber(metric.current),
-  discounts: (metric) => formatMoney(metric.current_money_object),
-  new_customers: (metric) => formatNumber(metric.current),
-  customers: (metric) => formatNumber(metric.current),
-  shipping_charges: (metric) => formatMoney(metric.current_money_object),
+type KpiValue = { text: string; title?: string };
+
+const KPI_VALUE_FORMATTERS: {
+  [K in KpiKey]: (metric: AnalyticsKpis[K], format: AmountFormat) => KpiValue;
+} = {
+  gross_sales: (metric, format) => moneyValue(metric.current_money_object, format),
+  orders: (metric) => ({ text: formatNumber(metric.current) }),
+  average_order_value: (metric, format) => moneyValue(metric.current_money_object, format),
+  returning_customer_rate: (metric) => ({ text: formatPercent(metric.current) }),
+  net_sales: (metric, format) => moneyValue(metric.current_money_object, format),
+  total_sales: (metric, format) => moneyValue(metric.current_money_object, format),
+  items_ordered: (metric) => ({ text: formatNumber(metric.current) }),
+  discounts: (metric, format) => moneyValue(metric.current_money_object, format),
+  new_customers: (metric) => ({ text: formatNumber(metric.current) }),
+  customers: (metric) => ({ text: formatNumber(metric.current) }),
+  shipping_charges: (metric, format) => moneyValue(metric.current_money_object, format),
 };
 
-const formatKpiValue = <K extends KpiKey>(key: K, kpis: AnalyticsKpis) => {
-  const format = KPI_VALUE_FORMATTERS[key];
+const formatKpiValue = <K extends KpiKey>(key: K, kpis: AnalyticsKpis, format: AmountFormat) => {
+  const formatter = KPI_VALUE_FORMATTERS[key];
 
-  return format(kpis[key]);
+  return formatter(kpis[key], format);
 };
 
 type CardSlotProps<K extends CardKey> = {
@@ -132,7 +137,7 @@ const KpiRow = (props: KpiRowProps) => {
             metricKey={key}
             title={definitions[key].title}
             info={definitions[key].info}
-            value={formatKpiValue(key, kpis)}
+            value={formatKpiValue(key, kpis, layout.amounts)}
             change={kpis[key].change}
             hasComparison={hasComparison}
             series={kpis[key].series}
@@ -248,11 +253,14 @@ const Analytics = () => {
             params={params}
             onChange={handleChange}
             layoutControls={layoutControls}
+            amountExample={queries.kpis.data?.meta.amount_example}
           />
           {hasAllFailed ? (
             <QueryErrorState onRetry={handleRetryAll} />
           ) : (
-            <MetricsContent queries={queries} params={params} layoutControls={layoutControls} />
+            <AmountFormatProvider format={layout.amounts}>
+              <MetricsContent queries={queries} params={params} layoutControls={layoutControls} />
+            </AmountFormatProvider>
           )}
         </Flex>
       </PageContent>

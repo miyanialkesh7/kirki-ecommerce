@@ -8,6 +8,8 @@ type HBarItem = {
   label: string;
   value: number;
   display: string;
+  /** Hover title of the display, such as the long amount of a short amount. */
+  displayTitle?: string;
   detail?: string;
   note?: string;
   change?: number | null;
@@ -36,7 +38,7 @@ const HBarRow = (props: HBarRowProps) => {
           {item.label}
         </Text>
         <div css={scoped(styles.values)}>
-          <Text variant="small" weight="semibold">
+          <Text variant="small" weight="semibold" title={item.displayTitle}>
             {item.display}
           </Text>
           {item.detail && (

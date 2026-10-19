@@ -75,7 +75,14 @@ describe('formatMetric', () => {
   it('formats sales as money and the counts as numbers', () => {
     const row = locationRow(1991357, 1200, 207);
 
-    expect(formatMetric(row, 'sales')).toBe('$19913.57');
-    expect(formatMetric(row, 'orders')).toBe('1,200');
+    expect(formatMetric(row, 'sales', 'long')).toEqual({ text: '$19913.57', title: undefined });
+    expect(formatMetric(row, 'orders', 'long')).toEqual({ text: '1,200' });
+  });
+
+  it('formats sales in short form with the long amount as the title', () => {
+    const row = locationRow(1991357, 1200, 207);
+
+    expect(formatMetric(row, 'sales', 'short')).toEqual({ text: '$19.9K', title: '$19913.57' });
+    expect(formatMetric(row, 'orders', 'short')).toEqual({ text: '1,200' });
   });
 });

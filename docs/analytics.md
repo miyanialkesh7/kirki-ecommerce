@@ -92,15 +92,20 @@ each part shows as soon as its own data comes. A hidden card sends no request:
     a group cannot be cleared.
   - Cards marked **Full width** always take a whole row. A half card that is
     alone in its row fills the row.
+  - The **Amounts** group, below Cards, sets how money amounts show:
+    **Short**, such as "$20.3K" (the default), or **Long**, such as
+    "$20,345.00". Each option shows an example in the store currency. The page
+    changes at once and sends no new request. See [Short amounts](#short-amounts).
   - **Reset to default** shows the first 4 key metrics and all cards in their
-    first order. **Done** closes the panel.
+    first order, with short amounts. **Done** closes the panel.
 - Each key metric and card has a **⋯** menu at its top right, shown on hover or
   keyboard focus (always on touch devices). Its one item, **Hide from page**,
   hides that part, the same as clearing it in the panel.
-- The choice of parts and their order is kept in the browser's local storage
-  (`kirki-ecommerce:analytics:layout`). It applies each time the page opens in
-  that browser. A part that a later version adds shows at the end of its
-  group.
+- The choice of parts, their order and the amount format are kept in the
+  browser's local storage (`kirki-ecommerce:analytics:layout`). They apply each
+  time the page opens in that browser. A part that a later version adds shows
+  at the end of its group. A layout that was saved before the amount format
+  existed shows short amounts.
 - All money is in the store's base currency. There is no currency filter.
 - The selection is kept in the page address (`#/analytics?range=...`), so a
   reload or a shared link shows the same view.
@@ -131,6 +136,38 @@ each part shows as soon as its own data comes. A hidden card sends no request:
   and a dot on its last point. The Average order value line has no filled area
   and a dot on each point. The Orders chart shows a faded comparison bar to
   the left of each dark current bar, both with rounded ends.
+
+### Short amounts
+
+The server makes both texts of each amount. Every money object in the
+Analytics responses has `display` (long) and `short_display` (short), and
+`meta.amount_example` has both texts of 20,345 for the Amounts examples. The
+Home dashboard overview uses the same short text for its sales metrics and top
+products (see [Home: Metric cards](home.md#metric-cards)). Other APIs do not have
+`short_display`. The short text uses the store's currency
+symbol, symbol position and separators:
+
+| Amount | `display` | `short_display` |
+|---|---|---|
+| 850 | $850.00 | $850.00 |
+| 20,000 | $20,000.00 | $20K |
+| 20,345 | $20,345.00 | $20.3K |
+| 999,950 | $999,950.00 | $1M |
+| 1,234,567 | $1,234,567.00 | $1.2M |
+| 3,000,000,000 | $3,000,000,000.00 | $3B |
+
+- Below 1,000, the short text is the same as the long text.
+- From 1,000, the amount is divided by K (thousand), M (million), B (billion)
+  or T (trillion), rounded to one decimal, and a ".0" is removed. When the
+  rounding gives 1,000 of a unit, the next unit is used.
+- A negative amount keeps its sign where the long text has it.
+- The format applies to the key metrics, the card headlines, Total sales
+  breakdown, the lists and bars, and Sales by location (its rows, legend and
+  map tooltip). The chart tooltips always show the long amount, and the chart
+  axes always show the short form of their round values.
+- In Short mode, hover a short amount to see the long amount (its title). The
+  map tooltip and the amounts inside a text such as "$3.2K off" have no such
+  title.
 
 ---
 
@@ -374,6 +411,11 @@ The names are familiar, but the numbers do not match one-to-one:
   kept in each browser's local storage, not on the server. Another browser, or
   another admin on another computer, sees the default layout, and two admins on
   one browser share one layout.
+- **Short amounts use English letters.** K, M, B and T are the same in every
+  language, and the short form does not follow the number style of the
+  site language (for example "Tsd." or "Mio." in German, or lakh and crore in
+  India). The separators and the symbol come from the store's currency
+  settings, not from the language.
 - **Base currency only.** All amounts are in the store's base currency. There is
   no filter for the currency the customer paid in, and no view of the amounts in
   that currency.

@@ -8,6 +8,8 @@ const money = (raw: number, code = 'USD') => ({
   currency: { code, symbol: '$' },
 });
 
+const shortMoney = (raw: number) => ({ ...money(raw), short_display: `$${raw.toFixed(2)}` });
+
 const recentOrder = {
   id: 12,
   uuid: 'a1b2c3',
@@ -40,9 +42,9 @@ describe('DashboardOverviewSchema', () => {
     const payload = {
       metrics: {
         base_total_sales: 120,
-        base_total_sales_money_object: money(120),
+        base_total_sales_money_object: shortMoney(120),
         base_net_sales: 80,
-        base_net_sales_money_object: money(80),
+        base_net_sales_money_object: shortMoney(80),
         orders_count: 1,
         products_sold: 2,
       },
@@ -54,7 +56,7 @@ describe('DashboardOverviewSchema', () => {
           image: null,
           units_sold: 5,
           base_revenue: 50,
-          base_revenue_money_object: money(50),
+          base_revenue_money_object: shortMoney(50),
           availability_status: 'in_stock',
           track_inventory: true,
           inventory: 59,
@@ -65,7 +67,7 @@ describe('DashboardOverviewSchema', () => {
           image: null,
           units_sold: 1,
           base_revenue: 10,
-          base_revenue_money_object: money(10),
+          base_revenue_money_object: shortMoney(10),
           availability_status: null,
           track_inventory: false,
           inventory: 0,
@@ -83,8 +85,8 @@ describe('DashboardOverviewSchema', () => {
   it('accepts an empty store', () => {
     const payload = {
       metrics: {
-        base_total_sales_money_object: money(0),
-        base_net_sales_money_object: money(0),
+        base_total_sales_money_object: shortMoney(0),
+        base_net_sales_money_object: shortMoney(0),
         orders_count: 0,
         products_sold: 0,
       },
@@ -98,6 +100,21 @@ describe('DashboardOverviewSchema', () => {
   it('rejects metrics without a money object', () => {
     const payload = {
       metrics: { orders_count: 0, products_sold: 0 },
+      recent_orders: [],
+      top_products: [],
+    };
+
+    expect(DashboardOverviewSchema.safeParse(payload).success).toBe(false);
+  });
+
+  it('rejects a metric money object without a short display', () => {
+    const payload = {
+      metrics: {
+        base_total_sales_money_object: money(0),
+        base_net_sales_money_object: shortMoney(0),
+        orders_count: 0,
+        products_sold: 0,
+      },
       recent_orders: [],
       top_products: [],
     };

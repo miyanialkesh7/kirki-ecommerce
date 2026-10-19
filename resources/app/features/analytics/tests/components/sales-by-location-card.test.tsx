@@ -100,7 +100,8 @@ describe('Sales by location card', () => {
     const labels = listLabels();
 
     expect(labels).toHaveLength(5);
-    expect(labels[0]).toMatch(/^United States\$19913\.57/);
+    expect(labels[0]).toMatch(/^United States\$19\.9K/);
+    expect(screen.getAllByTitle('$19913.57')[0]).toHaveTextContent('$19.9K');
     expect(labels.map((label) => label.split('$')[0])).toEqual([
       'United States',
       'Germany',
@@ -163,12 +164,12 @@ describe('Sales by location card', () => {
   it('shows a border and a tooltip with the value and the change on hover', async () => {
     renderCard();
 
-    const germany = await findCountry(/^Germany · \$5672\.15$/);
+    const germany = await findCountry(/^Germany · \$5\.7K$/);
 
     fireEvent.mouseMove(germany);
 
     expect(screen.getByTestId('choropleth-outline')).toBeInTheDocument();
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Germany$5672.15111.2%');
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Germany$5.7K111.2%');
 
     fireEvent.mouseLeave(germany);
 

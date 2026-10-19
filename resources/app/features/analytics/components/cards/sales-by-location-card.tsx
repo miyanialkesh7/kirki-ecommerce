@@ -9,6 +9,8 @@ import CardEmpty from '@/features/analytics/components/card-empty';
 import type { CardProps } from '@/features/analytics/components/cards/card-props';
 import ChoroplethMap, { type MapArea } from '@/features/analytics/components/charts/choropleth-map';
 import HBarList from '@/features/analytics/components/charts/hbar-list';
+import { useMoney } from '@/features/analytics/contexts/amount-format-context';
+import type { AmountFormat } from '@/features/analytics/lib/layout';
 import {
   formatMetric,
   locationColor,
@@ -41,7 +43,7 @@ type SalesByLocationCardProps = CardProps<'sales_by_location'> & {
 
 const toMapCode = (numericCode: string) => numericCode.padStart(3, '0');
 
-const toMapAreas = (countries: CountryRow[], metric: LocationMetric) => {
+const toMapAreas = (countries: CountryRow[], metric: LocationMetric, format: AmountFormat) => {
   const extremes = locationExtremes(countries, metric);
   const areas: Record<string, MapArea> = {};
 
@@ -63,7 +65,7 @@ const toMapAreas = (countries: CountryRow[], metric: LocationMetric) => {
       code: country.code,
       name: country.name,
       fill: locationColor(value, min, max),
-      display: formatMetric(country, metric),
+      display: formatMetric(country, metric, format).text,
       change: metricChange(country, metric),
     };
   });
@@ -74,17 +76,20 @@ const toMapAreas = (countries: CountryRow[], metric: LocationMetric) => {
 const toBarItems = (
   rows: (CountryRow | RegionRow)[],
   metric: LocationMetric,
+  format: AmountFormat,
   onSelect?: (code: string) => void,
   onHighlight?: (code: string, active: boolean) => void,
 ) =>
   rows.map((row) => {
     const code = 'code' in row ? row.code : null;
+    const value = formatMetric(row, metric, format);
 
     return {
       key: code ?? row.name,
       label: row.name,
       value: metricValue(row, metric),
-      display: formatMetric(row, metric),
+      display: value.text,
+      displayTitle: value.title,
       change: metricChange(row, metric),
       onSelect: code && onSelect ? () => onSelect(code) : undefined,
       onHighlight: code && onHighlight ? (active: boolean) => onHighlight(code, active) : undefined,
@@ -95,6 +100,7 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
   const { data, isEmpty, params } = props;
   const definition = getMetricDefinitions().sales_by_location;
   const labels = getMetricLabels();
+  const { format } = useMoney();
   const [metric, setMetric] = useState<LocationMetric>('sales');
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [highlightedCode, setHighlightedCode] = useState<string | null>(null);
@@ -150,7 +156,7 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
       );
     }
 
-    return <HBarList items={toBarItems(regions.data[metric], metric)} />;
+    return <HBarList items={toBarItems(regions.data[metric], metric, format)} />;
   };
 
   return (
@@ -167,7 +173,7 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
           <div css={scoped(styles.mapColumn)}>
             <ChoroplethMap
               label={definition.title}
-              areas={toMapAreas(data.countries, metric)}
+              areas={toMapAreas(data.countries, metric, format)}
               selectedNumericCode={selected?.numeric_code ? toMapCode(selected.numeric_code) : null}
               rippleNumericCode={
                 highlighted?.numeric_code ? toMapCode(highlighted.numeric_code) : null
@@ -180,12 +186,20 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
               </Text>
               {extremes && (
                 <>
-                  <Text variant="small" color="subdued">
-                    {formatMetric(extremes.min, metric)}
+                  <Text
+                    variant="small"
+                    color="subdued"
+                    title={formatMetric(extremes.min, metric, format).title}
+                  >
+                    {formatMetric(extremes.min, metric, format).text}
                   </Text>
                   <span aria-hidden="true" css={scoped(styles.gradient)} />
-                  <Text variant="small" color="subdued">
-                    {formatMetric(extremes.max, metric)}
+                  <Text
+                    variant="small"
+                    color="subdued"
+                    title={formatMetric(extremes.max, metric, format).title}
+                  >
+                    {formatMetric(extremes.max, metric, format).text}
                   </Text>
                 </>
               )}
@@ -224,7 +238,13 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
               </>
             ) : (
               <HBarList
-                items={toBarItems(topLocations(data.countries, metric), metric, select, highlight)}
+                items={toBarItems(
+                  topLocations(data.countries, metric),
+                  metric,
+                  format,
+                  select,
+                  highlight,
+                )}
               />
             )}
           </div>

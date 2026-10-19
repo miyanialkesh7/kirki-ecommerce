@@ -34,9 +34,23 @@ describe('analyticsMetricSchema', () => {
     expect(kpis.meta.granularity).toBe('day');
     expect(kpis.meta).not.toHaveProperty('currencies');
     expect(kpis.data.gross_sales.current_money_object?.display).toBe('$62.00');
+    expect(kpis.data.gross_sales.current_money_object?.short_display).toBe('$62.00');
+    expect(kpis.meta.amount_example?.short_display).toBe('$20.3K');
     expect(kpis.data.orders.current).toBe(12);
     expect(breakdown.data.rows).toHaveLength(7);
     expect(fulfillment.data.items.map((item) => item.status)).toContain('returned');
+  });
+
+  it('rejects a money object without short_display', () => {
+    const { short_display: _, ...longOnly } = moneyMetric(6200, 5000, 24).current_money_object!;
+    const gross = { ...moneyMetric(6200, 5000, 24), series: [] };
+    const valid = buildOverview({ kpis: { gross_sales: gross } });
+    const invalid = buildOverview({
+      kpis: { gross_sales: { ...gross, current_money_object: longOnly } },
+    });
+
+    expect(parseKey('kpis', valid).success).toBe(true);
+    expect(parseKey('kpis', invalid).success).toBe(false);
   });
 
   it('rejects the data of another key', () => {

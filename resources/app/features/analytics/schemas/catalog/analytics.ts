@@ -3,9 +3,11 @@ import { z } from 'zod';
 import { MoneyObjectSchema } from '@/schemas/shared/api';
 import { MediaRefSchema } from '@/schemas/shared/media';
 
+const AnalyticsMoneySchema = MoneyObjectSchema.extend({ short_display: z.string() });
+
 const MoneyMetricSchema = z.object({
-  current_money_object: MoneyObjectSchema.nullish(),
-  previous_money_object: MoneyObjectSchema.nullish(),
+  current_money_object: AnalyticsMoneySchema.nullish(),
+  previous_money_object: AnalyticsMoneySchema.nullish(),
   change: z.number().nullish(),
 });
 
@@ -37,8 +39,8 @@ const ProductItemSchema = z.object({
   image: MediaRefSchema.nullish(),
   is_deleted: z.boolean().nullish(),
   units_sold: z.number(),
-  net_sales_money_object: MoneyObjectSchema,
-  previous_net_sales_money_object: MoneyObjectSchema.nullish(),
+  net_sales_money_object: AnalyticsMoneySchema,
+  previous_net_sales_money_object: AnalyticsMoneySchema.nullish(),
   change: z.number().nullish(),
   availability_status: z.string().nullish(),
   track_inventory: z.boolean().nullish(),
@@ -48,8 +50,8 @@ const ProductItemSchema = z.object({
 const CategoryItemSchema = z.object({
   category_id: z.number().nullish(),
   name: z.string(),
-  net_sales_money_object: MoneyObjectSchema,
-  previous_net_sales_money_object: MoneyObjectSchema.nullish(),
+  net_sales_money_object: AnalyticsMoneySchema,
+  previous_net_sales_money_object: AnalyticsMoneySchema.nullish(),
   change: z.number().nullish(),
 });
 
@@ -75,7 +77,7 @@ const CustomerPointSchema = z.object({
 const CouponItemSchema = z.object({
   code: z.string(),
   orders: z.number(),
-  discount_given_money_object: MoneyObjectSchema,
+  discount_given_money_object: AnalyticsMoneySchema,
   previous_orders: z.number().nullish(),
   change: z.number().nullish(),
 });
@@ -84,8 +86,8 @@ const PaymentMethodItemSchema = z.object({
   id: z.string(),
   name: z.string(),
   orders: z.number(),
-  total_sales_money_object: MoneyObjectSchema,
-  previous_total_sales_money_object: MoneyObjectSchema.nullish(),
+  total_sales_money_object: AnalyticsMoneySchema,
+  previous_total_sales_money_object: AnalyticsMoneySchema.nullish(),
   change: z.number().nullish(),
 });
 
@@ -93,10 +95,10 @@ const TaxRegionItemSchema = z.object({
   country: z.string().nullish(),
   state: z.string().nullish(),
   name: z.string(),
-  product_tax_money_object: MoneyObjectSchema,
-  shipping_tax_money_object: MoneyObjectSchema,
-  total_tax_money_object: MoneyObjectSchema,
-  previous_total_tax_money_object: MoneyObjectSchema.nullish(),
+  product_tax_money_object: AnalyticsMoneySchema,
+  shipping_tax_money_object: AnalyticsMoneySchema,
+  total_tax_money_object: AnalyticsMoneySchema,
+  previous_total_tax_money_object: AnalyticsMoneySchema.nullish(),
   change: z.number().nullish(),
 });
 
@@ -104,8 +106,8 @@ const ShippingMethodItemSchema = z.object({
   id: z.string(),
   name: z.string(),
   orders: z.number(),
-  shipping_charges_money_object: MoneyObjectSchema,
-  previous_shipping_charges_money_object: MoneyObjectSchema.nullish(),
+  shipping_charges_money_object: AnalyticsMoneySchema,
+  previous_shipping_charges_money_object: AnalyticsMoneySchema.nullish(),
   change: z.number().nullish(),
 });
 
@@ -119,7 +121,7 @@ const LowestVariantSchema = z.object({
 });
 
 const LocationRowSchema = z.object({
-  sales_money_object: MoneyObjectSchema,
+  sales_money_object: AnalyticsMoneySchema,
   sales_change: z.number().nullish(),
   orders: z.number(),
   orders_change: z.number().nullish(),
@@ -216,6 +218,7 @@ const AnalyticsMetaSchema = z.object({
   granularity: z.string().nullish(),
   base_currency_code: z.string().nullish(),
   has_orders: z.boolean().nullish(),
+  amount_example: AnalyticsMoneySchema.nullish(),
 });
 
 const METRIC_DATA_SCHEMAS = { kpis: AnalyticsKpisSchema, ...AnalyticsCardsSchema.shape };
@@ -228,7 +231,7 @@ const analyticsMetricSchema = <K extends AnalyticsMetricKey>(key: K) => {
   return z.object({ meta: AnalyticsMetaSchema, data: METRIC_DATA_SCHEMAS[key] });
 };
 
-type MoneyObject = z.infer<typeof MoneyObjectSchema>;
+type MoneyObject = z.infer<typeof AnalyticsMoneySchema>;
 type SeriesPoint = z.infer<typeof SeriesPointSchema>;
 type AnalyticsKpis = z.infer<typeof AnalyticsKpisSchema>;
 type AnalyticsCards = z.infer<typeof AnalyticsCardsSchema>;

@@ -24,6 +24,7 @@ use Kirki\Ecommerce\Framework\Facade;
  * @method static int to_minor(mixed $amount, mixed $currency = null, int $roundingMode = \Brick\Math\RoundingMode::HALF_UP, \Brick\Money\Context $context = null)
  * @method static \Brick\Money\Money from_minor(mixed $minorAmount, mixed $currency = null, int $roundingMode = \Brick\Math\RoundingMode::HALF_UP, \Brick\Money\Context $context = null)
  * @method static string format(\Brick\Money\Money $money)
+ * @method static string format_short(\Brick\Money\Money $money)
  * @method static string format_from_minor(mixed $minorAmount, mixed $currency = null, int $roundingMode = \Brick\Math\RoundingMode::HALF_UP, \Brick\Money\Context $context = null)
  * @method static string format_from_decimal(mixed $amount, mixed $currency = null, int $roundingMode = \Brick\Math\RoundingMode::HALF_UP, \Brick\Money\Context $context = null)
  * @method static string get_currency_symbol(string $code)
@@ -34,6 +35,7 @@ use Kirki\Ecommerce\Framework\Facade;
  * @method static float prepare_amount_from_minor(mixed $amount, $currency = null, $target_currency = null)
  * @method static \Kirki\Ecommerce\App\DTO\MoneyDTO prepare_amount_object_from_minor(mixed $amount, $currency = null, $target_currency = null)
  * @method static \Kirki\Ecommerce\App\DTO\MoneyDTO to_dto(int $minor_amount, string $currency = null)
+ * @method static \Kirki\Ecommerce\App\DTO\ShortMoneyDTO to_short_dto(int $minor_amount, string $currency = null)
  *
  * @see \Kirki\Ecommerce\App\Managers\MoneyManager
  */

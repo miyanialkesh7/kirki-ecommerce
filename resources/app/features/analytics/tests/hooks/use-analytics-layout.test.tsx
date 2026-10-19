@@ -85,12 +85,26 @@ describe('useAnalyticsLayout', () => {
     expect(result.current.layout.cards).toEqual(DEFAULT_LAYOUT.cards);
   });
 
+  it('sets the amount format and saves it', () => {
+    const { result } = renderHook(() => useAnalyticsLayout());
+
+    expect(result.current.layout.amounts).toBe('short');
+
+    act(() => {
+      result.current.setAmounts('long');
+    });
+
+    expect(result.current.layout.amounts).toBe('long');
+    expect(stored()).toMatchObject({ amounts: 'long' });
+  });
+
   it('resets to the default layout', () => {
     const { result } = renderHook(() => useAnalyticsLayout());
 
     act(() => {
       result.current.move('cards', 14, 0);
       result.current.setVisible('cards', 'taxes_by_region', false);
+      result.current.setAmounts('long');
     });
     act(() => {
       result.current.reset();

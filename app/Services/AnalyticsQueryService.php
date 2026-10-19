@@ -45,6 +45,8 @@ class AnalyticsQueryService
 
     const VARIANT_CHUNK_SIZE = 1000;
 
+    const AMOUNT_EXAMPLE = '20345';
+
     const METRIC_KEYS = [
         'kpis',
         'total_sales_over_time',
@@ -156,6 +158,7 @@ class AnalyticsQueryService
             'granularity' => $range['granularity'],
             'base_currency_code' => $this->base_currency,
             'has_orders' => $this->has_orders(),
+            'amount_example' => $this->money(Money::to_minor(static::AMOUNT_EXAMPLE, $this->base_currency)),
         ];
     }
 
@@ -946,11 +949,11 @@ class AnalyticsQueryService
      *
      * @param int $minor_amount Amount in minor units.
      *
-     * @return \Kirki\Ecommerce\App\DTO\MoneyDTO
+     * @return \Kirki\Ecommerce\App\DTO\ShortMoneyDTO
      */
     protected function money(int $minor_amount)
     {
-        return Money::prepare_amount_object_from_minor($minor_amount);
+        return Money::to_short_dto($minor_amount, $this->base_currency);
     }
 
     /**

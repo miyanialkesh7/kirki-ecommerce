@@ -31,6 +31,7 @@ import {
   resolvePresetRange,
 } from '@/features/analytics/lib/date-range';
 import type { AnalyticsParams } from '@/features/analytics/lib/url-state';
+import type { MoneyObject } from '@/features/analytics/schemas/catalog/analytics';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
 import { __, sprintf } from '@/wpi18n';
@@ -45,6 +46,7 @@ type ControlProps = {
 
 type AnalyticsControlsProps = ControlProps & {
   layoutControls: AnalyticsLayoutControls;
+  amountExample?: MoneyObject | null;
 };
 
 type PendingCompare = {
@@ -337,7 +339,7 @@ const CompareControl = (props: ControlProps) => {
 CompareControl.displayName = 'CompareControl';
 
 const AnalyticsControls = (props: AnalyticsControlsProps) => {
-  const { params, onChange, layoutControls } = props;
+  const { params, onChange, layoutControls, amountExample } = props;
 
   return (
     <Flex align="center" justify="space-between" gap={2} wrap="wrap">
@@ -345,7 +347,7 @@ const AnalyticsControls = (props: AnalyticsControlsProps) => {
         <DateRangeControl params={params} onChange={onChange} />
         <CompareControl params={params} onChange={onChange} />
       </Flex>
-      <CustomizeSheet layoutControls={layoutControls}>
+      <CustomizeSheet layoutControls={layoutControls} amountExample={amountExample}>
         <Button variant="outline" cssOverride={styles.trigger}>
           <Settings2 aria-hidden="true" />
           {__('Customize', 'kirki-ecommerce')}
