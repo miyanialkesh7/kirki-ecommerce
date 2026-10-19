@@ -19,6 +19,7 @@ use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\Framework\Supports\Facades\DB;
 use Kirki\Ecommerce\Framework\Supports\MediaAttachment;
 
+use function Kirki\Ecommerce\App\client_timezone;
 use function Kirki\Ecommerce\Framework\app;
 use function Kirki\Ecommerce\Framework\resource_path;
 
@@ -26,7 +27,7 @@ use function Kirki\Ecommerce\Framework\resource_path;
  * Answers the Analytics page from the order, refund, customer, product and variant tables.
  *
  * Every figure is added up in minor units with SUM and COUNT when the request runs. A date range is turned
- * into UTC bounds, so the time indexes of the orders table are used. The store-local day of a row is
+ * into UTC bounds, so the time indexes of the orders table are used. The local day of a row is
  * calculated in SQL from the UTC offsets that apply inside the range. Names are resolved after the
  * aggregation, so only the rows that are shown are looked up.
  *
@@ -662,7 +663,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Get the UTC bounds of a range of store-local days.
+     * Get the UTC bounds of a range of local days.
      *
      * @since 1.0.0
      *
@@ -673,7 +674,7 @@ class AnalyticsQueryService
      */
     protected function utc_bounds(string $from, string $to)
     {
-        $zone = wp_timezone();
+        $zone = client_timezone();
         $utc = new DateTimeZone('UTC');
         $start = (new DateTimeImmutable($from . ' 00:00:00', $zone))->setTimezone($utc);
         // Add the day to the date in UTC, then build local midnight, so a DST gap at midnight cannot shift the bound.
@@ -689,7 +690,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Get the SQL for the store-local day of a UTC time column.
+     * Get the SQL for the local day of a UTC time column.
      *
      * @since 1.0.0
      *
@@ -704,7 +705,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Get the SQL for the store-local date-time of a UTC time column.
+     * Get the SQL for the local date-time of a UTC time column.
      *
      * The UTC offsets that apply inside the window come from the time zone transitions, so daylight saving
      * time and half-hour offsets are exact without the MySQL time zone tables.
@@ -718,7 +719,7 @@ class AnalyticsQueryService
      */
     protected function local_time_sql(string $column, array $bounds)
     {
-        $zone = wp_timezone();
+        $zone = client_timezone();
         $transitions = $zone->getTransitions($bounds['start_ts'], $bounds['end_ts']);
         $parts = [];
 
@@ -1616,7 +1617,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Build the Orders by time of day card: the placed orders by store-local weekday and hour.
+     * Build the Orders by time of day card: the placed orders by local weekday and hour.
      *
      * @since 1.0.0
      *
@@ -1639,7 +1640,7 @@ class AnalyticsQueryService
     }
 
     /**
-     * Count the placed orders of a window by the store-local weekday and hour of their order date.
+     * Count the placed orders of a window by the local weekday and hour of their order date.
      *
      * @since 1.0.0
      *

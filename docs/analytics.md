@@ -141,13 +141,17 @@ each part shows as soon as its own data comes. A hidden card sends no request:
   cancelled orders count. They are dated by the day they were created. A failed
   order never counts, whatever its fulfillment status.
 - **Returns.** A completed refund on a paid order. It is dated by the day the
-  refund last changed (its update time), in the site time zone. The sale keeps
+  refund last changed (its update time), in the browser time zone. The sale keeps
   its original day.
   Refunds are saved only in the order currency, so the amount in the base
   currency is `refund × order base total ÷ order invoiced total`, rounded half
   up. Pending and cancelled refunds are not counted.
-- **Days.** Every date is converted from UTC to the site time zone before it
-  is put on a day.
+- **Days.** Every date is converted from UTC to the time zone of the browser
+  that opens the page before it is put on a day. The admin app sends this time
+  zone in the `X-Kecom-Timezone` header on every API request (for example
+  `Asia/Dhaka`). When the header is missing or is not a valid time zone, the
+  site time zone is used. "Today" for the presets and for the future-date check
+  also comes from this time zone.
 - **Customers.** A customer is found by the customer on the order. If the order
   has none, by the customer whose email is the same (case does not matter). If
   there is none, by the email on the order (spaces at the ends are cut and case
@@ -222,7 +226,7 @@ Details:
 | Orders by fulfillment status | Orders created in the range, by their fulfillment status now. Failed payments are left out. | A headline such as "50% delivered · 12 orders", a 32px bar with rounded ends and a list with count and percent for each status |
 | New vs returning customers | New: first paid order in the period. Returning: a paid order in the period that was not their first. One customer can be both. | Customers, its change, and stacked bars of new and returning customers with a rounded top. The comparison shows only in the tooltip. |
 | Sales by coupon code | Paid orders that used each code, and the total discount the code gave. Free-shipping codes show the shipping fee removed. | The top 5 codes by orders, each as one bar with orders, the discount given ("$230.00 off") and the change in orders |
-| Orders by time of day | Orders placed in the range, by the weekday and hour of the store time zone. Failed payments are left out. | A full-width grid with one row for each day (Mon to Sun) and one dot for each hour, with the day totals on the right. Above the grid: the busiest hour (such as "Fri 6pm–7pm"), the busiest day, and the share of orders from the start of the busiest hour to midnight (such as "After 6pm 38% of orders"). When there is a comparison, a "This period / Change" toggle shows. In Change, a purple dot means more orders than the comparison period, a gray dot means fewer, and the dot size is the difference. |
+| Orders by time of day | Orders placed in the range, by the weekday and hour of the browser time zone. Failed payments are left out. | A full-width grid with one row for each day (Mon to Sun) and one dot for each hour, with the day totals on the right. Above the grid: the busiest hour (such as "Fri 6pm–7pm"), the busiest day, and the share of orders from the start of the busiest hour to midnight (such as "After 6pm 38% of orders"). When there is a comparison, a "This period / Change" toggle shows. In Change, a purple dot means more orders than the comparison period, a gray dot means fewer, and the dot size is the difference. |
 | Sales by location | Where orders go: the shipping address, or the billing address when there is none. Sales: net sales of paid orders. Orders: orders created, paid or not. Customers: different customers with a paid order. | A full-width world map with a "Sales / Orders / Customers" tab. A country with a bigger value is a darker purple, and a country with no value is gray. Hover a country to see its border, value and change. A gray country also shows its border and "No data" on hover, but a click on it does nothing. Next to the map: the top 5 countries. Click a country (on the map or in the list) to zoom to it and see its top 5 regions, with "← All countries" to go back (Escape and a click on the sea also go back). |
 | Sales by payment method | Total sales of paid orders, by the payment method used. | The top 5 methods by total sales, as one bar each with the total sales, the order count and the change in total sales |
 | Taxes collected by region | Product and shipping tax on paid orders, by the shipping address region. | The top 5 regions by total tax, such as "Texas, United States", as one bar each with the total tax, the change in total tax and the product and shipping tax under the bar |
@@ -277,9 +281,9 @@ tables as they are at that moment.
   deleted order, a completed refund, a deleted customer or product and a guest
   who registers all show up on the next request. There is no first preparation
   and no waiting state.
-- **Time zone.** Dates are put on a store day when the request runs, with the
-  site time zone and the start of the week that are set at that moment. A
-  change of either applies to the next request.
+- **Time zone.** Dates are put on a day when the request runs, with the
+  browser time zone of that request and the start of the week that is set at
+  that moment. A change of either applies to the next request.
 - **Stock is live.** Inventory health, and the stock next to a product, always
   read the variants as they are now.
 - **Cost.** Each request adds up the orders of the range and of the comparison
@@ -344,6 +348,10 @@ The names are familiar, but the numbers do not match one-to-one:
 - **Customers are grouped by email.** A guest and a registered customer with
   the same email are one customer. A customer who has their first paid order and
   another paid order in the same period counts as both new and returning.
+- **Days follow the browser time zone.** Shopify and WooCommerce use the
+  store time zone, so every user sees the same days. Here each user sees the
+  days of the time zone of their own browser, so two users in different time
+  zones can see different numbers for the same day.
 - **Weeks follow the site setting.** They start on the day set in WordPress,
   not always on Monday.
 - **The chart grouping is fixed.** Shopify and WooCommerce let the merchant

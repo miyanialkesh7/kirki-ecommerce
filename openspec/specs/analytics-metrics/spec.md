@@ -64,19 +64,32 @@ order, whatever its fulfillment status.
 
 ### Requirement: Store days and weeks
 
-Every date SHALL be converted from UTC to the site time zone before it is put on
-a day. A week SHALL start on the site's `start_of_week` day. A range SHALL
+Every date SHALL be converted from UTC to the request time zone before it is put
+on a day. The request time zone SHALL be the time zone in the `X-Kecom-Timezone`
+header, which the admin app sends with every API request from the browser time
+zone. When the header is missing or is not a valid time zone, the request time
+zone SHALL be the site time zone. A week SHALL start on the site's `start_of_week` day. A range SHALL
 include its start day and its end day.
 
 #### Scenario: Late order in a positive offset zone
 
-- **WHEN** the site time zone is Asia/Dhaka (UTC+6) and an order is paid at 2026-10-01 20:30 UTC
+- **WHEN** the request time zone is Asia/Dhaka (UTC+6) and an order is paid at 2026-10-01 20:30 UTC
 - **THEN** it is a sale on Oct 2
 
 #### Scenario: Half-hour offset
 
-- **WHEN** the site time zone is Asia/Kolkata (UTC+5:30) and an order is paid at 2026-10-01 18:45 UTC
+- **WHEN** the request time zone is Asia/Kolkata (UTC+5:30) and an order is paid at 2026-10-01 18:45 UTC
 - **THEN** it is a sale on Oct 2
+
+#### Scenario: Browser time zone header
+
+- **WHEN** the site time zone is UTC, the request has `X-Kecom-Timezone: Asia/Dhaka`, and an order is paid at 2026-10-01 20:30 UTC
+- **THEN** it is a sale on Oct 2
+
+#### Scenario: Invalid time zone header
+
+- **WHEN** the site time zone is Asia/Dhaka and the request has `X-Kecom-Timezone: Mars/Base`
+- **THEN** the site time zone Asia/Dhaka is used
 
 #### Scenario: Sunday week start
 
@@ -87,7 +100,7 @@ include its start day and its end day.
 
 The date range SHALL be one of: Today, Yesterday, Last 7 days, Last 30 days
 (default), Last 90 days, Last 12 months, Month to date, Year to date, or a
-custom start and end day. "Today" SHALL be today in the site time zone. "Last N
+custom start and end day. "Today" SHALL be today in the request time zone. "Last N
 days" SHALL end today and include N days. "Last 12 months" SHALL start on the day
 after the same date one year ago. A custom range SHALL NOT end after today.
 
@@ -259,7 +272,7 @@ are already reduced by it. When a range has no Returns, Total sales SHALL equal
 
 A **completed refund** SHALL be a refund with status `completed` on a sales
 order. Its return date SHALL be the refund's `updated_at`, converted to the
-site time zone. Its base amount SHALL be `invoiced_amount × orders.base_total ÷
+request time zone. Its base amount SHALL be `invoiced_amount × orders.base_total ÷
 orders.invoiced_total`, rounded half up; a refund on an order with
 `invoiced_total = 0` SHALL have a base amount of 0. Returns SHALL be one amount
 per refund. They SHALL NOT be split into product, shipping and tax, and SHALL NOT
@@ -419,12 +432,12 @@ comparison range.
 
 #### Scenario: Order late in the evening in a positive offset zone
 
-- **WHEN** the site time zone is Asia/Dhaka (UTC+6) and an order is created at 2026-10-01 20:30 UTC, a Thursday in UTC
+- **WHEN** the request time zone is Asia/Dhaka (UTC+6) and an order is created at 2026-10-01 20:30 UTC, a Thursday in UTC
 - **THEN** it counts under Friday at hour 2
 
 #### Scenario: Half-hour offset
 
-- **WHEN** the site time zone is Asia/Kolkata (UTC+5:30) and an order is created at 2026-10-05 12:45 UTC, a Monday
+- **WHEN** the request time zone is Asia/Kolkata (UTC+5:30) and an order is created at 2026-10-05 12:45 UTC, a Monday
 - **THEN** it counts under Monday at hour 18
 
 #### Scenario: Failed order
@@ -557,7 +570,7 @@ Every analytics response SHALL be calculated from the order, order item,
 coupon, tax, refund, customer, product and variant data as it is when the
 request runs. A response SHALL reflect every change saved before the request
 started, including changes made by database foreign keys (a deleted customer or
-product), and SHALL use the site time zone and week start in effect at that
+product), and SHALL use the request time zone and week start in effect at that
 moment. The endpoint SHALL NOT need a preparation step, a background job or a
 second request to return metrics.
 

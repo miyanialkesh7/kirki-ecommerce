@@ -7,11 +7,14 @@ defined('ABSPATH') || exit;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
+use Kirki\Ecommerce\Framework\Supports\Facades\Date;
+
+use function Kirki\Ecommerce\App\client_timezone;
 
 /**
  * Resolves the date range, the comparison range and the chart buckets of an analytics request.
  *
- * All dates are store-local calendar days in `Y-m-d` format.
+ * All dates are local calendar days (in the time zone of the browser) in `Y-m-d` format.
  *
  * @since 1.0.0
  */
@@ -36,7 +39,7 @@ class AnalyticsRangeResolver
     const GRANULARITY_MONTH = 'month';
 
     /**
-     * Get today's date in the site time zone.
+     * Get today's date in the time zone of the browser.
      *
      * The `kirki_ecommerce_analytics_today` filter can freeze the date.
      *
@@ -52,7 +55,7 @@ class AnalyticsRangeResolver
             return $frozen;
         }
 
-        return wp_date('Y-m-d');
+        return Date::now(client_timezone())->to_date_string();
     }
 
     /**
