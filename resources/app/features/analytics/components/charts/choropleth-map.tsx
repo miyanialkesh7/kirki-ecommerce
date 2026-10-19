@@ -1,3 +1,4 @@
+import { keyframes } from '@emotion/react';
 import { useQuery } from '@tanstack/react-query';
 import { geoMercator, geoPath } from 'd3-geo';
 import type { Feature, FeatureCollection, Geometry, Polygon } from 'geojson';
@@ -16,6 +17,7 @@ const ASPECT_RATIO = 0.6;
 const FIT_SHARE = 0.8;
 const MAX_ZOOM = 8;
 const FADED_OPACITY = 0.35;
+const RIPPLE_RADIUS = 6;
 
 type MapArea = {
   code: string;
@@ -29,6 +31,7 @@ type ChoroplethMapProps = {
   label: string;
   areas: Record<string, MapArea>;
   selectedNumericCode: string | null;
+  rippleNumericCode: string | null;
   onSelect: (code: string | null) => void;
 };
 
@@ -64,7 +67,7 @@ const largestPolygon = (geometry: Geometry, area: (shape: Polygon) => number): P
 };
 
 const ChoroplethMap = (props: ChoroplethMapProps) => {
-  const { label, areas, selectedNumericCode, onSelect } = props;
+  const { label, areas, selectedNumericCode, rippleNumericCode, onSelect } = props;
   const { ref, width } = useElementWidth(640);
   const height = Math.round(width * ASPECT_RATIO);
   const { data: countries } = useQuery({
@@ -127,6 +130,20 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
       k,
     };
   }, [shapes, path, selectedNumericCode, width, height]);
+
+  const ripplePoint = useMemo(() => {
+    const target = shapes.find((shape) => rippleNumericCode && shape.id === rippleNumericCode);
+    const polygon =
+      target && path ? largestPolygon(target.country.geometry, (shape) => path.area(shape)) : null;
+
+    if (!polygon || !path) {
+      return null;
+    }
+
+    const [x, y] = path.centroid(polygon);
+
+    return { x: zoom.x + zoom.k * x, y: zoom.y + zoom.k * y };
+  }, [shapes, path, rippleNumericCode, zoom]);
 
   const active = shapes.find((shape) => shape.key === activeId);
   const activeArea = active ? areas[active.id] : null;
@@ -241,6 +258,20 @@ const ChoroplethMap = (props: ChoroplethMapProps) => {
               />
             )}
           </g>
+          {ripplePoint && (
+            <circle
+              key={rippleNumericCode}
+              aria-hidden="true"
+              data-testid="choropleth-ripple"
+              cx={ripplePoint.x}
+              cy={ripplePoint.y}
+              r={RIPPLE_RADIUS}
+              fill="none"
+              stroke={theme.colors.analytics.map.ping}
+              strokeWidth={2}
+              css={scoped(styles.ripple)}
+            />
+          )}
         </svg>
       )}
       {active && tooltipPoint && (
@@ -272,6 +303,17 @@ ChoroplethMap.displayName = 'ChoroplethMap';
 export default ChoroplethMap;
 export type { MapArea };
 
+const ripple = keyframes({
+  from: {
+    transform: 'scale(1)',
+    opacity: 0.9,
+  },
+  to: {
+    transform: 'scale(4)',
+    opacity: 0,
+  },
+});
+
 const styles = defineStyles({
   frame: {
     position: 'relative',
@@ -302,6 +344,18 @@ const styles = defineStyles({
   outline: {
     vectorEffect: 'non-scaling-stroke',
     pointerEvents: 'none',
+  },
+  ripple: {
+    vectorEffect: 'non-scaling-stroke',
+    pointerEvents: 'none',
+    transformBox: 'fill-box',
+    transformOrigin: 'center',
+    animation: `${ripple} 800ms ease-out 1 forwards`,
+    '@media (prefers-reduced-motion: reduce)': {
+      animation: 'none',
+      transform: 'scale(4)',
+      opacity: 1,
+    },
   },
   tooltip: {
     position: 'absolute',

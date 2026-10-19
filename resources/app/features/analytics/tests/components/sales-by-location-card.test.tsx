@@ -312,4 +312,83 @@ describe('Sales by location card', () => {
     expect(screen.getByTestId('card-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('choropleth-map')).not.toBeInTheDocument();
   });
+
+  describe('row ripple', () => {
+    const row = (name: string) =>
+      screen
+        .getAllByRole('button', { name: new RegExp(`^${name}`) })
+        .find((element) => element.tagName === 'BUTTON')!;
+
+    // Scenario: Hover a country row
+    it('plays a ripple on the hovered country and shows no border or tooltip', async () => {
+      renderCard();
+      await findCountry(/^Germany · /);
+
+      fireEvent.mouseEnter(row('Germany'));
+
+      const ripple = screen.getByTestId('choropleth-ripple');
+
+      expect(ripple).toHaveAttribute('aria-hidden', 'true');
+      expect(screen.queryByTestId('choropleth-outline')).not.toBeInTheDocument();
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+      fireEvent.mouseLeave(row('Germany'));
+
+      expect(screen.queryByTestId('choropleth-ripple')).not.toBeInTheDocument();
+    });
+
+    // Scenario: Hover the same row again
+    it('plays the ripple again on a new hover of the same row', async () => {
+      renderCard();
+      await findCountry(/^Germany · /);
+
+      fireEvent.mouseEnter(row('Germany'));
+      const first = screen.getByTestId('choropleth-ripple');
+      fireEvent.mouseLeave(row('Germany'));
+      fireEvent.mouseEnter(row('Germany'));
+
+      expect(screen.getByTestId('choropleth-ripple')).not.toBe(first);
+    });
+
+    // Scenario: Move to another row
+    it('moves the ripple to the next hovered row', async () => {
+      renderCard();
+      await findCountry(/^Germany · /);
+
+      fireEvent.mouseEnter(row('Germany'));
+      const germany = screen.getByTestId('choropleth-ripple');
+      fireEvent.mouseEnter(row('United States'));
+      fireEvent.mouseLeave(row('Germany'));
+
+      const unitedStates = screen.getByTestId('choropleth-ripple');
+
+      expect(unitedStates).not.toBe(germany);
+      expect(unitedStates.getAttribute('cx')).not.toBe(germany.getAttribute('cx'));
+    });
+
+    // Scenario: Keyboard focus on a country row
+    it('plays the ripple on focus and removes it on blur', async () => {
+      renderCard();
+      await findCountry(/^Germany · /);
+
+      fireEvent.focus(row('Germany'));
+
+      expect(screen.getByTestId('choropleth-ripple')).toBeInTheDocument();
+
+      fireEvent.blur(row('Germany'));
+
+      expect(screen.queryByTestId('choropleth-ripple')).not.toBeInTheDocument();
+    });
+
+    // Scenario: Region row
+    it('shows no ripple on a region row', async () => {
+      mockRegions({ data: regions });
+      renderCard();
+
+      fireEvent.click(await findCountry(/^United States · /));
+      fireEvent.mouseEnter(within(screen.getByRole('list')).getByText('California'));
+
+      expect(screen.queryByTestId('choropleth-ripple')).not.toBeInTheDocument();
+    });
+  });
 });

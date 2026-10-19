@@ -12,6 +12,7 @@ type HBarItem = {
   note?: string;
   change?: number | null;
   onSelect?: () => void;
+  onHighlight?: (active: boolean) => void;
 };
 
 type HBarListProps = {
@@ -69,7 +70,15 @@ const HBarList = (props: HBarListProps) => {
       {items.map((item) => (
         <li key={item.key} css={scoped(styles.row)}>
           {item.onSelect ? (
-            <button type="button" css={scoped(styles.select)} onClick={item.onSelect}>
+            <button
+              type="button"
+              css={scoped(styles.select)}
+              onClick={item.onSelect}
+              onMouseEnter={() => item.onHighlight?.(true)}
+              onMouseLeave={() => item.onHighlight?.(false)}
+              onFocus={() => item.onHighlight?.(true)}
+              onBlur={() => item.onHighlight?.(false)}
+            >
               <HBarRow item={item} max={max} />
             </button>
           ) : (

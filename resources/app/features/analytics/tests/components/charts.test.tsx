@@ -1,11 +1,14 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import BarChart from '@/features/analytics/components/charts/bar-chart';
 import {
   buildScale,
   getXLabelIndexes,
 } from '@/features/analytics/components/charts/chart-geometry';
+import ChoroplethMap from '@/features/analytics/components/charts/choropleth-map';
+import HBarList from '@/features/analytics/components/charts/hbar-list';
 import LineChart from '@/features/analytics/components/charts/line-chart';
 
 import { renderInRoot } from '../helpers';
@@ -354,5 +357,68 @@ describe('getXLabelIndexes', () => {
   // Scenario: Narrow card
   it('uses a larger equal step on a narrow card', () => {
     expect(getXLabelIndexes(30, 280)).toEqual([0, 8, 16, 24]);
+  });
+});
+
+describe('HBarList highlight', () => {
+  afterEach(cleanup);
+
+  it('reports the hover and the focus of a selectable row', () => {
+    const onHighlight = vi.fn();
+
+    renderInRoot(
+      <HBarList
+        items={[
+          { key: 'DE', label: 'Germany', value: 1, display: '1', onSelect: vi.fn(), onHighlight },
+        ]}
+      />,
+    );
+
+    const row = screen.getByRole('button', { name: /^Germany/ });
+
+    fireEvent.mouseEnter(row);
+    fireEvent.mouseLeave(row);
+    fireEvent.focus(row);
+    fireEvent.blur(row);
+
+    expect(onHighlight.mock.calls).toEqual([[true], [false], [true], [false]]);
+  });
+
+  it('gives a row with no select action no button', () => {
+    renderInRoot(<HBarList items={[{ key: 'CA', label: 'California', value: 1, display: '1' }]} />);
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
+
+describe('ChoroplethMap ripple', () => {
+  afterEach(cleanup);
+
+  const renderMap = (rippleNumericCode: string | null) =>
+    renderInRoot(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChoroplethMap
+          label="Sales by location"
+          areas={{}}
+          selectedNumericCode={null}
+          rippleNumericCode={rippleNumericCode}
+          onSelect={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+
+  it('draws a ring hidden from assistive technology for a country with a shape', async () => {
+    renderMap('276');
+
+    expect(await screen.findByTestId('choropleth-ripple')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  // Scenario: Country with no map shape
+  it.each([['702'], [null]])('draws no ring for %s', async (code) => {
+    renderMap(code);
+
+    await screen.findByTestId('choropleth-sea');
+
+    expect(screen.queryByTestId('choropleth-ripple')).not.toBeInTheDocument();
   });
 });

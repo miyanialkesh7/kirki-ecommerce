@@ -75,6 +75,7 @@ const toBarItems = (
   rows: (CountryRow | RegionRow)[],
   metric: LocationMetric,
   onSelect?: (code: string) => void,
+  onHighlight?: (code: string, active: boolean) => void,
 ) =>
   rows.map((row) => {
     const code = 'code' in row ? row.code : null;
@@ -86,6 +87,7 @@ const toBarItems = (
       display: formatMetric(row, metric),
       change: metricChange(row, metric),
       onSelect: code && onSelect ? () => onSelect(code) : undefined,
+      onHighlight: code && onHighlight ? (active: boolean) => onHighlight(code, active) : undefined,
     };
   });
 
@@ -95,10 +97,23 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
   const labels = getMetricLabels();
   const [metric, setMetric] = useState<LocationMetric>('sales');
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [highlightedCode, setHighlightedCode] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const selected = data.countries.find((country) => country.code === selectedCode) ?? null;
   const regions = useAnalyticsRegionsQuery(params, selected?.code ?? null);
   const extremes = locationExtremes(data.countries, metric);
+  const highlighted = selected
+    ? null
+    : (data.countries.find((country) => country.code === highlightedCode) ?? null);
+
+  const select = (code: string | null) => {
+    setHighlightedCode(null);
+    setSelectedCode(code);
+  };
+
+  const highlight = (code: string, active: boolean) => {
+    setHighlightedCode((current) => (active ? code : current === code ? null : current));
+  };
 
   useEffect(() => {
     const body = bodyRef.current;
@@ -154,7 +169,10 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
               label={definition.title}
               areas={toMapAreas(data.countries, metric)}
               selectedNumericCode={selected?.numeric_code ? toMapCode(selected.numeric_code) : null}
-              onSelect={setSelectedCode}
+              rippleNumericCode={
+                highlighted?.numeric_code ? toMapCode(highlighted.numeric_code) : null
+              }
+              onSelect={select}
             />
             <div css={scoped(styles.legend)} data-testid="location-legend">
               <Text variant="small" color="secondary">
@@ -206,7 +224,7 @@ const SalesByLocationCard = (props: SalesByLocationCardProps) => {
               </>
             ) : (
               <HBarList
-                items={toBarItems(topLocations(data.countries, metric), metric, setSelectedCode)}
+                items={toBarItems(topLocations(data.countries, metric), metric, select, highlight)}
               />
             )}
           </div>
