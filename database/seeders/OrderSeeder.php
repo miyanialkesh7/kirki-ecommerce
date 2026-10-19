@@ -34,15 +34,20 @@ use function Kirki\Ecommerce\Framework\uuid;
 class OrderSeeder extends Seeder
 {
     /**
-     * Number of days of order history, counted back from today. A little over two years, so the
-     * "Last 12 months" range can compare against the previous year.
+     * Number of days of order history, counted back from today. Five years, so long ranges and
+     * year-over-year comparisons have data, and the Analytics queries run on a large table.
      */
-    const HISTORY_DAYS = 760;
+    const HISTORY_DAYS = 1826;
 
     /**
      * Rows per INSERT statement.
      */
     const INSERT_CHUNK = 200;
+
+    /**
+     * Number of built orders to keep in memory before they are inserted.
+     */
+    const FLUSH_ORDERS = 2000;
 
     /**
      * Fixed random seed, so every run gives the same mix of orders.
@@ -141,7 +146,7 @@ class OrderSeeder extends Seeder
     }
 
     /**
-     * Seed about two years of orders for the Analytics page.
+     * Seed about five years of orders (more than 20,000) for the Analytics page.
      *
      * The orders are written straight to the order tables with backdated timestamps, so stock,
      * coupon usage counts, emails and order activities stay as they are. The totals follow the
@@ -169,6 +174,7 @@ class OrderSeeder extends Seeder
         $this->next_customer_id = (int) Customer::query()->max('id') + 1;
 
         $order_id = (int) OrderModel::query()->max('id') + 1;
+        $first_order_id = $order_id;
         $now = time();
         $first_day = strtotime(gmdate('Y-m-d', $now) . ' 00:00:00 UTC') - static::HISTORY_DAYS * DAY_IN_SECONDS;
 
@@ -189,11 +195,15 @@ class OrderSeeder extends Seeder
             foreach ($times as $time) {
                 $this->build_order($order_id++, $time, $now);
             }
+
+            if (count($this->rows['orders']) >= static::FLUSH_ORDERS) {
+                $this->insert_rows();
+            }
         }
 
         $this->insert_rows();
 
-        Log::info(sprintf('OrderSeeder added %d history orders', count($this->rows['orders'])));
+        Log::info(sprintf('OrderSeeder added %d history orders', $order_id - $first_order_id));
     }
 
     /**
@@ -211,7 +221,7 @@ class OrderSeeder extends Seeder
         $month_factors = [1 => 0.8, 0.8, 0.95, 1.0, 1.0, 0.9, 0.9, 0.95, 1.05, 1.1, 1.45, 1.7];
         $weekday_factors = [1.2, 0.9, 0.95, 0.95, 1.0, 1.1, 1.3];
 
-        $trend = 2.5 + 6.5 * ($day / static::HISTORY_DAYS);
+        $trend = 3 + 20 * ($day / static::HISTORY_DAYS);
         $rate = $trend
             * $month_factors[(int) gmdate('n', $day_start)]
             * $weekday_factors[(int) gmdate('w', $day_start)];
@@ -333,7 +343,7 @@ class OrderSeeder extends Seeder
         $this->maybe_add_refund($order, $paid_at, $now);
 
         $this->rows['orders'][] = $order;
-        $this->rows['order_items'] = array_merge($this->rows['order_items'], $items);
+        array_push($this->rows['order_items'], ...$items);
     }
 
     /**
@@ -973,7 +983,7 @@ class OrderSeeder extends Seeder
     }
 
     /**
-     * Insert the collected rows, a chunk at a time, parents first.
+     * Insert the collected rows, a chunk at a time, parents first, then empty the buffers.
      *
      * @since 1.0.0
      *
@@ -994,6 +1004,8 @@ class OrderSeeder extends Seeder
             foreach (array_chunk($this->rows[$key], static::INSERT_CHUNK) as $chunk) {
                 $model::query()->insert($chunk);
             }
+
+            $this->rows[$key] = [];
         }
     }
 
