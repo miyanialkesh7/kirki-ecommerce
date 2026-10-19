@@ -17,6 +17,7 @@ use Kirki\Ecommerce\App\Hooks\Filters\ValidateRegisterConsents;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\AttachCustomerToNewWordPressUser;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\EnqueueAdminScripts;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\RedirectToOnboarding;
+use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\RemoveDeletedSitePageSetting;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\RemoveDuplicateSubmenu;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\SendCustomerNewAccountEmail;
 use Kirki\Ecommerce\App\Wordpress\Hooks\Actions\SMTPConfig;
@@ -46,6 +47,7 @@ return [
         AttachCustomerToNewWordPressUser::class,
         SendCustomerNewAccountEmail::class,
         RepairCurrencySyncSchedule::class,
+        RemoveDeletedSitePageSetting::class,
     ],
     'filters' => [
         ReplaceSiteTitle::class,

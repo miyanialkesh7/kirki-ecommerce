@@ -21,6 +21,7 @@ class WPHookNames extends \Kirki\Ecommerce\Framework\Wordpress\Constants\HookNam
     public const ADMIN_BAR_MENU = 'admin_bar_menu';
     public const PROFILE_UPDATE = 'profile_update';
     public const USER_REGISTER = 'user_register';
+    public const DELETED_POST = 'deleted_post';
     public const SEND_RETRIEVE_PASSWORD_EMAIL = 'send_retrieve_password_email';
     public const WP_SEND_NEW_USER_NOTIFICATION_TO_USER = 'wp_send_new_user_notification_to_user';
 }

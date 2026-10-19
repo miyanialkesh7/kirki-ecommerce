@@ -228,7 +228,9 @@ class Utils
             foreach ($pages as $settings_key => $page_title) {
                 $page_id = Settings::get($settings_key);
 
-                if (empty($page_id)) {
+                $page_exists = !empty($page_id) && get_post_type($page_id) === 'page';
+
+                if (!$page_exists) {
                     $new_page = [
                         'post_title'   => $page_title,
                         'post_status'  => 'publish',
