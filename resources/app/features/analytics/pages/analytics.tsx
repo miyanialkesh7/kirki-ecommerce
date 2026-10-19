@@ -71,18 +71,11 @@ type CardSlotProps<K extends CardKey> = {
 const CardSlot = <K extends CardKey>(props: CardSlotProps<K>) => {
   const { cardKey, size, query, children } = props;
 
-  if (query.isError) {
-    return (
-      <CardError
-        cardKey={cardKey}
-        size={size}
-        isRetrying={query.isFetching}
-        onRetry={() => void query.refetch()}
-      />
-    );
+  if (query.isError && !query.isFetching) {
+    return <CardError cardKey={cardKey} size={size} onRetry={() => void query.refetch()} />;
   }
 
-  if (!query.data) {
+  if (!query.data || query.isError) {
     return <CardSkeleton size={size} />;
   }
 
@@ -101,17 +94,17 @@ const KpiRow = (props: KpiRowProps) => {
   const { layout, setVisible } = layoutControls;
   const visibleKpis = layout.kpis.filter((item) => item.visible);
 
-  if (query.isError) {
+  if (query.isError && !query.isFetching) {
     return (
       <div css={scoped(styles.kpis)}>
         <Card data-testid="kpi-error" cssOverride={styles.kpiError}>
-          <QueryErrorState onRetry={() => void query.refetch()} isRetrying={query.isFetching} />
+          <QueryErrorState onRetry={() => void query.refetch()} />
         </Card>
       </div>
     );
   }
 
-  if (!query.data) {
+  if (!query.data || query.isError) {
     return (
       <div css={scoped(styles.kpis)}>
         {visibleKpis.map((item) => (

@@ -179,6 +179,41 @@ class AnalyticsMetricsApiTest extends RestTestCase
     }
 
     /**
+     * Data for invalid custom dates: the query parameters and the field with the error.
+     *
+     * @return array
+     * @since 1.0.0
+     */
+    public function invalid_custom_dates(): array
+    {
+        return [
+            'day that does not exist' => [['range' => 'custom', 'from' => '2026-02-30', 'to' => '2026-03-02'], 'from'],
+            'wrong format' => [['range' => 'custom', 'from' => '2026-10-01', 'to' => '10/02/2026'], 'to'],
+            'not a date' => [['range' => 'custom', 'from' => 'yesterday', 'to' => '2026-10-02'], 'from'],
+            'comparison day that does not exist' => [['range' => 'last_30', 'compare' => 'custom', 'compare_from' => '2026-04-31', 'compare_to' => '2026-05-02'], 'compare_from'],
+            'comparison wrong format' => [['range' => 'last_30', 'compare' => 'custom', 'compare_from' => '2026-05-01', 'compare_to' => '2026-5-2'], 'compare_to'],
+        ];
+    }
+
+    /**
+     * Endpoint access: a custom date that is not a real `Y-m-d` date is 422 with an error on that field.
+     *
+     * @dataProvider invalid_custom_dates
+     *
+     * @param array  $params Query parameters.
+     * @param string $field  Field that has the error.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_invalid_custom_date_is_422(array $params, string $field): void
+    {
+        $payload = $this->assert_validation_error($this->request('GET', 'analytics/metrics/kpis', $params));
+
+        $this->assertArrayHasKey($field, $payload['errors']);
+    }
+
+    /**
      * Scenario "First visit": a store with orders gets the metrics in the first response, with no preparing state.
      *
      * @return void
@@ -300,7 +335,7 @@ class AnalyticsMetricsApiTest extends RestTestCase
         }
 
         $payment = $cards['sales_by_payment_method']['items'][0];
-        $this->assertSame(['id', 'name', 'orders', 'total_sales_money_object'], array_keys($payment));
+        $this->assertSame(['id', 'name', 'orders', 'total_sales_money_object', 'previous_total_sales_money_object', 'change'], array_keys($payment));
         $this->assertSame(['raw', 'display', 'currency'], array_keys($payment['total_sales_money_object']));
         $this->assertSame(9000, $this->minor($cards['total_sales_over_time']['total']['current_money_object']));
     }

@@ -73,7 +73,7 @@ const SortableRow = (props: SortableRowProps) => {
       data-testid={`customize-item-${id}`}
       data-dragging={isDragging ? 'true' : undefined}
       cssOverride={styles.row}
-      style={{ transform: CSS.Translate.toString(transform), transition, paddingLeft: 2, gap: 2 }}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
     >
       <button
         type="button"
@@ -274,7 +274,8 @@ const styles = defineStyles({
     gap: theme.spacing[3],
   },
   row: {
-    gap: theme.spacing[2],
+    gap: theme.spacing[1],
+    paddingLeft: theme.spacing[1],
     height: '40px',
     paddingRight: theme.spacing[3],
     '& button[role="checkbox"]': {

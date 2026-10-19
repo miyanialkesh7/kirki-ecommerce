@@ -82,9 +82,9 @@
     "test": "bash bin/phpunit --testsuite Unit --testdox && bash bin/phpunit --testsuite Integration --testdox",
     "test:unit": "bash bin/phpunit --testsuite Unit --testdox",
     "test:integration": "bash bin/phpunit --testsuite Integration --testdox",
-    "test:docker:install": "bash kirki-test install",
-    "test:docker:unit": "bash kirki-test unit",
-    "test:docker:integration": "bash kirki-test integration",
-    "test:docker": "bash kirki-test all"
+    "test:docker:install": "bash kirki-ecommerce-test install",
+    "test:docker:unit": "bash kirki-ecommerce-test unit",
+    "test:docker:integration": "bash kirki-ecommerce-test integration",
+    "test:docker": "bash kirki-ecommerce-test all"
   }
 }

@@ -239,7 +239,7 @@ class AnalyticsMetricsTest extends RestTestCase
 
         $this->assertSame(2, $items[0]['orders']);
         $this->assertSame(1, $items[0]['previous_orders']);
-        $this->assertSame(100.0, $items[0]['change']);
+        $this->assertSame(100.0, (float) $items[0]['change']);
     }
 
     /**
@@ -418,8 +418,9 @@ class AnalyticsMetricsTest extends RestTestCase
 
         $countries = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['sales_by_location']['countries'];
 
-        $this->assertSame(111.2, $countries[0]['sales_change']);
-        $this->assertSame(0.0, $countries[0]['orders_change']);
+        $this->assertSame(111.2, (float) $countries[0]['sales_change']);
+        $this->assertNotNull($countries[0]['orders_change']);
+        $this->assertSame(0.0, (float) $countries[0]['orders_change']);
     }
 
     /**
@@ -736,6 +737,57 @@ class AnalyticsMetricsTest extends RestTestCase
     }
 
     /**
+     * Scenario "Browser time zone header": with the site in UTC, the header puts the order on its Asia/Dhaka day.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_time_zone_header_puts_the_order_on_the_browser_day(): void
+    {
+        $this->set_timezone('UTC');
+        $this->make_sale('2026-10-01 20:30:00', 1000);
+
+        $this->assertSame(0, $this->gross_sales_on('2026-10-01', 'Asia/Dhaka'));
+        $this->assertSame(1000, $this->gross_sales_on('2026-10-02', 'Asia/Dhaka'));
+    }
+
+    /**
+     * Scenario "Invalid time zone header": an unknown time zone in the header falls back to the site time zone.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_invalid_time_zone_header_uses_the_site_time_zone(): void
+    {
+        $this->set_timezone('Asia/Dhaka');
+        $this->make_sale('2026-10-01 20:30:00', 1000);
+
+        $this->assertSame(0, $this->gross_sales_on('2026-10-01', 'Mars/Base'));
+        $this->assertSame(1000, $this->gross_sales_on('2026-10-02', 'Mars/Base'));
+    }
+
+    /**
+     * Get the gross sales of one day, in minor units, for a request with the given time zone header.
+     *
+     * @param string $day      Day, Y-m-d.
+     * @param string $timezone Value of the `X-Kecom-Timezone` header.
+     *
+     * @return int|null
+     * @since 1.0.0
+     */
+    protected function gross_sales_on(string $day, string $timezone): ?int
+    {
+        $response = $this->request('GET', 'analytics/metrics/kpis', [
+            'range' => 'custom',
+            'from' => $day,
+            'to' => $day,
+            'compare' => 'none',
+        ], ['X-Kecom-Timezone' => $timezone]);
+
+        return $this->minor($this->assert_api_success($response)['data']['data']['gross_sales']['current_money_object']);
+    }
+
+    /**
      * Scenario "Currency parameter is ignored": a currency parameter does not filter orders, and every amount is in the base currency.
      *
      * @return void
@@ -814,7 +866,7 @@ class AnalyticsMetricsTest extends RestTestCase
         $items = $this->overview_between('2026-10-01', '2026-10-01', ['compare' => 'previous_period'])['cards']['sales_by_category']['items'];
 
         $this->assertSame(2000, $this->minor($items[0]['previous_net_sales_money_object']));
-        $this->assertSame(50.0, $items[0]['change']);
+        $this->assertSame(50.0, (float) $items[0]['change']);
     }
 
     /**
@@ -942,7 +994,7 @@ class AnalyticsMetricsTest extends RestTestCase
 
         $this->assertSame(13600, $this->minor($items[0]['total_sales_money_object']));
         $this->assertSame(10000, $this->minor($items[0]['previous_total_sales_money_object']));
-        $this->assertSame(36.0, $items[0]['change']);
+        $this->assertSame(36.0, (float) $items[0]['change']);
     }
 
     /**
@@ -1037,7 +1089,7 @@ class AnalyticsMetricsTest extends RestTestCase
 
         $this->assertSame(750, $this->minor($items[0]['total_tax_money_object']));
         $this->assertSame(600, $this->minor($items[0]['previous_total_tax_money_object']));
-        $this->assertSame(25.0, $items[0]['change']);
+        $this->assertSame(25.0, (float) $items[0]['change']);
     }
 
     /**
@@ -1077,7 +1129,7 @@ class AnalyticsMetricsTest extends RestTestCase
 
         $this->assertSame(1200, $this->minor($items[0]['shipping_charges_money_object']));
         $this->assertSame(1000, $this->minor($items[0]['previous_shipping_charges_money_object']));
-        $this->assertSame(20.0, $items[0]['change']);
+        $this->assertSame(20.0, (float) $items[0]['change']);
     }
 
     /**

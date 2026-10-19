@@ -7,10 +7,11 @@ cd "$ROOT"
 PLUGIN_PATH="/var/www/html/wp-content/plugins/kirki-ecommerce"
 WP_TESTS_DIR="/var/www/html/.wp-tests/wordpress-tests-lib"
 WP_CORE_DIR="/var/www/html/.wp-tests/wordpress"
+PHPUNIT="php -d xdebug.mode=off -d auto_prepend_file=bootstrap/abspath.php vendor/bin/phpunit"
 
 usage() {
 	cat <<EOF
-Usage: kirki-test <command> [phpunit options]
+Usage: kirki-ecommerce-test <command> [phpunit options]
 
 Commands:
   install       One-time WordPress test library install (Docker)
@@ -19,10 +20,10 @@ Commands:
   all           Run all test suites in the php container
 
 Examples:
-  kirki-test install
-  kirki-test unit
-  kirki-test integration
-  kirki-test integration --filter=CartApiTest
+  kirki-ecommerce-test install
+  kirki-ecommerce-test unit
+  kirki-ecommerce-test integration
+  kirki-ecommerce-test integration --filter=CartApiTest
 EOF
 }
 
@@ -49,7 +50,7 @@ install)
 	;;
 unit)
 	docker compose exec php bash -lc \
-		"cd ${PLUGIN_PATH} && vendor/bin/phpunit --testsuite Unit --testdox ${phpunit_args}"
+		"cd ${PLUGIN_PATH} && ${PHPUNIT} --testsuite Unit --testdox ${phpunit_args}"
 	;;
 integration)
 	docker compose exec php bash -lc \
@@ -58,7 +59,7 @@ integration)
 		 WP_CORE_DIR=${WP_CORE_DIR} \
 		 DB_HOST=mariadb \
 		 DB_NAME=kirki_ecommerce_test \
-		 vendor/bin/phpunit --testsuite Integration --testdox ${phpunit_args}"
+		 ${PHPUNIT} --testsuite Integration --testdox ${phpunit_args}"
 	;;
 all)
 	# One PHPUnit process per suite, on purpose. tests/bootstrap.php only loads
@@ -68,14 +69,14 @@ all)
 	# suites as separate jobs.
 	docker compose exec php bash -lc \
 		"cd ${PLUGIN_PATH} && \
-		 vendor/bin/phpunit --testsuite Unit --testdox ${phpunit_args} && \
+		 ${PHPUNIT} --testsuite Unit --testdox ${phpunit_args} && \
 		 WP_TESTS_DIR=${WP_TESTS_DIR} \
 		 WP_CORE_DIR=${WP_CORE_DIR} \
 		 DB_HOST=mariadb \
 		 DB_NAME=kirki_ecommerce_test \
-		 vendor/bin/phpunit --testsuite Integration --testsuite Integration --testdox ${phpunit_args}"
+		 ${PHPUNIT} --testsuite Integration --testsuite Integration --testdox ${phpunit_args}"
 	docker compose exec php bash -lc \
-		"cd ${PLUGIN_PATH} && vendor/bin/phpunit --testsuite Unit --testdox ${phpunit_args}"
+		"cd ${PLUGIN_PATH} && ${PHPUNIT} --testsuite Unit --testdox ${phpunit_args}"
 	;;
 -h | --help | help)
 	usage

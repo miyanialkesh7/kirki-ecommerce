@@ -423,8 +423,8 @@ on-hold, shipped, delivered, returned, cancelled.
 
 ### Requirement: Orders by time of day
 
-For a range, the system SHALL count the placed orders for each store-local
-weekday (Monday to Sunday) and each store-local hour (0 to 23) of their order
+For a range, the system SHALL count the placed orders for each weekday
+(Monday to Sunday) and each hour (0 to 23), in the request time zone, of their order
 date. The counts SHALL use the same placed orders as Orders, so the sum of all
 the counts SHALL be equal to Orders for the same range. When a comparison
 range is selected, the system SHALL also give the same counts for the
@@ -591,7 +591,7 @@ second request to return metrics.
 
 #### Scenario: Time zone changed
 
-- **WHEN** the site time zone changes from UTC to Asia/Dhaka
+- **WHEN** the request time zone changes from UTC to Asia/Dhaka, because the browser time zone or, with no header, the site time zone changes
 - **THEN** the next response puts every order on its Asia/Dhaka day
 
 #### Scenario: Guest registers later
@@ -621,7 +621,9 @@ key SHALL return a 404 response. Every money metric SHALL use the `base_`
 columns of the counted orders and the base currency. The response SHALL NOT
 include a `currencies` list. A `currency` parameter SHALL be ignored. Only
 users with the `manage_options` capability SHALL get a response. Invalid
-parameters SHALL return a 422 response with a field error.
+parameters SHALL return a 422 response with a field error. Each custom date
+(`from`, `to`, `compare_from`, `compare_to`) SHALL be a real calendar day in the
+`Y-m-d` format.
 
 #### Scenario: Shop manager without the capability
 
@@ -632,6 +634,11 @@ parameters SHALL return a 422 response with a field error.
 
 - **WHEN** a custom range ends after today
 - **THEN** the response is 422
+
+#### Scenario: Custom date that does not exist
+
+- **WHEN** a custom range has `from=2026-02-30`, or a date that is not in the `Y-m-d` format
+- **THEN** the response is 422 with an error on that date field
 
 #### Scenario: Currency parameter is ignored
 

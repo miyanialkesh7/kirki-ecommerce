@@ -143,7 +143,7 @@ class OnboardingApiTest extends RestTestCase
         $general = Option::get(OptionKeys::GENERAL_SETTINGS);
         $this->assertSame('Acme', $general['store_name']);
         $this->assertSame('food-and-drink', $general['industry']);
-        $this->assertSame('owner@example.com', $general['store_email']);
+        $this->assertSame(get_option('admin_email'), $general['store_email']);
         $this->assertSame('BD', $general['store_address']['country']);
         $this->assertSame('Dhaka', $general['store_address']['city']);
         $this->assertNull($general['store_address']['address_line_1']);
@@ -471,17 +471,17 @@ class OnboardingApiTest extends RestTestCase
     }
 
     /**
-     * Presets leave the order and invoice number settings at their defaults.
+     * Setup sets the order number prefix to "#" and leaves the invoice number settings at their defaults.
      *
      * @return void
      * @since 1.0.0
      */
-    public function test_presets_leave_order_and_invoice_numbering_unchanged(): void
+    public function test_setup_sets_order_number_prefix_and_leaves_invoice_numbering_unchanged(): void
     {
         $this->assert_api_success($this->request('POST', 'onboarding', $this->preset_payload()));
 
         $general = Option::get(OptionKeys::GENERAL_SETTINGS);
-        $this->assertSame(['prefix' => '', 'suffix' => ''], $general['order_number']);
+        $this->assertSame(['prefix' => '#'], $general['order_number']);
         $this->assertSame([
             'prefix' => '',
             'suffix' => '',

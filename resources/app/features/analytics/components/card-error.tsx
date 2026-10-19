@@ -6,12 +6,11 @@ import type { AnalyticsCards } from '@/features/analytics/schemas/catalog/analyt
 type CardErrorProps = {
   cardKey: keyof AnalyticsCards;
   size: 'half' | 'full';
-  isRetrying: boolean;
   onRetry: () => void;
 };
 
 const CardError = (props: CardErrorProps) => {
-  const { cardKey, size, isRetrying, onRetry } = props;
+  const { cardKey, size, onRetry } = props;
   const definition = getMetricDefinitions()[cardKey];
 
   return (
@@ -21,7 +20,7 @@ const CardError = (props: CardErrorProps) => {
       size={size}
       testId={`card-error-${cardKey}`}
     >
-      <QueryErrorState onRetry={onRetry} isRetrying={isRetrying} />
+      <QueryErrorState onRetry={onRetry} />
     </AnalyticsCard>
   );
 };

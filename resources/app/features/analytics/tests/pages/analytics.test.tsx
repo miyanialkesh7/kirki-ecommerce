@@ -28,6 +28,7 @@ type QueryState = {
   data?: unknown;
   isLoading?: boolean;
   isPending?: boolean;
+  isFetching?: boolean;
   isError?: boolean;
   error?: unknown;
 };
@@ -776,6 +777,27 @@ describe('Analytics page states', () => {
 
     expect(refetch).toHaveBeenCalledTimes(1);
     expect(refetch).toHaveBeenCalledWith('taxes_by_region');
+  });
+
+  it('shows a skeleton in place of the failed card while its retry loads', () => {
+    mockData(buildOverview(), {
+      taxes_by_region: { isError: true, isFetching: true, error: new Error('Server') },
+    });
+    renderPage();
+
+    expect(screen.queryByTestId('card-error-taxes_by_region')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('card-skeleton')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the key metric skeletons while the key metrics retry loads', () => {
+    mockData(buildOverview(), {
+      kpis: { isError: true, isFetching: true, error: new Error('Server') },
+    });
+    renderPage();
+
+    expect(screen.queryByTestId('kpi-error')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('kpi-skeleton')).toHaveLength(4);
   });
 
   it('shows one error with a retry action across the key metrics row when only the key metrics fail', () => {

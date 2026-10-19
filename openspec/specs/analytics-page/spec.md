@@ -189,6 +189,11 @@ as a percent, and the others as numbers.
 - **WHEN** 5 key metrics are on and the screen is 1400px wide
 - **THEN** the first line shows 4 key metrics, and the second line shows 1 key metric with 1/4 of the row width
 
+#### Scenario: Three key metrics on a wide screen
+
+- **WHEN** 3 key metrics are on and the screen is 1400px wide
+- **THEN** the line shows 3 key metrics, each with 1/4 of the row width, and the fourth column stays empty
+
 #### Scenario: Saved order
 
 - **WHEN** the saved order puts Orders before Gross sales
@@ -218,7 +223,7 @@ background. Status badges, such as the stock badge, SHALL keep their background.
 Below the key metrics, the page SHALL show the cards that are on, in the saved
 order, at most two in a row, with "full" cards taking a whole row and a half
 card left alone in a row filling it. The default order is the order of this
-table. A card's width SHALL NOT change when other cards are hidden or moved. On screens narrower than 720px, every card SHALL take a whole row.
+table. A card's size (half or full) SHALL NOT change when other cards are hidden or moved. On screens narrower than 720px, every card SHALL take a whole row.
 
 | Card | Width | Shows |
 |---|---|---|

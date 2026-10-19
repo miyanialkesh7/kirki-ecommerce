@@ -16,7 +16,7 @@ report, and there is no export.
 - [5. Cards](#5-cards)
 - [6. Data freshness](#6-data-freshness)
 - [7. Limits](#7-limits)
-- [8. Where this differs from Shopify and WooCommerce](#8-where-this-differs-from-shopify-and-woocommerce)
+- [8. Where this differs from other store analytics](#8-where-this-differs-from-other-store-analytics)
 
 ---
 
@@ -42,13 +42,16 @@ each part shows as soon as its own data comes. A hidden card sends no request:
   `sales_by_payment_method`, `taxes_by_region`, `shipping_charges_by_method`
   and `inventory_health`. An unknown key returns 404.
 - Every key takes the same `range`, `from`, `to`, `compare`, `compare_from`
-  and `compare_to` parameters.
+  and `compare_to` parameters. Each date is a real calendar day in the `Y-m-d`
+  format. A date such as `2026-02-30` or `10/02/2026` returns 422 with an error
+  on that field.
 - The response `data` is `{ meta, data }`. `meta` has `range`, `compare`,
   `granularity`, `base_currency_code` and `has_orders`. `data` has only the
   metrics of that key.
 - While a part loads, it shows a skeleton in its final place and size. When the
   request of one part fails, only that part shows an error with **Try Again**,
-  and the other parts stay. When every request fails, the page shows one error
+  and the other parts stay. After **Try Again**, the part shows its skeleton
+  until the data comes. When every request fails, the page shows one error
   with **Try Again** for all parts.
 
 ---
@@ -67,8 +70,8 @@ each part shows as soon as its own data comes. A hidden card sends no request:
   Escape, or a click outside the panel keeps the current range. When the
   selected days match no preset, the **Custom** item is active. You cannot
   select a day after today.
-- A range includes its first and last day. "Today" is today in the site time
-  zone. A custom range cannot end after today.
+- A range includes its first and last day. "Today" is today in the browser
+  time zone. A custom range cannot end after today.
 - **Previous period** is the same number of days, ending the day before the
   range starts. **Previous year** is the same dates one year earlier (Feb 29
   moves to Feb 28).
@@ -324,37 +327,37 @@ that replaces today) is used by the tests.
 
 ---
 
-## 8. Where this differs from Shopify and WooCommerce
+## 8. Where this differs from other store analytics
 
 The names are familiar, but the numbers do not match one-to-one:
 
-- **Sales are counted by the paid date.** Shopify reports orders by the day
-  they were placed. WooCommerce Analytics lets the merchant choose the date type
-  (created, paid or completed), and its default is the created date. Here a
+- **Sales are counted by the paid date.** Other store analytics often report
+  orders by the day they were placed, or let the merchant choose the date type
+  (created, paid or completed). Here a
   sale is always dated by the day it was paid, with no choice, and an unpaid
   order is not a sale until it is paid. The Orders metric is the one
   that counts unpaid orders, by the day they were created.
-- **Returns are not split.** Shopify and WooCommerce show refunds with more
+- **Returns are not split.** Other store analytics often show refunds with more
   detail. Here a return is one amount, dated by the day the refund last changed
   (normally the day it completed), and it only reduces Net sales and Total sales.
 - **Average order value ignores returns.** It is (Gross sales − discounts) ÷
-  paid orders, the same as Shopify, not Net sales ÷ orders.
+  paid orders, not Net sales ÷ orders.
 - **Categories are live.** Sales are grouped by the categories a product is in
   now, not at the time of sale. A category change moves the old sales.
 - **No sessions and no conversion rate.** The page has no visitors, sessions,
   traffic sources or conversion rate. It only reads orders.
-- **No reports and no export.** Shopify and WooCommerce link their metrics to
-  detailed reports and allow CSV export. Here no number opens anything.
+- **No reports and no export.** Other store analytics often link their metrics
+  to detailed reports and allow CSV export. Here no number opens anything.
 - **Customers are grouped by email.** A guest and a registered customer with
   the same email are one customer. A customer who has their first paid order and
   another paid order in the same period counts as both new and returning.
-- **Days follow the browser time zone.** Shopify and WooCommerce use the
+- **Days follow the browser time zone.** Other store analytics often use the
   store time zone, so every user sees the same days. Here each user sees the
   days of the time zone of their own browser, so two users in different time
   zones can see different numbers for the same day.
 - **Weeks follow the site setting.** They start on the day set in WordPress,
   not always on Monday.
-- **The chart grouping is fixed.** Shopify and WooCommerce let the merchant
+- **The chart grouping is fixed.** Other store analytics often let the merchant
   pick the interval (day, week, month and more). Here the interval comes from
   the range length.
 - **Home dashboard Net sales is different.** The Home page calculates Net sales
@@ -362,9 +365,8 @@ The names are familiar, but the numbers do not match one-to-one:
   Shipping, so it is subtracted twice. This page uses the formula in section 5,
   so Home and Analytics can show different Net sales until the Home page is
   corrected.
-- **Sales by location has no city level and no region map.** Shopify shows
-  sales by country, region and city, and WooCommerce has no location map by
-  default. Here the map has countries only, and a selected country lists its
+- **Sales by location has no city level and no region map.** Other store
+  analytics can show sales by country, region and city. Here the map has countries only, and a selected country lists its
   top 5 regions. Sales by location always uses the shipping address, else the
   billing address, with no choice of address.
 - **The layout is kept in the browser.** The shown parts and their order are
