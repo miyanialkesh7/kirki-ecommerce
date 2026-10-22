@@ -6,9 +6,8 @@ defined('ABSPATH') || exit;
 
 use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\Supports\Onboarding;
-use Kirki\Ecommerce\App\Supports\Utils;
 
-use function Kirki\Ecommerce\Framework\migrator;
+use function Kirki\Ecommerce\Framework\with_prefix;
 
 /**
  * Plugin lifecycle handlers for activation, deactivation and uninstallation.
@@ -52,7 +51,8 @@ final class KirkiEcommerce
      */
     public static function handle_deactivation()
     {
-        // Deactivation logic here
+        wp_clear_scheduled_hook(with_prefix('cache_gc'));
+        wp_clear_scheduled_hook(with_prefix('queue_sweep'));
     }
 
     /**
