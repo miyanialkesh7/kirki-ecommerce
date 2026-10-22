@@ -489,7 +489,7 @@ class OrderActivityManager
         $item_summary = $metadata['item_summary'] ?? '';
 
         /* translators: %1$s: item summary, %2$s: order number */
-        return sprintf(__('Order placed for %1$s #%2$s', 'kirki-ecommerce'), $item_summary, $order_number);
+        return sprintf(__('Order placed for %1$s %2$s', 'kirki-ecommerce'), $item_summary, $order_number);
     }
 
     /**
