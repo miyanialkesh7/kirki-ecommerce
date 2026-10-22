@@ -264,6 +264,7 @@ class UpdateOrderAction
         $order_dto->base_shipping_tax_amount = $calculated_result->base_shipping_tax;
 
         $order_dto->is_tax_inclusive = Tax::is_tax_inclusive();
+        $order_dto->tax_destination = $calculated_result->tax_destination;
 
         $order_dto->invoiced_total = $this->convert_amount($calculated_result->base_total, $dto->currency_code, $order_dto->exchange_rate);
         $order_dto->base_total = $calculated_result->base_total;
@@ -300,7 +301,7 @@ class UpdateOrderAction
         $order_dto->customer_last_name = $dto->customer_last_name;
         $order_dto->customer_email = $dto->customer_email;
         $order_dto->customer_phone = $dto->customer_phone;
-        $order_dto->admin_notes = $dto->admin_notes;
+        $order_dto->order_notes = $dto->order_notes;
         $order_dto->flags = $dto->flags;
 
         return $order_dto;

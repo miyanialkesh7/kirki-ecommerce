@@ -70,10 +70,10 @@ class DashboardService
         $totals = $this->counted_orders()
             ->select_raw(
                 'COUNT(*) AS orders_count, '
-                . 'COALESCE(SUM(base_total), 0) AS base_total, '
-                . 'COALESCE(SUM(base_tax_total), 0) AS base_tax_total, '
-                . 'COALESCE(SUM(base_shipping_total), 0) AS base_shipping_total, '
-                . 'COALESCE(SUM(base_shipping_tax_amount), 0) AS base_shipping_tax_amount'
+                    . 'COALESCE(SUM(base_total), 0) AS base_total, '
+                    . 'COALESCE(SUM(base_tax_total), 0) AS base_tax_total, '
+                    . 'COALESCE(SUM(base_shipping_total), 0) AS base_shipping_total, '
+                    . 'COALESCE(SUM(base_shipping_tax_amount), 0) AS base_shipping_tax_amount'
             )
             ->first();
 
@@ -90,9 +90,9 @@ class DashboardService
 
         return [
             'base_total_sales' => Money::prepare_amount_from_minor($base_total_sales),
-            'base_total_sales_money_object' => Money::prepare_amount_object_from_minor($base_total_sales),
+            'base_total_sales_money_object' => Money::to_short_dto($base_total_sales),
             'base_net_sales' => Money::prepare_amount_from_minor($base_net_sales),
-            'base_net_sales_money_object' => Money::prepare_amount_object_from_minor($base_net_sales),
+            'base_net_sales_money_object' => Money::to_short_dto($base_net_sales),
             'orders_count' => (int) ($totals->orders_count ?? 0),
             'products_sold' => (int) ($products_sold->products_sold ?? 0),
         ];
@@ -176,7 +176,7 @@ class DashboardService
             ->where_in('order_id', $this->counted_order_ids())
             ->select_raw(
                 'MAX(product_id) AS product_id, MAX(id) AS latest_item_id, '
-                . 'SUM(quantity) AS units_sold, SUM(base_total) AS base_revenue'
+                    . 'SUM(quantity) AS units_sold, SUM(base_total) AS base_revenue'
             )
             ->group_by_raw("CASE WHEN product_id IS NULL THEN CONCAT('name:', product_name) ELSE product_id END")
             ->order_by_raw('units_sold DESC, base_revenue DESC')
@@ -211,7 +211,7 @@ class DashboardService
                 'image' => MediaAttachment::make($item->product_image ?? null),
                 'units_sold' => (int) $row->units_sold,
                 'base_revenue' => Money::prepare_amount_from_minor($base_revenue),
-                'base_revenue_money_object' => Money::prepare_amount_object_from_minor($base_revenue),
+                'base_revenue_money_object' => Money::to_short_dto($base_revenue),
             ], $this->get_product_stock($product));
         })->values()->all();
     }

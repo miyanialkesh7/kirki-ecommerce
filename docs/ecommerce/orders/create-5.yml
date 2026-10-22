@@ -48,7 +48,7 @@ http:
         "customer_last_name": "Doe",
         "customer_email": "jane.shipping@example.com",
         "customer_phone": "+1 555-000-2000",
-        "customer_notes": null
+        "order_notes": null
       }
   auth: inherit
 settings:
@@ -101,7 +101,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": null
+            "order_notes": null
           }
     response:
       status: 200
@@ -132,6 +132,7 @@ examples:
               "is_manual": false,
               "currency_code": "BDT",
               "is_tax_inclusive": false,
+              "tax_destination": "shipping",
               "totals": {
                 "invoiced_items_subtotal_money_object": { "raw": 6952.00, "display": "৳6,952.00", "currency": { "code": "BDT", "symbol": "৳" } },
                 "base_items_subtotal_money_object": { "raw": 63.20, "display": "$63.20", "currency": { "code": "USD", "symbol": "$" } },
@@ -219,8 +220,7 @@ examples:
               "shipping_method": "fsdfdsfsdfsdf343432jh4",
               "shipping_method_name": "Standard Delivery",
               "shipping_method_type": "flat_rate",
-              "customer_notes": null,
-              "admin_notes": null,
+              "order_notes": null,
               "flags": [],
               "shipping_tracking": {
                 "carrier": null,
@@ -276,7 +276,7 @@ examples:
             "billing_company": null,
             "customer_email": "jane.shipping@example.com",
             "customer_phone": "+1 555-000-2000",
-            "customer_notes": null
+            "order_notes": null
           }
     response:
       status: 404

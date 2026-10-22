@@ -114,7 +114,7 @@ after the operation read its data, which is exactly the moment the old code
 broke.
 
 ```
-./kirki-test integration --filter=ConcurrencySafetyTest
+./kirki-ecommerce-test integration --filter=ConcurrencySafetyTest
 ```
 
 **Real concurrency.** `bin/concurrency-stress.sh [workers]` starts the given

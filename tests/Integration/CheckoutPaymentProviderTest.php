@@ -84,6 +84,28 @@ class CheckoutPaymentProviderTest extends RestTestCase
     }
 
     /**
+     * Spec scenarios: Checkout creates an order, and Customer leaves no note.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_checkout_carries_order_notes_onto_the_order(): void
+    {
+        $this->enable_payment_provider('paypal');
+        $this->add_item_to_cart();
+
+        $with_note = $this->request('POST', 'checkout', $this->order_payload(['order_notes' => 'Call before delivery']));
+        $payload = $this->assert_api_success($with_note, 201);
+        $this->assertSame('Call before delivery', $payload['data']['order_notes']);
+        $this->assertSame('Call before delivery', Order::find($payload['data']['id'])->order_notes);
+
+        $this->add_item_to_cart();
+        $without_note = $this->request('POST', 'checkout', $this->order_payload());
+        $payload = $this->assert_api_success($without_note, 201);
+        $this->assertNull($payload['data']['order_notes']);
+    }
+
+    /**
      * An offline method is rejected while disabled and accepted once enabled through its endpoint.
      *
      * @return void

@@ -69,6 +69,7 @@ class OrderResource extends Resource
             'is_manual' => $this->is_manual,
             'currency_code' => $this->currency_code,
             'is_tax_inclusive' => (bool) $this->is_tax_inclusive,
+            'tax_destination' => $this->tax_destination,
 
             'totals' => [
                 'invoiced_items_subtotal_money_object' => Money::prepare_amount_object_from_minor($items_subtotal['invoiced'], $this->currency_code),
@@ -131,8 +132,7 @@ class OrderResource extends Resource
             'shipping_method' => $this->shipping_method,
             'shipping_method_name' => $this->shipping_metadata['shipping_method']['name'] ?? null,
             'shipping_method_type' => $this->shipping_metadata['shipping_method']['type'] ?? null,
-            'customer_notes' => $this->customer_notes,
-            'admin_notes' => $this->admin_notes,
+            'order_notes' => $this->order_notes,
             'flags' => $this->flags,
 
             'shipping_tracking' => [

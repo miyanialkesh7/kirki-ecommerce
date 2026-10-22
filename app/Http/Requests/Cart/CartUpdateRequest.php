@@ -54,8 +54,7 @@ class CartUpdateRequest extends Request
 
             'shipping_method' => 'string|nullable',
             'customer_email' => 'email|nullable',
-            'customer_notes' => 'string|nullable',
-            'admin_notes' => 'string|nullable',
+            'order_notes' => 'string|nullable',
         ];
     }
 
@@ -99,8 +98,7 @@ class CartUpdateRequest extends Request
 
             'shipping_method' => Sanitizer::TEXT,
             'customer_email' => Sanitizer::EMAIL,
-            'customer_notes' => Sanitizer::TEXT,
-            'admin_notes' => Sanitizer::TEXT,
+            'order_notes' => Sanitizer::TEXTAREA,
         ];
     }
 }

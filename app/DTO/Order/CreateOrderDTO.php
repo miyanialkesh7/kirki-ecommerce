@@ -76,6 +76,9 @@ class CreateOrderDTO extends DTO
     /** @var bool */
     public $is_tax_inclusive = false;
 
+    /** @var string|null */
+    public $tax_destination;
+
     /** @var int */
     public $invoiced_total;
 
@@ -145,10 +148,7 @@ class CreateOrderDTO extends DTO
     public $billing_email;
 
     /** @var string|null */
-    public $customer_notes;
-
-    /** @var string|null */
-    public $admin_notes;
+    public $order_notes;
 
     /** @var string|null */
     public $ip_address;

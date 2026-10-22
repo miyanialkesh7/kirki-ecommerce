@@ -5,6 +5,7 @@ namespace Kirki\Ecommerce\App\Managers;
 defined('ABSPATH') || exit;
 
 use BadMethodCallException;
+use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Brick\Money\Currency as BrickCurrency;
 use Brick\Money\Money;
@@ -12,6 +13,7 @@ use Kirki\Ecommerce\App\Constants\CookieNames;
 use Kirki\Ecommerce\App\Constants\OptionKeys;
 use Kirki\Ecommerce\App\DTO\CurrencyDTO;
 use Kirki\Ecommerce\App\DTO\MoneyDTO;
+use Kirki\Ecommerce\App\DTO\ShortMoneyDTO;
 use Kirki\Ecommerce\App\Models\Currency as CurrencyModel;
 use Kirki\Ecommerce\App\Services\CurrencyService;
 use Kirki\Ecommerce\App\Supports\Currency;
@@ -232,6 +234,80 @@ class MoneyManager
     {
         $amount = (string) $money->getAmount();
         $currency_code = $money->getCurrency()->getCurrencyCode();
+        $currency_settings = $this->get_format_settings();
+
+        $decimals = $money->getCurrency()->getDefaultFractionDigits();
+
+        $formatted_amount = number_format(
+            (float) $amount,
+            $decimals,
+            $currency_settings['decimal_separator'],
+            $currency_settings['thousand_separator']
+        );
+
+        return $this->place_currency_symbol($formatted_amount, $currency_code, $currency_settings);
+    }
+
+    /**
+     * Format a Money object in short form, such as $20.3K, with the store's separator, position and symbol settings.
+     *
+     * An amount less than 1,000 is formatted as in format(). A larger amount is divided by the
+     * largest unit (K, M, B or T) that is not more than it, and rounded to one decimal.
+     *
+     * @since 1.0.0
+     *
+     * @param Money $money
+     * @return string
+     */
+    public function format_short(Money $money)
+    {
+        $amount = $money->getAmount();
+        $absolute = $amount->abs();
+
+        if ($absolute->isLessThan(1000)) {
+            return $this->format($money);
+        }
+
+        $units = [
+            ['K', BigDecimal::of('1000')],
+            ['M', BigDecimal::of('1000000')],
+            ['B', BigDecimal::of('1000000000')],
+            ['T', BigDecimal::of('1000000000000')],
+        ];
+        $index = 0;
+
+        while (isset($units[$index + 1]) && $absolute->isGreaterThanOrEqualTo($units[$index + 1][1])) {
+            $index++;
+        }
+
+        $value = $absolute->dividedBy($units[$index][1], 1, RoundingMode::HALF_UP);
+
+        if (isset($units[$index + 1]) && $value->isGreaterThanOrEqualTo(1000)) {
+            $index++;
+            $value = $absolute->dividedBy($units[$index][1], 1, RoundingMode::HALF_UP);
+        }
+
+        $currency_settings = $this->get_format_settings();
+        $formatted_amount = number_format(
+            (float) (string) $value,
+            $value->hasNonZeroFractionalPart() ? 1 : 0,
+            $currency_settings['decimal_separator'],
+            $currency_settings['thousand_separator']
+        );
+        $formatted_amount = ($amount->isNegative() ? '-' : '') . $formatted_amount . $units[$index][0];
+
+        return $this->place_currency_symbol($formatted_amount, $money->getCurrency()->getCurrencyCode(), $currency_settings);
+    }
+
+    /**
+     * Get the store's currency format settings, with the 'space' separators resolved.
+     *
+     * @since 1.0.0
+     *
+     * @return array
+     */
+    protected function get_format_settings()
+    {
         $currency_settings = app(CurrencyService::class)->get_currency_preferences();
 
         if ($currency_settings['thousand_separator'] === 'space') {
@@ -242,14 +318,21 @@ class MoneyManager
             $currency_settings['decimal_separator'] = ' ';
         }
 
-        $decimals = $money->getCurrency()->getDefaultFractionDigits();
+        return $currency_settings;
+    }
 
-        $formatted_amount = number_format(
-            (float) $amount,
-            $decimals,
-            $currency_settings['decimal_separator'],
-            $currency_settings['thousand_separator']
-        );
+    /**
+     * Put the currency symbol before or after a formatted amount, as the store's settings say.
+     *
+     * @since 1.0.0
+     *
+     * @param string $formatted_amount  Formatted amount.
+     * @param string $currency_code     Currency code.
+     * @param array  $currency_settings Store currency format settings.
+     * @return string
+     */
+    protected function place_currency_symbol(string $formatted_amount, string $currency_code, array $currency_settings)
+    {
         $currency_symbol = static::get_currency_symbol($currency_code);
 
         return $currency_settings['currency_position'] === 'before'
@@ -434,6 +517,24 @@ class MoneyManager
                 'symbol' => static::get_currency_symbol($currency),
             ]),
         ]);
+    }
+
+    /**
+     * Build a ShortMoneyDTO: a MoneyDTO with the short display string from format_short().
+     *
+     * @since 1.0.0
+     *
+     * @param int         $minor_amount Amount in minor units.
+     * @param string|null $currency     Currency the amount is in; defaults to the base currency.
+     * @return ShortMoneyDTO
+     */
+    public function to_short_dto($minor_amount, $currency = null)
+    {
+        $currency = $currency ?? $this->base_currency;
+
+        return ShortMoneyDTO::from_array(array_merge($this->to_dto($minor_amount, $currency)->all(), [
+            'short_display' => $this->format_short($this->from_minor($minor_amount, $currency)),
+        ]));
     }
 
 

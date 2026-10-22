@@ -1,4 +1,3 @@
-import { useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router';
 
 import ActionGroup from '@/components/ui/action-group';
@@ -14,6 +13,7 @@ import {
 import Flex from '@/components/ui/flex';
 import { Form } from '@/components/ui/form';
 import { Page, PAGE_HEADING_HEIGHT, PageContent, PageHeading } from '@/components/ui/page';
+import QueryErrorState from '@/components/ui/query-error-state';
 import Text from '@/components/ui/text';
 import CustomerCard from '@/features/orders/components/order-create/customer-card';
 import NotesCard from '@/features/orders/components/order-create/notes-card';
@@ -45,6 +45,8 @@ const OrderDetails = () => {
     order,
     isLoading,
     isError,
+    isFetching,
+    refetch,
     form,
     paymentBadge,
     fulfillmentBadge,
@@ -62,11 +64,6 @@ const OrderDetails = () => {
     handleSaveOrder,
   } = useOrderDetails(id);
 
-  const adminNotes = useWatch({
-    control: form.control,
-    name: 'admin_notes',
-  });
-
   if (isLoading) {
     return <OrderDetailsSkeleton />;
   }
@@ -76,15 +73,7 @@ const OrderDetails = () => {
       <Page containerSize="xl">
         <PageHeading sticky text={__('Order', 'kirki-ecommerce')} hasBack onBack={handleBack} />
         <PageContent>
-          <Card cssOverride={{ marginTop: theme.spacing[12] }}>
-            <CardContent>
-              <Flex justify="center" align="center" cssOverride={{ minHeight: 200 }}>
-                <Text color="secondary" variant="heading4" weight="normal">
-                  {__('Order not found.', 'kirki-ecommerce')}
-                </Text>
-              </Flex>
-            </CardContent>
-          </Card>
+          <QueryErrorState onRetry={refetch} isRetrying={isFetching} />
         </PageContent>
       </Page>
     );
@@ -210,7 +199,7 @@ const OrderDetails = () => {
 
               <FlagCard onSave={handleSaveOrder} />
 
-              {Boolean(adminNotes) && <NotesCard isEditable={false} />}
+              <NotesCard mode="edit" onSave={handleSaveOrder} isSaving={isSaving} />
             </Flex>
           </Flex>
         </PageContent>

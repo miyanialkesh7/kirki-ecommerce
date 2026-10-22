@@ -10,6 +10,8 @@
     "search:index": "npm run search:index --prefix resources/app",
     "test:app": "npm run test --prefix resources/app",
     "test:php": "composer test:docker",
+    "test:php:unit": "bash kirki-ecommerce-test unit",
+    "test:php:integration": "bash kirki-ecommerce-test integration",
     "test": "npm run test:php && npm run test:app",
     "typecheck:app": "npm run typecheck --prefix resources/app"
   }

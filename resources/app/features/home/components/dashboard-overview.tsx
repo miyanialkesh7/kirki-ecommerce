@@ -1,9 +1,9 @@
-import { Card } from '@/components/ui/card';
 import Flex from '@/components/ui/flex';
-import Text from '@/components/ui/text';
+import QueryErrorState from '@/components/ui/query-error-state';
 import MetricCard from '@/features/home/components/metric-card';
 import RecentOrdersCard from '@/features/home/components/recent-orders-card';
 import TopProductsCard from '@/features/home/components/top-products-card';
+import { shortMoney } from '@/features/home/lib/money';
 import type { DashboardMetrics } from '@/features/home/schemas/catalog/dashboard-overview';
 import { useDashboardOverviewQuery } from '@/features/home/services/dashboard';
 import { theme } from '@/theme';
@@ -17,12 +17,12 @@ const getMetricCards = (metrics?: DashboardMetrics) => [
       'All money customers paid for their orders, including tax and shipping, in your store currency. Refunds are not removed.',
       'kirki-ecommerce',
     ),
-    value: metrics?.base_total_sales_money_object.display,
+    ...(metrics && shortMoney(metrics.base_total_sales_money_object)),
   },
   {
     label: __('Net sales', 'kirki-ecommerce'),
     info: __('Total sales minus tax, shipping and completed refunds.', 'kirki-ecommerce'),
-    value: metrics?.base_net_sales_money_object.display,
+    ...(metrics && shortMoney(metrics.base_net_sales_money_object)),
   },
   {
     label: __('Orders', 'kirki-ecommerce'),
@@ -30,7 +30,7 @@ const getMetricCards = (metrics?: DashboardMetrics) => [
       'The number of orders that customers paid for, including refunded orders. Unpaid, failed and cancelled orders are not counted.',
       'kirki-ecommerce',
     ),
-    value: metrics === undefined ? undefined : String(metrics.orders_count),
+    text: metrics === undefined ? undefined : String(metrics.orders_count),
   },
   {
     label: __('Products sold', 'kirki-ecommerce'),
@@ -38,21 +38,15 @@ const getMetricCards = (metrics?: DashboardMetrics) => [
       'The number of product units in paid orders. Refunded units are not removed.',
       'kirki-ecommerce',
     ),
-    value: metrics === undefined ? undefined : String(metrics.products_sold),
+    text: metrics === undefined ? undefined : String(metrics.products_sold),
   },
 ];
 
 const DashboardOverview = () => {
-  const { data, isLoading, isError } = useDashboardOverviewQuery();
+  const { data, isLoading, isError, isFetching, refetch } = useDashboardOverviewQuery();
 
   if (isError || (!isLoading && !data)) {
-    return (
-      <Card>
-        <Text color="critical">
-          {__('We could not load your store overview. Please reload the page.', 'kirki-ecommerce')}
-        </Text>
-      </Card>
-    );
+    return <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />;
   }
 
   return (
@@ -63,7 +57,8 @@ const DashboardOverview = () => {
             key={metric.label}
             label={metric.label}
             info={metric.info}
-            value={metric.value}
+            value={metric.text}
+            valueTitle={metric.title}
           />
         ))}
       </div>

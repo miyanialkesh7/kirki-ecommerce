@@ -49,7 +49,6 @@ use Kirki\Ecommerce\Framework\Supports\Facades\DB;
 use Throwable;
 
 use function Kirki\Ecommerce\App\base_currency;
-use function Kirki\Ecommerce\App\customer;
 use function Kirki\Ecommerce\Framework\collection;
 use function Kirki\Ecommerce\Framework\throw_if;
 use function Kirki\Ecommerce\Framework\uuid;
@@ -674,6 +673,7 @@ class CreateOrderAction
         $order_dto->base_shipping_tax_amount = $calculated_result->base_shipping_tax;
 
         $order_dto->is_tax_inclusive = Tax::is_tax_inclusive();
+        $order_dto->tax_destination = $calculated_result->tax_destination;
 
         $order_dto->invoiced_total = $this->convert_amount($calculated_result->base_total, $target_currency_code, $order_dto->exchange_rate);
         $order_dto->base_total = $calculated_result->base_total;
@@ -682,7 +682,7 @@ class CreateOrderAction
 
         $order_dto->payment_status = PaymentStatus::UNPAID;
         $order_dto->payment_provider = $dto->payment_provider;
-        $order_dto->payment_metadata = $this->build_payment_provider_snapshot($dto->payment_provider);
+        $order_dto->payment_metadata = Payment::build_snapshot($dto->payment_provider);
         $order_dto->shipping_method = $dto->shipping_method;
         $order_dto->shipping_metadata = $this->build_shipping_method_snapshot($context);
 
@@ -715,8 +715,7 @@ class CreateOrderAction
         $order_dto->customer_last_name = $customer_contact['last_name'];
         $order_dto->customer_email = $customer_contact['email'];
         $order_dto->customer_phone = $customer_contact['phone'];
-        $order_dto->customer_notes = $dto->customer_notes;
-        $order_dto->admin_notes = $dto->admin_notes;
+        $order_dto->order_notes = $dto->order_notes;
         $order_dto->ip_address = $dto->ip_address;
         $order_dto->user_agent = $dto->user_agent;
         $order_dto->created_by = $dto->created_by;
@@ -827,32 +826,6 @@ class CreateOrderAction
         }
 
         return Money::convert_to_currency(Money::from_minor($amount, $this->base_currency_code), $target_currency_code, $exchange_rate)->getMinorAmount()->toInt();
-    }
-
-    /**
-     * Build the payment provider snapshot stored on the order.
-     *
-     * @since 1.0.0
-     *
-     * @param string|null $payment_provider_id Payment provider ID.
-     * @return array<string, mixed>|null Provider id, name, icon and offline flag; null when the provider is unknown.
-     */
-    protected function build_payment_provider_snapshot($payment_provider_id)
-    {
-        $provider = Payment::get_provider($payment_provider_id);
-
-        if (!$provider) {
-            return null;
-        }
-
-        return [
-            'payment_provider' => [
-                'id' => $provider->id(),
-                'name' => $provider->title(),
-                'icon' => $provider->icon(),
-                'is_offline' => $provider->is_offline(),
-            ],
-        ];
     }
 
     /**

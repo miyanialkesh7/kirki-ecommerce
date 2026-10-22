@@ -62,7 +62,7 @@ class OrderCalculationRequest extends Request
             'customer_email' => 'nullable|email',
             'customer_phone' => 'nullable|string',
 
-            'admin_notes' => 'nullable|string',
+            'order_notes' => 'nullable|string',
             'is_manual' => 'nullable|boolean',
         ];
     }
@@ -115,7 +115,7 @@ class OrderCalculationRequest extends Request
             'customer_last_name' => Sanitizer::TEXT,
             'customer_email' => Sanitizer::EMAIL,
             'customer_phone' => Sanitizer::TEXT,
-            'admin_notes' => Sanitizer::TEXT,
+            'order_notes' => Sanitizer::TEXTAREA,
             'is_manual' => Sanitizer::BOOL,
         ];
     }

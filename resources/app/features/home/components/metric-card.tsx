@@ -9,10 +9,11 @@ type MetricCardProps = {
   label: string;
   info: string;
   value?: string;
+  valueTitle?: string;
 };
 
 const MetricCard = (props: MetricCardProps) => {
-  const { label, info, value } = props;
+  const { label, info, value, valueTitle } = props;
 
   return (
     <Card cssOverride={styles.card}>
@@ -24,7 +25,7 @@ const MetricCard = (props: MetricCardProps) => {
       {value === undefined ? (
         <SkeletonLine width="120px" lineHeight="26px" barHeight="20px" />
       ) : (
-        <Text variant="heading4" weight="bold" truncate>
+        <Text variant="heading4" weight="bold" truncate title={valueTitle}>
           {value}
         </Text>
       )}

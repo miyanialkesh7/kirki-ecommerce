@@ -4,15 +4,19 @@ namespace Kirki\Ecommerce\App;
 
 defined('ABSPATH') || exit;
 
+use DateTimeZone;
+use Exception;
 use Kirki\Ecommerce\App\AppSettings;
 use Kirki\Ecommerce\App\Decisions\DecisionEngine;
 use Kirki\Ecommerce\App\Models\Currency;
 use Kirki\Ecommerce\App\Services\CurrencyService;
 use Kirki\Ecommerce\App\Supports\Facades\Settings;
 use Kirki\Ecommerce\App\Wordpress\Customer;
+use Kirki\Ecommerce\Framework\Sanitizer;
 use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 
 use function Kirki\Ecommerce\Framework\app;
+use function Kirki\Ecommerce\Framework\request;
 
 if (!function_exists('Kirki\Ecommerce\App\customer')) {
     /**
@@ -145,5 +149,32 @@ if (!function_exists('Kirki\Ecommerce\App\to_utc_datetime_string')) {
         }
 
         return Date::parse($value)->set_timezone('UTC')->to_date_time_string();
+    }
+}
+
+if (!function_exists('Kirki\Ecommerce\App\client_timezone')) {
+    /**
+     * Get the time zone of the browser that sent the request.
+     *
+     * The admin app sends it in the `X-Kecom-Timezone` header. When the header is missing or is not a
+     * valid time zone, the site time zone is used.
+     *
+     * @since 1.0.0
+     *
+     * @return DateTimeZone
+     */
+    function client_timezone()
+    {
+        $name = Sanitizer::apply_rule(request()->header('X-Kecom-Timezone'), Sanitizer::TEXT);
+
+        if (empty($name)) {
+            return wp_timezone();
+        }
+
+        try {
+            return new DateTimeZone($name);
+        } catch (Exception $exception) {
+            return wp_timezone();
+        }
     }
 }

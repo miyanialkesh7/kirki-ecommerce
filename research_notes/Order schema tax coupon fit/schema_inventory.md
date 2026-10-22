@@ -25,7 +25,7 @@ Seven tables, all money as signed 32-bit `integer` minor units in `invoiced_*`/`
 - Payment: `payment_status` string(50) def 'pending' (:65); `payment_provider` string(100) null (:66); `payment_transaction_id` string null (:67); `invoiced_payment_provider_fee`/`base_payment_provider_fee` integer def 0 (:68-69); `payment_metadata` text null (:70)
 - Shipping: `shipping_method` string(100) null (:72); `shipping_metadata` text null (:73); `shipping_carrier`(100), `shipping_tracking_number`(100), `shipping_tracking_url`(500) null (:74-76)
 - Shipping address columns (all nullable strings): first_name, last_name, address_line1, address_line2, city, state, country(100), postal_code(20), phone, email, company (:78-88). `is_billing_same_as_shipping` bool def false (:90). Billing address mirror columns (:92-102). Customer contact snapshot: `customer_first_name/last_name/email/phone` (:104-107). `ip_address` (:108), `user_agent` text (:109)
-- Notes: `customer_notes`, `admin_notes`, `flags` (comma-separated text), `cancellation_reason` (:111-115)
+- Notes: `order_notes`, `flags` (comma-separated text), `cancellation_reason` (:111-115)
 - `created_by`, `updated_by` unsigned_big_integer null (:117-118)
 - Timestamps null: `paid_at`, `shipped_at`, `cancelled_at`, `fulfilled_at`, `estimated_delivery_date`, `delivered_at`, `archived_at` (:120-126) + `timestamps()` (:127)
 - FKs: `created_by`/`updated_by` -> `users.ID` null_on_delete (:129-130); `customer_id` -> `kirki_ecommerce_customers.id` null_on_delete (:155-158)

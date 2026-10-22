@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import Button from '@/components/ui/button';
 import NotFoundState from '@/components/ui/not-found-state';
 import { Page, PageContent, PageHeading } from '@/components/ui/page';
+import QueryErrorState from '@/components/ui/query-error-state';
 import { RouteConfig } from '@/config/route-config';
 import InventoryTable from '@/features/inventory/components/inventory-table/inventory-table';
 import { useInventoryQuery } from '@/features/inventory/services/inventory';
@@ -16,7 +17,7 @@ const Inventory = () => {
   const navigate = useNavigate();
   const { params } = useDataTableParams(inventoryListOptions);
 
-  const { data, isFetching } = useInventoryQuery(params);
+  const { data, isFetching, isError, refetch } = useInventoryQuery(params);
 
   const hasRecord = !isDefined(data) || data.has_records !== false;
 
@@ -24,7 +25,9 @@ const Inventory = () => {
     <Page>
       <PageHeading text={__('Inventory', 'kirki-ecommerce')} />
       <PageContent>
-        {!hasRecord ? (
+        {isError ? (
+          <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
+        ) : !hasRecord ? (
           <NotFoundState
             icon={<InventoryEmptyStateIcon />}
             text={__('Track your inventory', 'kirki-ecommerce')}

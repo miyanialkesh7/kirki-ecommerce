@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import Button from '@/components/ui/button';
 import NotFoundState from '@/components/ui/not-found-state';
 import { Page, PageContent, PageHeading } from '@/components/ui/page';
+import QueryErrorState from '@/components/ui/query-error-state';
 import { NEW_ITEM_ID } from '@/conf';
 import { RouteConfig } from '@/config/route-config';
 import CollectionTable from '@/features/collections/components/collection-table/collection-table';
@@ -18,7 +19,7 @@ const Collections = () => {
 
   const { params } = useDataTableParams(collectionListOptions);
 
-  const { data, isFetching } = useCollectionsQuery(params);
+  const { data, isFetching, isError, refetch } = useCollectionsQuery(params);
 
   const hasRecord = !isDefined(data) || data.has_records !== false;
 
@@ -42,7 +43,9 @@ const Collections = () => {
         }
       />
       <PageContent>
-        {!hasRecord ? (
+        {isError ? (
+          <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
+        ) : !hasRecord ? (
           <NotFoundState
             icon={<CollectionEmptyStateIcon />}
             text={__('Group products into collections', 'kirki-ecommerce')}

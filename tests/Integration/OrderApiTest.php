@@ -391,7 +391,7 @@ class OrderApiTest extends RestTestCase
         $response = $this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
             'id' => $this->order_id,
             'customer_id' => $customer_id,
-            'admin_notes' => 'Updated notes',
+            'order_notes' => 'Updated notes',
             'items' => [
                 [
                     'id' => $order['items'][0]['id'] ?? null,
@@ -402,7 +402,120 @@ class OrderApiTest extends RestTestCase
         ]));
 
         $payload = $this->assert_api_success($response);
-        $this->assertEquals('Updated notes', $payload['data']['admin_notes']);
+        $this->assertEquals('Updated notes', $payload['data']['order_notes']);
+    }
+
+    /**
+     * Spec scenario: Order created with a note.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_create_order_stores_order_notes_and_hides_old_note_keys(): void
+    {
+        $order = $this->create_order(['order_notes' => 'Ring the bell']);
+        $this->order_id = $order['id'];
+
+        $this->assertSame('Ring the bell', $order['order_notes']);
+        $this->assertArrayNotHasKey('customer_notes', $order);
+        $this->assertArrayNotHasKey('admin_notes', $order);
+        $this->assertSame('Ring the bell', Order::find($order['id'])->order_notes);
+    }
+
+    /**
+     * Spec scenario: Order created without a note.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_create_order_without_order_notes_stores_null(): void
+    {
+        $payload = $this->order_payload();
+        unset($payload['order_notes']);
+
+        $order = $this->assert_api_success($this->request('POST', 'orders', $payload), 201)['data'];
+        $this->order_id = $order['id'];
+
+        $this->assertArrayHasKey('order_notes', $order);
+        $this->assertNull($order['order_notes']);
+    }
+
+    /**
+     * Spec scenario: Old field names sent (create and update).
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_old_note_keys_are_ignored_on_create_and_update(): void
+    {
+        $payload = $this->order_payload(['customer_notes' => 'Old customer', 'admin_notes' => 'Old admin']);
+        unset($payload['order_notes']);
+
+        $order = $this->assert_api_success($this->request('POST', 'orders', $payload), 201)['data'];
+        $this->order_id = $order['id'];
+
+        $this->assertNull($order['order_notes']);
+        $this->assertArrayNotHasKey('customer_notes', $order);
+        $this->assertArrayNotHasKey('admin_notes', $order);
+        $this->assertNull(Order::find($order['id'])->order_notes);
+
+        $update = $this->order_payload([
+            'id' => $order['id'],
+            'customer_notes' => 'Old customer',
+            'admin_notes' => 'Old admin',
+            'items' => [[
+                'id' => $order['items'][0]['id'] ?? null,
+                'variant_id' => $this->variant_id,
+                'quantity' => 1,
+            ]],
+        ]);
+        unset($update['order_notes']);
+
+        $updated = $this->assert_api_success($this->request('PUT', 'orders/' . $order['id'], $update))['data'];
+
+        $this->assertNull($updated['order_notes']);
+        $this->assertArrayNotHasKey('customer_notes', $updated);
+        $this->assertArrayNotHasKey('admin_notes', $updated);
+    }
+
+    /**
+     * Spec scenario: Merchant clears a note.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_update_order_with_null_order_notes_clears_the_note(): void
+    {
+        $order = $this->create_order(['order_notes' => 'Will be cleared']);
+        $this->order_id = $order['id'];
+
+        $payload = $this->assert_api_success($this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
+            'id' => $this->order_id,
+            'order_notes' => null,
+            'items' => [[
+                'id' => $order['items'][0]['id'] ?? null,
+                'variant_id' => $this->variant_id,
+                'quantity' => 1,
+            ]],
+        ])));
+
+        $this->assertNull($payload['data']['order_notes']);
+        $this->assertNull(Order::find($this->order_id)->order_notes);
+    }
+
+    /**
+     * Spec scenario: Note with line breaks.
+     *
+     * @return void
+     * @since 1.0.0
+     */
+    public function test_order_notes_keep_line_breaks(): void
+    {
+        $order = $this->create_order(['order_notes' => "First line\nSecond line"]);
+        $this->order_id = $order['id'];
+
+        $this->assertSame("First line\nSecond line", $order['order_notes']);
+        $this->assertSame("First line\nSecond line", Order::find($this->order_id)->order_notes);
     }
 
     /**
@@ -531,7 +644,7 @@ class OrderApiTest extends RestTestCase
 
         $response = $this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
             'id' => $this->order_id,
-            'admin_notes' => 'Updated by store manager',
+            'order_notes' => 'Updated by store manager',
             'items' => [
                 [
                     'id' => $order['items'][0]['id'] ?? null,
@@ -542,7 +655,7 @@ class OrderApiTest extends RestTestCase
         ]));
 
         $payload = $this->assert_api_success($response);
-        $this->assertEquals('Updated by store manager', $payload['data']['admin_notes']);
+        $this->assertEquals('Updated by store manager', $payload['data']['order_notes']);
     }
 
     /**
@@ -583,7 +696,7 @@ class OrderApiTest extends RestTestCase
 
         $response = $this->request('PUT', 'orders/' . $this->order_id, $this->order_payload([
             'id' => $this->order_id,
-            'admin_notes' => 'Guest order edit',
+            'order_notes' => 'Guest order edit',
             'items' => [
                 [
                     'id' => $order['items'][0]['id'] ?? null,
@@ -1218,6 +1331,50 @@ class OrderApiTest extends RestTestCase
 
         $this->assertSame(200, $stored->invoiced_payment_provider_fee);
         $this->assertSame(100, $stored->base_payment_provider_fee);
+    }
+
+    /**
+     * The base-currency fee is divided by the order's frozen rate exactly.
+     * 256115 / 2.896 is exactly 88437.5 minor units, which must round up;
+     * the float reciprocal 1 / 2.896 rounds it down to 88437.
+     *
+     * @return void
+     */
+    public function test_set_payment_provider_fee_base_fee_is_exact_at_half_unit_boundary(): void
+    {
+        $currency_code = $this->create_test_currency(['code' => 'CHF', 'exchange_rate' => 2.896]);
+
+        $order = $this->create_order(['currency_code' => $currency_code]);
+        $this->order_id = $order['id'];
+
+        OrderManager::set_payment_provider_fee($this->order_id, 256115);
+
+        $stored = OrderManager::find($this->order_id);
+
+        $this->assertSame(256115, $stored->invoiced_payment_provider_fee);
+        $this->assertSame(88438, $stored->base_payment_provider_fee);
+    }
+
+    /**
+     * A fee in a zero-decimal order currency is converted using that
+     * currency's own minor-unit scale: 30000 yen at 150 per base unit is
+     * 200.00 in the base currency.
+     *
+     * @return void
+     */
+    public function test_set_payment_provider_fee_zero_decimal_order_currency(): void
+    {
+        $currency_code = $this->create_test_currency(['code' => 'JPY', 'exchange_rate' => 150]);
+
+        $order = $this->create_order(['currency_code' => $currency_code]);
+        $this->order_id = $order['id'];
+
+        OrderManager::set_payment_provider_fee($this->order_id, 30000);
+
+        $stored = OrderManager::find($this->order_id);
+
+        $this->assertSame(30000, $stored->invoiced_payment_provider_fee);
+        $this->assertSame(20000, $stored->base_payment_provider_fee);
     }
 
     /**
@@ -2001,7 +2158,7 @@ class OrderApiTest extends RestTestCase
             'id' => $this->order_id,
             'customer_id' => $customer_id,
             'coupon_codes' => [$first_time->code, $once->code],
-            'admin_notes' => 'Unrelated edit',
+            'order_notes' => 'Unrelated edit',
             'items' => [
                 [
                     'id' => $order['items'][0]['id'] ?? null,
@@ -2274,7 +2431,7 @@ class OrderApiTest extends RestTestCase
             'id' => $this->order_id,
             'customer_id' => $customer_id,
             'coupon_codes' => [$coupon->code],
-            'admin_notes' => 'Unrelated edit',
+            'order_notes' => 'Unrelated edit',
         ])));
 
         $this->assertEquals(1, Coupon::find($coupon->id)->current_usage_count);
@@ -2313,7 +2470,7 @@ class OrderApiTest extends RestTestCase
             'id' => $this->order_id,
             'customer_id' => $customer_id,
             'coupon_codes' => [$coupon->code],
-            'admin_notes' => 'Edited after cancellation',
+            'order_notes' => 'Edited after cancellation',
         ])));
 
         $this->assertEquals(0, Coupon::find($coupon->id)->current_usage_count);
@@ -2937,8 +3094,7 @@ class OrderApiTest extends RestTestCase
             'billing_state' => 'NY',
             'billing_postal_code' => '10001',
             'billing_country' => 'US',
-            'customer_notes' => 'Test order',
-            'admin_notes' => 'Test order',
+            'order_notes' => 'Test order',
         ];
 
         return array_merge($payload, $overrides);

@@ -180,7 +180,11 @@ processing and cancelled payments are never counted. All figures are **all time*
 | Products sold | Sum of order item `quantity` of counted orders. |
 
 Money is in the store's **base currency**, formatted with the store's currency
-settings. Refunds are stored only in the order's currency, so each order's
+settings. Total sales and Net sales show **short amounts** (`$20.3K`, `$1.2M`),
+with the same rules as the Analytics page (see
+[Analytics: Short amounts](analytics.md#short-amounts)). When the short amount is
+different from the full amount, a hover tooltip shows the full amount
+(`$20,345.00`). An amount less than 1,000 shows in full (`$850.00`). Refunds are stored only in the order's currency, so each order's
 completed refunds are converted with that order's own `base_total / invoiced_total`
 ratio (the rate frozen when the order was placed). Pending and cancelled refunds
 are ignored. The cards show no change percentage or trend.
@@ -201,7 +205,8 @@ reads "No orders yet", centered in the card.
 
 Up to 5 products from counted orders. Variants are merged into their product.
 Rows are sorted by units sold, then by base-currency revenue. Each row shows a
-48 × 48 px image, the name with a stock badge, the revenue ("$3,134 generated")
+48 × 48 px image, the name with a stock badge, the revenue as a short amount
+("$3.1K generated", with "$3,134.00 generated" as the hover tooltip)
 and the units sold ("1200 units sold"). The revenue is the sum of `base_total` of
 the product's order items in counted orders, for all of its variants. Name and
 image come from the product's newest order item, so a deleted product still
@@ -285,9 +290,9 @@ response. They are in the admin app (`resources/app/features/home/lib/steps.ts`)
   "data": {
     "metrics": {
       "base_total_sales": 120,
-      "base_total_sales_money_object": { "raw": 120, "display": "$120.00", "currency": { "code": "USD", "symbol": "$" } },
+      "base_total_sales_money_object": { "raw": 120, "display": "$120.00", "short_display": "$120.00", "currency": { "code": "USD", "symbol": "$" } },
       "base_net_sales": 80,
-      "base_net_sales_money_object": { "raw": 80, "display": "$80.00", "currency": { "code": "USD", "symbol": "$" } },
+      "base_net_sales_money_object": { "raw": 80, "display": "$80.00", "short_display": "$80.00", "currency": { "code": "USD", "symbol": "$" } },
       "orders_count": 1,
       "products_sold": 2
     },
@@ -299,7 +304,7 @@ response. They are in the admin app (`resources/app/features/home/lib/steps.ts`)
         "image": null,
         "units_sold": 5,
         "base_revenue": 50,
-        "base_revenue_money_object": { "raw": 50, "display": "$50.00", "currency": { "code": "USD", "symbol": "$" } },
+        "base_revenue_money_object": { "raw": 50, "display": "$50.00", "short_display": "$50.00", "currency": { "code": "USD", "symbol": "$" } },
         "availability_status": "in_stock",
         "track_inventory": true,
         "inventory": 59
@@ -310,7 +315,9 @@ response. They are in the admin app (`resources/app/features/home/lib/steps.ts`)
 }
 ```
 
-`recent_orders` items use the same resource as the order list (`OrderListResource`).
+The metric and top product money objects have `short_display` (section 7).
+`recent_orders` items use the same resource as the order list (`OrderListResource`),
+so their money objects have no `short_display`.
 `product_id` is `null` for a product that was deleted. The endpoint does not check
 whether setup is complete; the admin app only calls it in overview mode. The
 queries are in `app/Services/DashboardService.php`.
@@ -378,5 +385,9 @@ until every step completes again.
 - **No date range, no comparison, no charts, no reports pages.** WooCommerce's
   Home and Analytics have all of these. "View all products" opens the plain
   products list, not a sales report.
+- **Short amounts.** WooCommerce Home shows full amounts. Here Total sales, Net
+  sales and the top product revenue show short amounts (`$20.3K`), and the full
+  amount is only in the hover tooltip. The unit letters (K, M, B, T) are English
+  in every language. Recent orders show the full order total.
 - **No extension API.** The cards are fixed. There is no filter or hook that adds
   a metric.

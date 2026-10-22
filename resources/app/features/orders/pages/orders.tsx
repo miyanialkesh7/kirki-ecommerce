@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import Button from '@/components/ui/button';
 import NotFoundState from '@/components/ui/not-found-state';
 import { Page, PageContent, PageHeading } from '@/components/ui/page';
+import QueryErrorState from '@/components/ui/query-error-state';
 import { RouteConfig } from '@/config/route-config';
 import { orderListOptions } from '@/features/orders';
 import OrderTable from '@/features/orders/components/order-table/order-table';
@@ -16,7 +17,7 @@ const Orders = () => {
   const navigate = useNavigate();
   const { params } = useDataTableParams(orderListOptions);
 
-  const { data, isFetching } = useOrdersQuery(params);
+  const { data, isFetching, isError, refetch } = useOrdersQuery(params);
 
   const hasRecord = !isDefined(data) || data.has_records !== false;
 
@@ -45,7 +46,9 @@ const Orders = () => {
         }
       />
       <PageContent>
-        {!hasRecord ? (
+        {isError ? (
+          <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
+        ) : !hasRecord ? (
           <NotFoundState
             icon={<OrderEmptyStateIcon />}
             text={__('No orders yet', 'kirki-ecommerce')}

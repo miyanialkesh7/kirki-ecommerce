@@ -73,6 +73,9 @@ class UpdateOrderDTO extends DTO
     /** @var bool */
     public $is_tax_inclusive;
 
+    /** @var string|null */
+    public $tax_destination;
+
     /** @var int */
     public $invoiced_total;
 
@@ -134,7 +137,7 @@ class UpdateOrderDTO extends DTO
     public $billing_company;
 
     /** @var string|null */
-    public $admin_notes;
+    public $order_notes;
 
     /** @var string[]|null */
     public $flags;
