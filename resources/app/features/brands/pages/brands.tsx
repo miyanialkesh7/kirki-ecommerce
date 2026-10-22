@@ -7,14 +7,15 @@ import { useBrandsQuery } from '@/features/brands/services/brand';
 import { brandListOptions } from '@/features/brands/types';
 import { useDataTableParams } from '@/hooks';
 import { BrandEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Brands = () => {
-  const { params, hasActiveFilters } = useDataTableParams(brandListOptions);
+  const { params } = useDataTableParams(brandListOptions);
 
   const { data, isFetching, isError, refetch } = useBrandsQuery(params);
 
-  const hasRecord = !(!isFetching && !hasActiveFilters && data?.total === 0); // @todo: later will use isDefined(data) && isDefined(data.has_record) && data?.has_record
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

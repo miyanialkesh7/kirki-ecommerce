@@ -7,14 +7,15 @@ import { useCategoriesQuery } from '@/features/categories/services/category';
 import { categoryListOptions } from '@/features/categories/types';
 import { useDataTableParams } from '@/hooks';
 import { CategoryEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Categories = () => {
-  const { params, hasActiveFilters } = useDataTableParams(categoryListOptions);
+  const { params } = useDataTableParams(categoryListOptions);
 
   const { data, isFetching, isError, refetch } = useCategoriesQuery(params);
 
-  const hasRecord = !(!isFetching && !hasActiveFilters && data?.total === 0); // @todo: later will use isDefined(data) && isDefined(data.has_record) && data?.has_record
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>
