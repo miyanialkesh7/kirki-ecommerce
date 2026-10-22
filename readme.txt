@@ -1,5 +1,5 @@
 === Kirki eCommerce ===
-Contributors: themeum
+Contributors: Kirki
 Tags: ecommerce, online store, shopping cart, checkout, payments
 Requires at least: 6.8
 Tested up to: 7.1
@@ -101,7 +101,7 @@ Get a complete view of every order, from payment through fulfillment. Create ord
 
 Choose the payment methods that work best for your customers with no transaction fees. Kirki eCommerce has a flexible gateway system that lets you add online payment providers through separately installable companion plugins.
 
-The payment gateways includes integrations for:
+The payment gateways include integrations for:
 
 * PayPal
 
@@ -305,7 +305,7 @@ The plugin can also connect to a currency exchange rate service to convert displ
 * Adds Full-fledged coupon system: free shipping, targeting by country, region, customer, and product, with usage limits
 * Adds Customer Dashboard: order history, order details, saved addresses, account management
 * Adds Search and filtering across all product listings
-* Adds Cart syncing between guest and logged-in sessions (backend only, frontend pending)
+* Adds Cart syncing between guest and logged-in sessions
 * Adds Bulk Inventory Edit
 * Adds Low Stock Threshold (global, product, variant)
 * Adds Out of Stock Protection
