@@ -48,7 +48,7 @@ class WebhookController
                 $content_type = Sanitizer::apply_rule($result->content_type(), Sanitizer::MIME_TYPE) ?: 'text/plain'; 
  
                 header('Content-Type: ' . $content_type . '; charset=UTF-8');
-                echo $result->raw_body(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Acknowledgement body the payment provider requires verbatim; Content-Type is sanitized above. ignore escaping for handling webhook raw request.
+                echo $result->raw_body(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The payment provider needs this acknowledgement body unchanged, so it cannot be escaped. The Content-Type header is sanitized above.
 
                 return true;
             });
