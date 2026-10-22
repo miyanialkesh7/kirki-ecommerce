@@ -3,7 +3,28 @@ import { describe, expect, it } from 'vitest';
 import { MultiCurrencySettingsFormSchema } from '@/features/settings/multi-currency/schemas/forms/multi-currency-settings-form';
 
 describe('MultiCurrencySettingsFormSchema', () => {
+  const baseCurrency = {
+    id: 1,
+    name: 'US Dollar',
+    code: 'USD',
+    symbol: '$',
+    exchange_rate: 1,
+    is_base: true,
+    is_active: true,
+  };
+
+  const secondCurrency = {
+    id: 2,
+    name: 'Euro',
+    code: 'EUR',
+    symbol: '€',
+    exchange_rate: 0.92,
+    is_base: false,
+    is_active: true,
+  };
+
   const base = {
+    currencies: [baseCurrency, secondCurrency],
     is_automatic_update_enabled: false,
     api_provider: '',
     api_configs: {},
@@ -82,15 +103,16 @@ describe('MultiCurrencySettingsFormSchema', () => {
     expect(result.is_automatic_update_enabled).toBe(false);
   });
 
-  const currencyItem = {
-    id: 2,
-    name: 'Euro',
-    code: 'EUR',
-    symbol: '€',
-    exchange_rate: 0.92,
-    is_base: false,
-    is_active: true,
-  };
+  it('sends is_automatic_update_enabled as false when only one currency exists', () => {
+    const result = MultiCurrencySettingsFormSchema.parse({
+      ...base,
+      currencies: [baseCurrency],
+      is_automatic_update_enabled: true,
+    });
+    expect(result.is_automatic_update_enabled).toBe(false);
+  });
+
+  const currencyItem = secondCurrency;
 
   it('accepts a currencies array with positive exchange rates', () => {
     expect(() =>

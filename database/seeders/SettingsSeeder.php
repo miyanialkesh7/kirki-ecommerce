@@ -436,7 +436,7 @@ class SettingsSeeder extends Seeder
                 "currency_position" => "before",
                 "thousand_separator" => ",",
                 "decimal_separator" => ".",
-                "is_automatic_update_enabled" => true,
+                "is_automatic_update_enabled" => false,
                 "api_provider" => null,
                 "api_configs" => []
             ]

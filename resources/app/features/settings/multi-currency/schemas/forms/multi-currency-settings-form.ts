@@ -39,7 +39,8 @@ const MultiCurrencySettingsFormShape = z.object({
 export const MultiCurrencySettingsFormSchema = prepareFormSchema(
   MultiCurrencySettingsFormShape,
 ).transform((values) => ({
-  is_automatic_update_enabled: Boolean(values.is_automatic_update_enabled),
+  is_automatic_update_enabled:
+    values.currencies.length > 1 && Boolean(values.is_automatic_update_enabled),
   api_provider: values.api_provider || null,
   api_configs: Object.fromEntries(
     Object.entries(values.api_configs ?? {}).map(([providerId, config]) => [
