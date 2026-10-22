@@ -4,6 +4,7 @@ namespace Kirki\Ecommerce\App\Managers;
 
 defined('ABSPATH') || exit;
 
+use Brick\Math\RoundingMode;
 use Kirki\Ecommerce\App\Actions\Order\CreateOrderAction;
 use Kirki\Ecommerce\App\Actions\Order\CreateRefundAction;
 use Kirki\Ecommerce\App\Actions\Order\UpdateOrderAction;
@@ -30,6 +31,7 @@ use Kirki\Ecommerce\App\Constants\Order\PaymentStatus;
 use Kirki\Ecommerce\App\DTO\Order\CreateOrderPayloadDTO;
 use Kirki\Ecommerce\App\DTO\Order\UpdateOrderPayloadDTO;
 use Kirki\Ecommerce\App\Facades\Money;
+use Kirki\Ecommerce\App\Payment\Facades\Payment;
 use Kirki\Ecommerce\App\Services\CouponService;
 use Kirki\Ecommerce\Framework\Supports\Facades\Date;
 
@@ -335,7 +337,9 @@ class OrderManager
      * Mark an order's payment as paid.
      *
      * Records the payment time and provider, confirms reserved stock when the
-     * order is already delivered, and logs the activity.
+     * order is already delivered, and logs the activity. When the provider differs
+     * from the one in the order's snapshot, the payment metadata is replaced with
+     * the new provider's snapshot, which drops the old provider's gateway data.
      *
      * @since 1.0.0
      *
@@ -353,6 +357,12 @@ class OrderManager
 
             if (!empty($payment_provider)) {
                 $update['payment_provider'] = $payment_provider;
+
+                $snapshot_provider_id = is_array($order->payment_metadata) ? ($order->payment_metadata['payment_provider']['id'] ?? null) : null;
+
+                if ($snapshot_provider_id !== $payment_provider) {
+                    $update['payment_metadata'] = Payment::build_snapshot($payment_provider);
+                }
             }
 
             $this->order_service->partial_update_order($id, $update);
@@ -563,7 +573,8 @@ class OrderManager
     /**
      * Convert an invoiced-currency fee to the store's base currency.
      *
-     * Uses the order's own frozen exchange rate rather than a live rate.
+     * Uses the order's own frozen exchange rate rather than a live rate, dividing
+     * by it exactly so the result is not skewed by a float reciprocal.
      *
      * @since 1.0.0
      *
@@ -577,10 +588,13 @@ class OrderManager
             return $fee;
         }
 
-        return Money::convert_to_currency(
-            Money::from_minor($fee, $order->currency_code),
+        $invoiced_amount = Money::from_minor($fee, $order->currency_code)->getAmount();
+
+        return Money::of(
+            $invoiced_amount->dividedBy((string) $order->exchange_rate, 20, RoundingMode::HALF_UP),
             $order->base_currency_code,
-            1 / $order->exchange_rate
+            null,
+            RoundingMode::HALF_UP
         )->getMinorAmount()->toInt();
     }
 
