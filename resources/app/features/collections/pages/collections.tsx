@@ -10,6 +10,7 @@ import { useCollectionsQuery } from '@/features/collections/services/collection'
 import { collectionListOptions } from '@/features/collections/types';
 import { useDataTableParams } from '@/hooks';
 import { CollectionEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Collections = () => {
@@ -19,7 +20,7 @@ const Collections = () => {
 
   const { data, isFetching } = useCollectionsQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

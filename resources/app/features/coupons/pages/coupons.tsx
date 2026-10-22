@@ -11,6 +11,7 @@ import type { CouponListFilter } from '@/features/coupons/types';
 import { couponListOptions } from '@/features/coupons/types';
 import { useDataTableParams } from '@/hooks';
 import { CouponEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Coupons = () => {
@@ -19,7 +20,7 @@ const Coupons = () => {
 
   const { data, isFetching } = useCouponsQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

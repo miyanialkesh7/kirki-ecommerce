@@ -9,6 +9,7 @@ import { useInventoryQuery } from '@/features/inventory/services/inventory';
 import { inventoryListOptions } from '@/features/inventory/types';
 import { useDataTableParams } from '@/hooks';
 import { InventoryEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Inventory = () => {
@@ -17,7 +18,7 @@ const Inventory = () => {
 
   const { data, isFetching } = useInventoryQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

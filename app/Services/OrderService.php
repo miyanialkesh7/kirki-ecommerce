@@ -122,11 +122,7 @@ class OrderService
             ->with('items')
             ->paginate($dto->limit ?? Pagination::LIMIT, $dto->page ?? 1);
 
-        $has_records = Order::query()->when(is_numeric($dto->customer_id), function (QueryBuilder $query) use ($dto) {
-            return $query->where('customer_id', $dto->customer_id);
-        });
-
-        return ListPaginator::from($page, $has_records);
+        return ListPaginator::from($page, Order::query());
     }
 
     /**

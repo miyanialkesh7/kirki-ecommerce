@@ -6,6 +6,7 @@ import { useCategoriesQuery } from '@/features/categories/services/category';
 import { categoryListOptions } from '@/features/categories/types';
 import { useDataTableParams } from '@/hooks';
 import { CategoryEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Categories = () => {
@@ -13,7 +14,7 @@ const Categories = () => {
 
   const { data, isFetching } = useCategoriesQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

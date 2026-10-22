@@ -6,6 +6,7 @@ import { useTagsQuery } from '@/features/tags/services/tag';
 import { tagListOptions } from '@/features/tags/types';
 import { useDataTableParams } from '@/hooks';
 import { TagEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Tags = () => {
@@ -13,7 +14,7 @@ const Tags = () => {
 
   const { data, isFetching } = useTagsQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

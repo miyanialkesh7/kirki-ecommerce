@@ -9,6 +9,7 @@ import OrderTable from '@/features/orders/components/order-table/order-table';
 import { useOrdersQuery } from '@/features/orders/services/order';
 import { useDataTableParams } from '@/hooks';
 import { OrderEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Orders = () => {
@@ -17,7 +18,7 @@ const Orders = () => {
 
   const { data, isFetching } = useOrdersQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

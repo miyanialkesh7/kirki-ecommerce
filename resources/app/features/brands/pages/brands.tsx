@@ -6,6 +6,7 @@ import { useBrandsQuery } from '@/features/brands/services/brand';
 import { brandListOptions } from '@/features/brands/types';
 import { useDataTableParams } from '@/hooks';
 import { BrandEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Brands = () => {
@@ -13,7 +14,7 @@ const Brands = () => {
 
   const { data, isFetching } = useBrandsQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

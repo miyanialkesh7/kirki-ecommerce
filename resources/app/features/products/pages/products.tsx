@@ -9,6 +9,7 @@ import ProductTable from '@/features/products/components/product-table/product-t
 import { useProductsQuery } from '@/features/products/services/product';
 import { useDataTableParams } from '@/hooks';
 import { ProductEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Products = () => {
@@ -17,7 +18,7 @@ const Products = () => {
 
   const { data, isFetching } = useProductsQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

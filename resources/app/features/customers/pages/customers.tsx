@@ -11,6 +11,7 @@ import { useCustomersQuery } from '@/features/customers/services/customer';
 import { customerListOptions } from '@/features/customers/types';
 import { useDataTableParams } from '@/hooks';
 import { CustomerEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Customers = () => {
@@ -19,7 +20,7 @@ const Customers = () => {
 
   const { data, isFetching } = useCustomersQuery(params);
 
-  const hasRecord = data?.has_records !== false;
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   const handleAddNewCustomer = () => {
     void navigate(RouteConfig.Customers.get('CustomerDetail').buildLink({ id: NEW_ITEM_ID }));
