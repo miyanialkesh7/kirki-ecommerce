@@ -10,6 +10,7 @@ use Kirki\Ecommerce\Framework\Http\Request;
 use Kirki\Ecommerce\Framework\Sanitizer;
 
 use function Kirki\Ecommerce\Framework\app;
+use function Kirki\Ecommerce\Framework\throw_exception;
 
 /**
  * Validates and sanitizes the range and comparison of an analytics metric request.
@@ -98,7 +99,7 @@ class AnalyticsMetricRequest extends Request
         }
 
         if (!empty($errors)) {
-            throw ValidationException::with_errors($errors);
+            throw_exception(ValidationException::with_errors($errors));
         }
     }
 
