@@ -12,15 +12,16 @@ import type { CouponListFilter } from '@/features/coupons/types';
 import { couponListOptions } from '@/features/coupons/types';
 import { useDataTableParams } from '@/hooks';
 import { CouponEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Coupons = () => {
   const navigate = useNavigate();
-  const { params, hasActiveFilters } = useDataTableParams<CouponListFilter>(couponListOptions);
+  const { params } = useDataTableParams<CouponListFilter>(couponListOptions);
 
   const { data, isFetching, isError, refetch } = useCouponsQuery(params);
 
-  const hasRecord = !(!isFetching && !hasActiveFilters && data?.total === 0); // @todo: later will use isDefined(data) && isDefined(data.has_record) && data?.has_record
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

@@ -7,14 +7,15 @@ import { useTagsQuery } from '@/features/tags/services/tag';
 import { tagListOptions } from '@/features/tags/types';
 import { useDataTableParams } from '@/hooks';
 import { TagEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Tags = () => {
-  const { params, hasActiveFilters } = useDataTableParams(tagListOptions);
+  const { params } = useDataTableParams(tagListOptions);
 
   const { data, isFetching, isError, refetch } = useTagsQuery(params);
 
-  const hasRecord = !(!isFetching && !hasActiveFilters && data?.total === 0); // @todo: later will use isDefined(data) && isDefined(data.has_record) && data?.has_record
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

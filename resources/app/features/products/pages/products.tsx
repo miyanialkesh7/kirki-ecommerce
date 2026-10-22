@@ -10,15 +10,16 @@ import ProductTable from '@/features/products/components/product-table/product-t
 import { useProductsQuery } from '@/features/products/services/product';
 import { useDataTableParams } from '@/hooks';
 import { ProductEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Products = () => {
   const navigate = useNavigate();
-  const { params, hasActiveFilters } = useDataTableParams(productListOptions);
+  const { params } = useDataTableParams(productListOptions);
 
   const { data, isFetching, isError, refetch } = useProductsQuery(params);
 
-  const hasRecord = !(!isFetching && !hasActiveFilters && data?.total === 0); // @todo: later will use isDefined(data) && isDefined(data.has_record) && data?.has_record
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>

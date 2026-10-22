@@ -11,16 +11,17 @@ import { useCollectionsQuery } from '@/features/collections/services/collection'
 import { collectionListOptions } from '@/features/collections/types';
 import { useDataTableParams } from '@/hooks';
 import { CollectionEmptyStateIcon } from '@/icons/empty-state';
+import { isDefined } from '@/utils/object';
 import { __ } from '@/wpi18n';
 
 const Collections = () => {
   const navigate = useNavigate();
 
-  const { params, hasActiveFilters } = useDataTableParams(collectionListOptions);
+  const { params } = useDataTableParams(collectionListOptions);
 
   const { data, isFetching, isError, refetch } = useCollectionsQuery(params);
 
-  const hasRecord = !(!isFetching && !hasActiveFilters && data?.total === 0); // @todo: later will use isDefined(data) && isDefined(data.has_record) && data?.has_record
+  const hasRecord = !isDefined(data) || data.has_records !== false;
 
   return (
     <Page>
