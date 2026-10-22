@@ -1024,17 +1024,6 @@ export const PaymentIcon = () => (
   </svg>
 );
 
-export const LicenseKeyIcon = () => (
-  <svg width="15" height="14" viewBox="0 0 15 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M13.1667 0.5L6.76667 6.9M9.5 4.16667L11.5 6.16667L13.8333 3.83333L11.8333 1.83333M7.83333 9.5C7.83333 11.525 6.19171 13.1667 4.16667 13.1667C2.14162 13.1667 0.5 11.525 0.5 9.5C0.5 7.47496 2.14162 5.83333 4.16667 5.83333C6.19171 5.83333 7.83333 7.47496 7.83333 9.5Z"
-      stroke="#4D4D4D"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 export const SnowflakeIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g clipPath="url(#clip0_9948_100091)">

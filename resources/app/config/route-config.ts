@@ -63,6 +63,5 @@ export const RouteConfig = {
     }),
     AdvancedSettings: defineRoute('/advanced'),
     LegalSettings: defineRoute('/legal'),
-    LicenseSettings: defineRoute('/license'),
   }),
 };

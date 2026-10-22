@@ -7,6 +7,9 @@ defined('ABSPATH') || exit;
 use Kirki\Ecommerce\Framework\Wordpress\Constants\MenuTypes;
 use Kirki\Ecommerce\Framework\Wordpress\Menu;
 
+use function Kirki\Ecommerce\Framework\app;
+use function Kirki\Ecommerce\Framework\with_prefix;
+
 /**
  * Registers a non-clickable divider line between submenu items.
  *
@@ -40,7 +43,7 @@ class Separator extends Menu
     }
 
     /**
-     * Register the divider as a submenu page and print its inline admin styles.
+     * Register the divider as a submenu page and hook its inline admin styles.
      *
      * @since 1.0.0
      *
@@ -58,22 +61,49 @@ class Separator extends Menu
             $this->position
         );
 
-        add_action('admin_head', function () {
-            echo '<style>
-                a:has(.kirki-menu-separator) {
-                    width: 80%;
-                    pointer-events: none;
-                }
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_styles']);
+    }
 
-                .kirki-menu-separator {
-                    display: block;
-                    width: 100%;
-                    height: 1px;
-                    background-color: #4A5257;
-                    pointer-events: none;
-                    margin-block: 4px;
-                }
-            </style>';
-        });
+    /**
+     * Enqueue the divider's inline styles on every admin page.
+     *
+     * Hooked to `admin_enqueue_scripts`.
+     *
+     * @since 1.0.0
+     *
+     * @return void
+     */
+    public function enqueue_admin_styles()
+    {
+        $style_handle = with_prefix('menu-separator');
+
+        wp_register_style($style_handle, false, [], app()->version());
+        wp_enqueue_style($style_handle);
+
+        wp_add_inline_style($style_handle, $this->get_inline_styles());
+    }
+
+    /**
+     * Get the inline CSS that draws the divider line.
+     *
+     * @since 1.0.0
+     *
+     * @return string
+     */
+    protected function get_inline_styles()
+    {
+        return 'a:has(.kirki-menu-separator) {
+                width: 80%;
+                pointer-events: none;
+            }
+
+            .kirki-menu-separator {
+                display: block;
+                width: 100%;
+                height: 1px;
+                background-color: #4A5257;
+                pointer-events: none;
+                margin-block: 4px;
+            }';
     }
 }

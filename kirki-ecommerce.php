@@ -60,7 +60,7 @@ define('KIRKI_ECOMMERCE_ASSETS_URL', plugins_url('assets', KIRKI_ECOMMERCE_PLUGI
  * The kirki ecommerce plugin assets path
  * @var string
  */
-define('KIRKI_ECOMMERCE_ASSETS_PATH', KIRKI_ECOMMERCE_PLUGIN_PATH . '/assets');
+define('KIRKI_ECOMMERCE_ASSETS_PATH', KIRKI_ECOMMERCE_PLUGIN_PATH . 'assets');
 
 /**
  * The kirki ecommerce plugin prefix
@@ -74,7 +74,7 @@ define('KIRKI_ECOMMERCE_PREFIX', 'kirki_ecommerce_');
  */
 define('KIRKI_ECOMMERCE_MODE', 'development');
 
-require_once KIRKI_ECOMMERCE_PLUGIN_PATH . '/vendor/autoload.php';
+require_once KIRKI_ECOMMERCE_PLUGIN_PATH . 'vendor/autoload.php';
 
 // Register activation, deactivation, and uninstall hooks
 register_activation_hook(KIRKI_ECOMMERCE_PLUGIN_FILE, [KirkiEcommerce::class, 'handle_activation']);
@@ -89,5 +89,5 @@ function kirki_ecommerce_boot_application()
     // Do not call bootstrap_path() yet —
     // Application instance must be created with the base path before its path helpers are available.
     // Only after instantiation can you safely use bootstrap_path() to resolve the bootstrap directory.
-    require_once KIRKI_ECOMMERCE_PLUGIN_PATH . '/bootstrap/app.php';
+    require_once KIRKI_ECOMMERCE_PLUGIN_PATH . 'bootstrap/app.php';
 }

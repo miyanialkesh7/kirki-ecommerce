@@ -20,7 +20,7 @@ $email_body_color = $default_template['colors']['background']['email_body'] ?? E
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><?php echo esc_html(get_bloginfo('name')); ?></title>
-    <?php HtmlStyle::print_style_block(HtmlStyle::richtext_styles()); ?>
+    <?php HtmlStyle::print_email_style_block(HtmlStyle::richtext_styles()); ?>
 </head>
 
 <body style="margin: 0; padding: 0; background-color: <?php echo esc_attr($outer_area_color); ?>; font-family: -apple-system, BlinkMacSystemFont, inter;">

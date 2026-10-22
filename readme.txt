@@ -287,6 +287,20 @@ The plugin can also connect to a currency exchange rate service to convert displ
 
 - **ExchangeRate-API:** [Terms](https://www.exchangerate-api.com/terms) | [Privacy](https://www.exchangerate-api.com/terms#privacy)
 
+== Third-Party Libraries ==
+
+Kirki eCommerce is licensed under GPLv2 or later. It bundles the following GPL-compatible libraries. Each keeps its own license.
+
+* themeum/framework: GPL-2.0-or-later
+* brick/math and brick/money: MIT
+* react and react-dom: MIT
+* react-router: MIT
+* alpinejs: MIT
+* date-fns: MIT
+* lucide-react: ISC
+
+PayPal is a trademark of PayPal, Inc. CurrencyApi and ExchangeRate-API are trademarks of their respective owners. Kirki eCommerce is not affiliated with or endorsed by these companies. Their names and logos are used only to identify the services the plugin connects to.
+
 == Changelog ==
 
 = 1.0.0 =

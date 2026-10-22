@@ -8,7 +8,7 @@ use Kirki\Ecommerce\App\Facades\CurrencyExchange;
 use Kirki\Ecommerce\Framework\Wordpress\BaseHook;
 use Kirki\Ecommerce\Framework\Wordpress\Constants\HookTypes;
 
-use function Kirki\Ecommerce\Framework\app;
+use function Kirki\Ecommerce\Framework\with_prefix;
 
 /**
  * Restarts the automatic exchange rate sync schedule when it has stopped running.
@@ -24,7 +24,7 @@ class RepairCurrencySyncSchedule extends BaseHook
      */
     public function get_name(): string
     {
-        return app()->prefix() . 'queue_sweep';
+        return with_prefix('queue_sweep');
     }
 
     /**

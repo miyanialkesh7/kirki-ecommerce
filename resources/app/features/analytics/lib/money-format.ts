@@ -26,7 +26,11 @@ const createMinorFormatter = (currencyCode: string) => {
 
 const createCompactMinorFormatter = (currencyCode: string) => {
   const digits = getFractionDigits(currencyCode);
-  const options: Intl.NumberFormatOptions = { notation: 'compact', maximumFractionDigits: 1 };
+  const options: Intl.NumberFormatOptions = {
+    notation: 'compact',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  };
   let formatter: Intl.NumberFormat;
 
   try {
