@@ -9,7 +9,7 @@ export const ApiConfigSchema = z.object({
   update_frequency: z.string().nullish().default('every_1_hour'),
 });
 
-const CurrencyRateItemSchema = CurrencyDraftSchema.extend({
+export const CurrencyRateItemSchema =CurrencyDraftSchema.extend({
   exchange_rate: z
     .union([z.number(), z.string()])
     .nullish()
