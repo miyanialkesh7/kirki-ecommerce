@@ -84,16 +84,11 @@ const styles = defineStyles({
   },
   flag: {
     display: 'inline-block',
-    width: '28px',
     fontSize: 20,
     textAlign: 'center',
   },
   rateInput: {
     width: '120px',
-    // '& input': {
-    //   minHeight: '24px',
-    //   textAlign: 'right',
-    // },
     '& input:focus-visible': {
       boxShadow: 'none',
     },

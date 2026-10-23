@@ -14,7 +14,12 @@ const CurrencyOptionList = () => {
       {filteredCurrency?.length > 0 &&
         filteredCurrency.map((currency, index) => (
           <Label htmlFor={`add-currency-checkbox-${index}`} key={index}>
-            <Flex key={index} gap={3} cssOverride={{ width: '100%', cursor: 'pointer' }}>
+            <Flex
+              key={index}
+              gap={3}
+              cssOverride={{ width: '100%', cursor: 'pointer' }}
+              align="center"
+            >
               <Flex gap={2} align="center">
                 <Checkbox
                   id={`add-currency-checkbox-${index}`}
@@ -25,12 +30,7 @@ const CurrencyOptionList = () => {
                 {currency.code}
               </Flex>
               <Flex justify="space-between" cssOverride={{ width: '100%', cursor: 'pointer' }}>
-                <Text
-                  variant="small"
-                  style={{
-                    color: theme.colors.text.subdued,
-                  }}
-                >
+                <Text variant="small" color="subdued">
                   {currency.name}
                 </Text>
                 <Text weight="semibold" cssOverride={styles.symbolText}>
