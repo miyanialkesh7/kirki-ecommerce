@@ -19,16 +19,18 @@ const Collections = () => {
 
   const { params } = useDataTableParams(collectionListOptions);
 
-  const { data, isFetching, isError, refetch } = useCollectionsQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useCollectionsQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
       <PageHeading
         text={__('Collections', 'kirki-ecommerce')}
         actions={
-          hasRecord && (
+          !isFetching &&
+          !showNoRecordState && (
             <Button
               variant="primary"
               onClick={() => {
@@ -45,7 +47,7 @@ const Collections = () => {
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<CollectionEmptyStateIcon />}
             text={__('Group products into collections', 'kirki-ecommerce')}

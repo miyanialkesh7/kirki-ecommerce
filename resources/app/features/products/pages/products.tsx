@@ -17,16 +17,18 @@ const Products = () => {
   const navigate = useNavigate();
   const { params } = useDataTableParams(productListOptions);
 
-  const { data, isFetching, isError, refetch } = useProductsQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useProductsQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
       <PageHeading
         text={__('Products', 'kirki-ecommerce')}
         actions={
-          hasRecord && (
+          !isFetching &&
+          !showNoRecordState && (
             <Button
               variant="primary"
               onClick={() => {
@@ -41,7 +43,7 @@ const Products = () => {
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<ProductEmptyStateIcon />}
             text={__('Add a product', 'kirki-ecommerce')}

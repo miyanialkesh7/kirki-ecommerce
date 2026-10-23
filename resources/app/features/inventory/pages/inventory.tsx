@@ -17,9 +17,10 @@ const Inventory = () => {
   const navigate = useNavigate();
   const { params } = useDataTableParams(inventoryListOptions);
 
-  const { data, isFetching, isError, refetch } = useInventoryQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useInventoryQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
@@ -27,7 +28,7 @@ const Inventory = () => {
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<InventoryEmptyStateIcon />}
             text={__('Track your inventory', 'kirki-ecommerce')}

@@ -13,17 +13,21 @@ import { __ } from '@/wpi18n';
 const Tags = () => {
   const { params } = useDataTableParams(tagListOptions);
 
-  const { data, isFetching, isError, refetch } = useTagsQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useTagsQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
-      <PageHeading text={__('Tags', 'kirki-ecommerce')} actions={hasRecord && <NewTagButton />} />
+      <PageHeading
+        text={__('Tags', 'kirki-ecommerce')}
+        actions={!isFetching && !showNoRecordState && <NewTagButton />}
+      />
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<TagEmptyStateIcon />}
             text={__('Label products with tags', 'kirki-ecommerce')}
