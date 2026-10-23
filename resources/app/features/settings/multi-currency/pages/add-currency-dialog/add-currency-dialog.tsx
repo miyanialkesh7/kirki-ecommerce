@@ -1,4 +1,5 @@
 import { ArrowLeftIcon, ArrowRightIcon, PlusIcon } from 'lucide-react';
+import { useEffect } from 'react';
 
 import Button from '@/components/ui/button';
 import {
@@ -24,7 +25,11 @@ import CurrencySearchField from '@/features/settings/multi-currency/pages/add-cu
 import { theme } from '@/theme';
 import { __ } from '@/wpi18n';
 
-const AddCurrencyDialogPanel = () => {
+type AddCurrencyDialogPanelProps = {
+  onOpenChange?: (open: boolean) => void;
+};
+
+const AddCurrencyDialogPanel = ({ onOpenChange }: AddCurrencyDialogPanelProps) => {
   const {
     form,
     openPopup,
@@ -37,6 +42,11 @@ const AddCurrencyDialogPanel = () => {
     handleNext,
     handleBack,
   } = useAddCurrencyDialogContext();
+
+  useEffect(() => {
+    onOpenChange?.(openPopup);
+  }, [openPopup, onOpenChange]);
+
   const isRatesStep = step === 'rates';
 
   return (
@@ -119,10 +129,10 @@ const AddCurrencyDialogPanel = () => {
 
 AddCurrencyDialogPanel.displayName = 'AddCurrencyDialogPanel';
 
-const AddCurrencyPopup = () => {
+const AddCurrencyPopup = ({ onOpenChange }: AddCurrencyDialogPanelProps) => {
   return (
     <AddCurrencyDialogProvider>
-      <AddCurrencyDialogPanel />
+      <AddCurrencyDialogPanel onOpenChange={onOpenChange} />
     </AddCurrencyDialogProvider>
   );
 };

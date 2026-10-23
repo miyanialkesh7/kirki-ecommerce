@@ -79,7 +79,7 @@ const SettingsLayoutShell = () => {
           </div>
         </div>
       </PageContent>
-      <FloatingBar visible={isDirty} shakeSignal={shakeSignal}>
+      <FloatingBar visible={isDirty && !actions?.hideFloatingBar} shakeSignal={shakeSignal}>
         <Button variant="tertiary" onClick={handleDiscard} disabled={isSaving}>
           {__('Discard', 'kirki-ecommerce')}
         </Button>
