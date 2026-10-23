@@ -13,20 +13,21 @@ import { __ } from '@/wpi18n';
 const Brands = () => {
   const { params } = useDataTableParams(brandListOptions);
 
-  const { data, isFetching, isError, refetch } = useBrandsQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useBrandsQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
       <PageHeading
         text={__('Brands', 'kirki-ecommerce')}
-        actions={hasRecord && <NewBrandButton />}
+        actions={!isFetching && !showNoRecordState && <NewBrandButton />}
       />
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<BrandEmptyStateIcon />}
             text={__('Add your brands', 'kirki-ecommerce')}

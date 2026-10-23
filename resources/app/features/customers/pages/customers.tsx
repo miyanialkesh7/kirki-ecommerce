@@ -19,9 +19,10 @@ const Customers = () => {
   const navigate = useNavigate();
   const { params } = useDataTableParams(customerListOptions);
 
-  const { data, isFetching, isError, refetch } = useCustomersQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useCustomersQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   const handleAddNewCustomer = () => {
     void navigate(RouteConfig.Customers.get('CustomerDetail').buildLink({ id: NEW_ITEM_ID }));
@@ -32,7 +33,8 @@ const Customers = () => {
       <PageHeading
         text={__('Customers', 'kirki-ecommerce')}
         actions={
-          hasRecord && (
+          !isFetching &&
+          !showNoRecordState && (
             <Button variant="primary" onClick={handleAddNewCustomer}>
               {__('Add Customer', 'kirki-ecommerce')}
             </Button>
@@ -76,8 +78,8 @@ const Customers = () => {
             </CardContent>
           </Card> */}
           {isError ? (
-          <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+            <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
+          ) : showNoRecordState ? (
             <NotFoundState
               icon={<CustomerEmptyStateIcon />}
               text={__('Waiting on customer #1', 'kirki-ecommerce')}

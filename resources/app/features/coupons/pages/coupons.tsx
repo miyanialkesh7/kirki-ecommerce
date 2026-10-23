@@ -19,16 +19,18 @@ const Coupons = () => {
   const navigate = useNavigate();
   const { params } = useDataTableParams<CouponListFilter>(couponListOptions);
 
-  const { data, isFetching, isError, refetch } = useCouponsQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useCouponsQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
       <PageHeading
         text={__('Coupons', 'kirki-ecommerce')}
         actions={
-          hasRecord && (
+          !isFetching &&
+          !showNoRecordState && (
             <Button
               variant="primary"
               onClick={() => {
@@ -43,7 +45,7 @@ const Coupons = () => {
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<CouponEmptyStateIcon />}
             text={__('Create your first coupon', 'kirki-ecommerce')}

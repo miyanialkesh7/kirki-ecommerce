@@ -17,16 +17,18 @@ const Orders = () => {
   const navigate = useNavigate();
   const { params } = useDataTableParams(orderListOptions);
 
-  const { data, isFetching, isError, refetch } = useOrdersQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useOrdersQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
       <PageHeading
         text={__('Orders', 'kirki-ecommerce')}
         actions={
-          hasRecord && (
+          !isFetching &&
+          !showNoRecordState && (
             <>
               {/* @todo: implement import and export later */}
               {/* <Button variant="ghost">
@@ -48,7 +50,7 @@ const Orders = () => {
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<OrderEmptyStateIcon />}
             text={__('No orders yet', 'kirki-ecommerce')}

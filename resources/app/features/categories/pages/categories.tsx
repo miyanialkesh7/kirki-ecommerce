@@ -13,20 +13,21 @@ import { __ } from '@/wpi18n';
 const Categories = () => {
   const { params } = useDataTableParams(categoryListOptions);
 
-  const { data, isFetching, isError, refetch } = useCategoriesQuery(params);
+  const { data, isFetching, isError, refetch, isFetched } = useCategoriesQuery(params);
 
-  const hasRecord = !isDefined(data) || data.has_records !== false;
+  const showNoRecordState =
+    isFetched && isDefined(data) && isDefined(data.has_records) && !data.has_records;
 
   return (
     <Page>
       <PageHeading
         text={__('Categories', 'kirki-ecommerce')}
-        actions={hasRecord && <NewCategoryButton />}
+        actions={!isFetching && !showNoRecordState && <NewCategoryButton />}
       />
       <PageContent>
         {isError ? (
           <QueryErrorState onRetry={() => void refetch()} isRetrying={isFetching} />
-        ) : !hasRecord ? (
+        ) : showNoRecordState ? (
           <NotFoundState
             icon={<CategoryEmptyStateIcon />}
             text={__('Organize products into categories', 'kirki-ecommerce')}
