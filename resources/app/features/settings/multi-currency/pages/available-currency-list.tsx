@@ -180,6 +180,7 @@ const CurrencyRowActions = (props: CurrencyRowActionsProps) => {
 export const AvailableCurrencyList = () => {
   const { currencyList, syncStatus, handleAction } = useAvailableCurrencyList();
   const { mutate: syncRates, isPending: isSyncing } = useSyncCurrencyRatesMutation();
+  const { formState } = useFormContext<MultiCurrencySettingsFormInput>();
   const hasMultipleCurrencies = currencyList.length > 1;
 
   return (
@@ -191,7 +192,7 @@ export const AvailableCurrencyList = () => {
         <StackedItemContent>
           <Text weight="semibold">{__('Available Currencies', 'kirki-ecommerce')}</Text>
         </StackedItemContent>
-        {hasMultipleCurrencies && (
+        {hasMultipleCurrencies && !formState.isDirty && (
           <StackedItemActions>
             <Button
               variant="ghost"
