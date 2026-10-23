@@ -1,5 +1,5 @@
 import { Check, CircleSlashIcon, Info, MoreVertical, RefreshCcw, Trash2 } from 'lucide-react';
-import { useFormContext, useFormState } from 'react-hook-form';
+import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { useOutletContext } from 'react-router';
 
 import NumberField from '@/components/form/number-field';
@@ -180,8 +180,16 @@ const CurrencyRowActions = (props: CurrencyRowActionsProps) => {
 export const AvailableCurrencyList = () => {
   const { currencyList, syncStatus, handleAction } = useAvailableCurrencyList();
   const { mutate: syncRates, isPending: isSyncing } = useSyncCurrencyRatesMutation();
-  const { formState } = useFormContext<MultiCurrencySettingsFormInput>();
+  const { formState, control } = useFormContext<MultiCurrencySettingsFormInput>();
   const hasMultipleCurrencies = currencyList.length > 1;
+
+  const isAutomaticUpdateEnabled = useWatch({
+    control,
+    name: 'is_automatic_update_enabled',
+  });
+
+  const isDisplaySyncButton =
+    isAutomaticUpdateEnabled && hasMultipleCurrencies && !formState.isDirty;
 
   return (
     <StackedItems
@@ -192,7 +200,7 @@ export const AvailableCurrencyList = () => {
         <StackedItemContent>
           <Text weight="semibold">{__('Available Currencies', 'kirki-ecommerce')}</Text>
         </StackedItemContent>
-        {hasMultipleCurrencies && !formState.isDirty && (
+        {isDisplaySyncButton && (
           <StackedItemActions>
             <Button
               variant="ghost"
