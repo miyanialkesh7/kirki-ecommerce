@@ -175,6 +175,7 @@ const ApiConfig = ({ currencySettings, onOpenChange }: ApiConfigProps) => {
                   data-search-keywords="api key, conversion rate, exchange rate provider, automatic rates"
                   data-search-title={__('Exchange Rate API Configuration', 'kirki-ecommerce')}
                   noShadow
+                  cssOverride={cardStyles.innerCard}
                 >
                   <CardContent cssOverride={cardStyles.innerContent}>
                     <Flex justify="space-between" align="center">

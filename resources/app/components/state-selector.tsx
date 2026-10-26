@@ -24,7 +24,7 @@ const StateSelector = ({
   error,
   disabled,
 }: StateSelectorProps) => {
-  const { data: countries = [] } = useCountriesQuery({ limit: -1 });
+  const { data: countries = [] } = useCountriesQuery({ limit: -1, only_selling_countries: false });
 
   const states = countries.find((item) => item.code === country)?.states ?? [];
 
