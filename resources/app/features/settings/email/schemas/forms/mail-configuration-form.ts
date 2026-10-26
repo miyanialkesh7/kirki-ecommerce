@@ -1,47 +1,20 @@
 import { z } from 'zod';
 
-import { isEmptyValue, prepareFormSchema, required, requiredWhen } from '@/libs/zod';
-import { __ } from '@/wpi18n';
+import { prepareFormSchema } from '@/libs/zod';
 
 export const MailerOptions = ['smtp', 'php_mail'] as const;
 export const EncryptionOptions = ['none', 'ssl', 'tls'] as const;
 
 export const MailConfigurationShape = z.object({
-  from_email: required(z.string().nullish(), __('Email is required', 'kirki-ecommerce')),
-  from_name: required(z.string().nullish(), __('Name is required', 'kirki-ecommerce')),
-  mailer: required(z.enum(MailerOptions).nullish(), __('Mailer is required', 'kirki-ecommerce')),
-  host: requiredWhen(
-    z.string().nullish(),
-    (values) => values.mailer === 'smtp' && isEmptyValue(values.host),
-    __('Host is required', 'kirki-ecommerce'),
-  ),
-  port: requiredWhen(
-    z.number().nullish(),
-    (values) => values.mailer === 'smtp' && isEmptyValue(values.port),
-    __('Port is required', 'kirki-ecommerce'),
-  ),
-  encryption: requiredWhen(
-    z.enum(EncryptionOptions).nullish(),
-    (values) => values.mailer === 'smtp' && isEmptyValue(values.encryption),
-    __('Encryption is required', 'kirki-ecommerce'),
-  ),
+  from_email: z.string().nullish(),
+  from_name: z.string().nullish(),
+  mailer: z.enum(MailerOptions).nullish(),
+  host: z.string().nullish(),
+  port: z.number().nullish(),
+  encryption: z.enum(EncryptionOptions).nullish(),
   is_authentication_enabled: z.boolean().nullish(),
-  username: requiredWhen(
-    z.string().nullish(),
-    (values) =>
-      values.mailer === 'smtp' &&
-      Boolean(values.is_authentication_enabled) &&
-      isEmptyValue(values.username),
-    __('Username is required', 'kirki-ecommerce'),
-  ),
-  password: requiredWhen(
-    z.string().nullish(),
-    (values) =>
-      values.mailer === 'smtp' &&
-      Boolean(values.is_authentication_enabled) &&
-      isEmptyValue(values.password),
-    __('Password is required', 'kirki-ecommerce'),
-  ),
+  username: z.string().nullish(),
+  password: z.string().nullish(),
 });
 
 export const MailConfigurationFormSchema = prepareFormSchema(MailConfigurationShape).transform(
