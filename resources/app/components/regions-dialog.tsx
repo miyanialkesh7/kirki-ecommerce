@@ -81,6 +81,9 @@ const emptyRegions: Region[] = [];
 
 const ROW_HEIGHT = 36;
 
+const normalizeRegions = (regions: Region[] = []): Region[] =>
+  regions.map((region) => ({ ...region, states: region.states.map(String) }));
+
 type CountryRowProps = {
   country: Country;
   checked: boolean | 'indeterminate';
@@ -316,8 +319,8 @@ export const RegionsDialog = ({
   }, [formRegions]);
 
   const selectedStatesByCountry = useMemo(() => {
-    const map = new Map<string, Set<string | number>>();
-    formRegions.forEach((region) => map.set(region.country, new Set(region.states)));
+    const map = new Map<string, Set<string>>();
+    formRegions.forEach((region) => map.set(region.country, new Set(region.states.map(String))));
     return map;
   }, [formRegions]);
 
@@ -331,7 +334,7 @@ export const RegionsDialog = ({
     form.reset({
       title: defaultValue.title ?? '',
       countries: defaultValue.countryCodes ?? [],
-      regions: defaultValue.regions ?? [],
+      regions: normalizeRegions(defaultValue.regions),
     });
   }, [form, defaultValue, open]);
 
@@ -373,7 +376,7 @@ export const RegionsDialog = ({
 
       const selectedRegion = {
         country: country.code,
-        states: countryOnly ? [] : allStates.map((state) => state.id),
+        states: countryOnly ? [] : allStates.map((state) => String(state.id)),
         hasDeselectedState: false,
         flag: country?.flag,
       };
@@ -429,6 +432,7 @@ export const RegionsDialog = ({
       const allStates = getSelectableStates(country);
       const countryCode = country.code;
       const countryIndex = regions.findIndex((item) => item.country === countryCode);
+      const stateKey = String(stateId);
 
       if (countryIndex === -1) {
         const nextCountryCodes = countryCodes.includes(countryCode)
@@ -442,7 +446,7 @@ export const RegionsDialog = ({
             ...regions,
             {
               country: countryCode,
-              states: [stateId],
+              states: [stateKey],
               hasDeselectedState: allStates.length !== 1,
               flag: country?.flag,
             },
@@ -453,11 +457,12 @@ export const RegionsDialog = ({
       }
 
       const countryItem = regions[countryIndex];
-      const stateExists = countryItem.states.includes(stateId);
+      const currentStates = countryItem.states.map(String);
+      const stateExists = currentStates.includes(stateKey);
 
       const updatedStates = stateExists
-        ? countryItem.states.filter((id) => id !== stateId)
-        : [...countryItem.states, stateId];
+        ? currentStates.filter((id) => id !== stateKey)
+        : [...currentStates, stateKey];
 
       if (updatedStates.length === 0) {
         const nextCountryCodes = countryCodes.filter((country) => country !== countryCode);
@@ -487,7 +492,7 @@ export const RegionsDialog = ({
     form.reset({
       title: defaultValue.title ?? '',
       countries: defaultValue.countryCodes ?? [],
-      regions: defaultValue.regions ?? [],
+      regions: normalizeRegions(defaultValue.regions),
     });
     onOpenChange(false);
   };
@@ -563,7 +568,7 @@ export const RegionsDialog = ({
           country={country}
           state={state}
           used={used}
-          checked={used || Boolean(selectedStatesByCountry.get(country.code)?.has(state.id))}
+          checked={used || Boolean(selectedStatesByCountry.get(country.code)?.has(String(state.id)))}
           onToggle={handleSelectStates}
         />
       );

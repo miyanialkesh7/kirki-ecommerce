@@ -42,13 +42,9 @@ use Kirki\Ecommerce\App\Http\Controllers\Site\OrderActivityController as SiteOrd
 use Kirki\Ecommerce\App\Http\Controllers\Api\Site\SiteController;
 use Kirki\Ecommerce\App\Http\Controllers\Api\Site\WishlistController;
 use Kirki\Ecommerce\App\Payment\WebhookController;
-use Kirki\Ecommerce\Framework\Http\Request;
 use Kirki\Ecommerce\Framework\Route;
 use Kirki\Ecommerce\Framework\Middlewares\AdminMiddleware;
 use Kirki\Ecommerce\Framework\Middlewares\AuthMiddleware;
-use Kirki\Ecommerce\Framework\Supports\Facades\DB;
-
-use function Kirki\Ecommerce\Framework\response;
 
 Route::set_namespace('kirki/ecommerce/v1');
 

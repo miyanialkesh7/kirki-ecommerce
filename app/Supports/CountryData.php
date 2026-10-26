@@ -4,6 +4,9 @@ namespace Kirki\Ecommerce\App\Supports;
 
 defined('ABSPATH') || exit;
 
+use Kirki\Ecommerce\App\Constants\SellingLocationType;
+use Kirki\Ecommerce\App\Supports\Facades\Settings;
+
 use function Kirki\Ecommerce\Framework\resource_path;
 
 /**
@@ -42,6 +45,13 @@ class CountryData
      * @var array|null
      */
     protected static $nested = null;
+
+    /**
+     * The selling locations list.
+     *
+     * @var array|null
+     */
+    protected static $selling_locations = null;
 
     /**
      * Get the country index, keyed by country code.
@@ -106,6 +116,45 @@ class CountryData
         }
 
         return static::$nested;
+    }
+
+    /**
+     * Get the selling locations list with each country's states nested inside it,
+     * @since 1.0.0
+     * 
+     * @return array[] Countries sorted by name.
+     */
+    public static function get_selling_countries()
+    {
+        if (static::$selling_locations !== null) {
+            return static::$selling_locations;
+        }
+
+        static::$selling_locations = [];
+
+        $selling_location_type = Settings::get('general.selling_location_type') ?? SellingLocationType::ALL_COUNTRIES;
+        $selling_countries = Settings::get('general.selling_countries') ?? [];
+
+        if ($selling_location_type === SellingLocationType::ALL_COUNTRIES) {
+            static::$selling_locations = static::nested();
+
+            return static::$selling_locations;
+        }
+
+
+        foreach (static::nested() as $country) {
+            if ($selling_location_type === SellingLocationType::SELECTED_COUNTRIES && !in_array($country['code'], $selling_countries, true)) {
+                continue;
+            }
+
+            if ($selling_location_type === SellingLocationType::EXCLUDED_COUNTRIES && in_array($country['code'], $selling_countries, true)) {
+                continue;
+            }
+
+            static::$selling_locations[] = $country;
+        }
+
+        return static::$selling_locations;
     }
 
     /**
@@ -269,5 +318,6 @@ class CountryData
         static::$index = null;
         static::$states = null;
         static::$nested = null;
+        static::$selling_locations = null;
     }
 }
