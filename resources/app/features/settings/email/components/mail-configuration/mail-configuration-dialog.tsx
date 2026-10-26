@@ -27,8 +27,6 @@ import {
   type MailConfigurationFormPayload,
   MailConfigurationFormSchema,
 } from '@/features/settings/email/schemas/forms/mail-configuration-form';
-import type { ErrorResponse } from '@/libs/api';
-import { applyServerErrors } from '@/libs/form-errors';
 import { getDefaults } from '@/libs/zod';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
@@ -107,12 +105,8 @@ const MailConfigurationDialog = ({
   }, [mailConfiguration, isOpen, form]);
 
   const handleConfiguration = async (values: MailConfigurationFormPayload) => {
-    try {
-      await onSave?.(values);
-      onClose();
-    } catch (error) {
-      applyServerErrors(form, error as ErrorResponse, { stripPrefix: 'data.mail_configuration.' });
-    }
+    await onSave?.(values);
+    onClose();
   };
 
   return (
