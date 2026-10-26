@@ -27,6 +27,8 @@ import {
   type MailConfigurationFormPayload,
   MailConfigurationFormSchema,
 } from '@/features/settings/email/schemas/forms/mail-configuration-form';
+import type { ErrorResponse } from '@/libs/api';
+import { applyServerErrors } from '@/libs/form-errors';
 import { getDefaults } from '@/libs/zod';
 import { theme } from '@/theme';
 import { defineStyles, scoped } from '@/theme/mixins';
@@ -74,7 +76,12 @@ const MailConfigurationDialog = ({
     name: 'mailer',
   });
 
-  const isPhpMailer = mailer === 'php_mail';
+  const isEnabledAuthentication = useWatch({
+    control: form.control,
+    name: 'is_authentication_enabled',
+  });
+
+  const isSmtp = mailer === 'smtp';
 
   useEffect(() => {
     if (!isOpen) {
@@ -100,8 +107,12 @@ const MailConfigurationDialog = ({
   }, [mailConfiguration, isOpen, form]);
 
   const handleConfiguration = async (values: MailConfigurationFormPayload) => {
-    await onSave?.(values);
-    onClose();
+    try {
+      await onSave?.(values);
+      onClose();
+    } catch (error) {
+      applyServerErrors(form, error as ErrorResponse, { stripPrefix: 'data.mail_configuration.' });
+    }
   };
 
   return (
@@ -142,7 +153,7 @@ const MailConfigurationDialog = ({
                   placeholder={__('Select mailer', 'kirki-ecommerce')}
                   options={MAILER_OPTIONS}
                 />
-                {!isPhpMailer && (
+                {isSmtp && (
                   <>
                     <TextField
                       name="host"
@@ -164,16 +175,20 @@ const MailConfigurationDialog = ({
                       name="is_authentication_enabled"
                       label={__('Enable authentication', 'kirki-ecommerce')}
                     />
-                    <TextField
-                      name="username"
-                      label={__('Username', 'kirki-ecommerce')}
-                      placeholder={__('Enter the smtp username', 'kirki-ecommerce')}
-                    />
-                    <PasswordField
-                      name="password"
-                      label={__('Password', 'kirki-ecommerce')}
-                      placeholder={__('Enter the smtp password', 'kirki-ecommerce')}
-                    />
+                    {isEnabledAuthentication && (
+                      <>
+                        <TextField
+                          name="username"
+                          label={__('Username', 'kirki-ecommerce')}
+                          placeholder={__('Enter the smtp username', 'kirki-ecommerce')}
+                        />
+                        <PasswordField
+                          name="password"
+                          label={__('Password', 'kirki-ecommerce')}
+                          placeholder={__('Enter the smtp password', 'kirki-ecommerce')}
+                        />
+                      </>
+                    )}
                   </>
                 )}
               </Flex>

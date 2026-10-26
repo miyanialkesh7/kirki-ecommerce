@@ -283,11 +283,11 @@ const styles = defineStyles({
     },
   },
   error: {
-    border: `1px solid ${theme.colors.border.critical}`,
+    border: `1px solid ${theme.colors.background.fillCritical}`,
     boxShadow: 'none',
     '&:focus-visible, &[data-state="open"]': {
-      borderColor: theme.colors.border.critical,
-      ...uiFocusRing(theme, theme.colors.border.critical),
+      borderColor: theme.colors.background.fillCritical,
+      ...uiFocusRing(theme, theme.colors.background.fillCriticalSecondary),
     },
   },
   value: {

@@ -895,15 +895,15 @@ class SettingsUpdateRequest extends Request
 
             // Mail server configuration
             'data.mail_configuration' => 'nullable|array',
-            'data.mail_configuration.from_email' => 'nullable|email',
-            'data.mail_configuration.from_name' => 'nullable|string',
-            'data.mail_configuration.mailer' => 'nullable|string|in:' . Mailer::join(),
-            'data.mail_configuration.host' => 'nullable|string',
-            'data.mail_configuration.port' => 'nullable|integer',
-            'data.mail_configuration.encryption' => 'nullable|string|in:' . MailEncryption::join(),
+            'data.mail_configuration.from_email' => 'required|email',
+            'data.mail_configuration.from_name' => 'required|string',
+            'data.mail_configuration.mailer' => 'required|string|in:' . Mailer::join(),
+            'data.mail_configuration.host' => 'required_if:data.mail_configuration.mailer,smtp|nullable|string',
+            'data.mail_configuration.port' => 'required_if:data.mail_configuration.mailer,smtp|nullable|integer',
+            'data.mail_configuration.encryption' => 'required_if:data.mail_configuration.mailer,smtp|nullable|string|in:' . MailEncryption::join(),
             'data.mail_configuration.is_authentication_enabled' => 'nullable|boolean',
-            'data.mail_configuration.username' => 'nullable|string',
-            'data.mail_configuration.password' => 'nullable|string',
+            'data.mail_configuration.username' => 'required_if:data.mail_configuration.is_authentication_enabled,true|nullable|string',
+            'data.mail_configuration.password' => 'required_if:data.mail_configuration.is_authentication_enabled,true|nullable|string',
         ], $this->make_email_template_rules());
     }
 
